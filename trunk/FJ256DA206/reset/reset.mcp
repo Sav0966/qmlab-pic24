@@ -5,8 +5,8 @@ device=PIC24FJ256DA206
 [PATH_INFO]
 BuildDirPolicy=BuildDirIsProjectDir
 dir_src=
-dir_bin=bin
-dir_tmp=bin
+dir_bin=
+dir_tmp=
 dir_sin=
 dir_inc=..\pm
 dir_lib=
@@ -57,14 +57,14 @@ file_007=no
 file_008=yes
 file_009=yes
 [FILE_INFO]
-file_000=C:\MPLAB Projects\FJ256DA206\Pm\pm.c
-file_001=C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.s
-file_002=main.c
-file_003=reset.c
-file_004=C:\MPLAB Projects\FJ256DA206\Pm\pm.h
-file_005=C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h
-file_006=reset.h
-file_007=main.h
+file_000=main.c
+file_001=reset.c
+file_002=C:\MPLAB Projects\FJ256DA206\Pm\pm.c
+file_003=C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.s
+file_004=main.h
+file_005=reset.h
+file_006=C:\MPLAB Projects\FJ256DA206\Pm\pm.h
+file_007=C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h
 file_008=C:\MPLAB Projects\FJ256DA206\libpic30.h
 file_009=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
 [SUITE_INFO]
