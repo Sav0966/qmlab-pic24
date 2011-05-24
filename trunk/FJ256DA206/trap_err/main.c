@@ -37,7 +37,7 @@ int main(void)
 	check_traps(); /* Do some possible traps */
 
 	/* SIM doesn't clear SRbits.IPL, ICD2 clears it */
-	SRbits.IPL = MAIN_IPL; /* Set default by hands */
+	SET_CPU_IPL(MAIN_IPL); /* Set default by hands */
 
 	clr_reset_state(); // Clear uParam and RCON
 
