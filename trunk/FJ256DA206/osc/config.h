@@ -15,6 +15,7 @@
 /* Windowed WDT: */\
 /*	WINDIS_ON	&	Window mode */\
 	WINDIS_OFF	&	/* (def) Non-Window mode */\
+\
 /* WDT Prescaler: */\
 /*	FWPSA_PR32	&	 1:32 */\
 	FWPSA_PR128	&	/* (def) 1:128 */\
@@ -36,25 +37,22 @@
 /*	WDTPS_PS16384	&	 1:16,384 */\
 	WDTPS_PS32768	&	/* (def) 1:32,768 */\
 \
+/* Emulator Pin Placement Select bits: */\
+/*	ICS_PGx3	&	 Emulator functions are shared with PGEC3/PGED3 */\
+/*	ICS_PGx2	&	 Emulator functions are shared with PGEC2/PGED2 */\
+	ICS_PGx1	&	/* (def) Emulator functions are shared with PGEC1/PGED1 */\
+\
+/* General Segment Write Protect: */\
+/*	GWRP_ON 	&	 Enabled */\
+	GWRP_OFF	&	/* (def) Disabled */\
+/* General Segment Code Protect: */\
+/*	GCP_ON  	&	 Code protection is enabled */\
+	GCP_OFF 	&	/* (def) Code protection is disabled */\
+\
 /* JTAG Port Enable: */\
 /*	JTAGEN_OFF	 Disabled */\
 	JTAGEN_ON   /* (def) Enabled */\
 ) /* #define CONFIG1_INIT */
-
-#ifdef _not_compil_
-**   Emulator Pin Placement Select bits:
-**     ICS_PGx3             Emulator functions are shared with PGEC3/PGED3
-**     ICS_PGx2             Emulator functions are shared with PGEC2/PGED2
-**     ICS_PGx1             Emulator functions are shared with PGEC1/PGED1
-**
-**   General Segment Write Protect:
-**     GWRP_ON              Enabled
-**     GWRP_OFF             Disabled
-**
-**   General Segment Code Protect:
-**     GCP_ON               Code protection is enabled
-**     GCP_OFF              Code protection is disabled
-#endif
 
 #define CONFIG2_INIT (\
 /* OSCO Pin Configuration: */\

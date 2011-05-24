@@ -21,7 +21,7 @@ int main(void)
 	__delay32((unsigned long)((1000)*(FCY_UP)/1000ULL));
 
 	/* SIM doesn't clear SRbits.IPL, ICD2 clears it */
-	SRbits.IPL = MAIN_IPL; /* Set default by hands */
+	SET_CPU_IPL(MAIN_IPL); /* Set default by hands */
 
 	mcu_id = MCU_ID;
 	if (isPOWER_ON(rst_state = get_reset_state()))
