@@ -1,0 +1,123 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.5.4	//
+!_TAG_REVISION_NAME	MCHPTags	//
+!_TAG_REVISION_VERSION	6.0.1	//
+DisableInterrupts::(cycles)__builtin_disi(cycles)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	87;"	d	line:87
+EXT_RESET::(RCON_POR|RCON_BOR|RCON_EXTR)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	77;"	d	line:77
+FCY::2000000L	C:\MPLAB Projects\FJ256DA206\Reset\main.h	5;"	d	line:5
+IESO_OFF	C:\MPLAB Projects\FJ256DA206\Reset\main.c	5;"	v	line:5
+INT_RESET::(RCON_WDTO|RCON_SWR)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	76;"	d	line:76
+IS_MCU_PROGRAMMED::((MCU_CONFIG2&~IESO_OFF)==0)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	29;"	d	line:29
+MCU_CONFIG12::_mcu_long(__builtin_tbladdress	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	12;"	d	line:12
+MCU_CONFIG1::((unsignedint)(MCU_CONFIG12>>1	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	14;"	d	line:14
+MCU_CONFIG23::_mcu_long(__builtin_tbladdress	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	13;"	d	line:13
+MCU_CONFIG2::((unsignedint)MCU_CONFIG12)	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	15;"	d	line:15
+MCU_CONFIG3::((unsignedint)MCU_CONFIG23)	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	16;"	d	line:16
+MCU_ID::((unsignedint)_mcu_revid)	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	21;"	d	line:21
+MCU_ID::0	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	24;"	d	line:24
+MCU_REV::((unsignedint)(_mcu_revid>>16)	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	20;"	d	line:20
+MCU_REV::0	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	23;"	d	line:23
+PM_CLEAN::_user_addr(__builtin_tbladdres	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	40;"	d	line:40
+PM_LAST_PAGE::_page_addr(__builtin_tbladdres	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	39;"	d	line:39
+PM_PAGE_SIZE::(3*_FLASH_PAGE)	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	15;"	d	line:15
+PM_ROW_SIZE::(3*_FLASH_ROW)	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	14;"	d	line:14
+RCON_BITS::~RCON_UNUSED	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	74;"	d	line:74
+RCON_BOR::2	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	57;"	d	line:57
+RCON_CM::0x0200	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	67;"	d	line:67
+RCON_EXTR::128	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	64;"	d	line:64
+RCON_IDLE::4	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	58;"	d	line:58
+RCON_IOPUWR::0x4000	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	69;"	d	line:69
+RCON_POR::1	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	56;"	d	line:56
+RCON_RESETS::(INT_RESET|EXT_RESET|TRAP_RESE	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	79;"	d	line:79
+RCON_SLEEP::8	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	59;"	d	line:59
+RCON_STATUS::(RCON_RESETS|RCON_IDLE|RCON_SL	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	80;"	d	line:80
+RCON_SWDTEN::32	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	62;"	d	line:62
+RCON_SWR::64	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	63;"	d	line:63
+RCON_TRAPR::0x8000	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	72;"	d	line:72
+RCON_UNUSED::0x3C00	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	68;"	d	line:68
+RCON_VREGS::256	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	66;"	d	line:66
+RCON_WDTO::16	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	61;"	d	line:61
+TRAP_RESET::(RCON_TRAPR|RCON_IOPUWR|RCON_C	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	78;"	d	line:78
+WDTSWDisable::RCONbits.SWDTEN=0	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	91;"	d	line:91
+WDTSWEnable::RCONbits.SWDTEN=1	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	90;"	d	line:90
+_MAIN_INCL_	C:\MPLAB Projects\FJ256DA206\Reset\main.h	2;"	d	line:2
+_MCU_ID_INCL_	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	5;"	d	line:5
+_PM_INCL_	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	5;"	d	line:5
+_RESET_INCL_	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	5;"	d	line:5
+__mcu_long	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.s	16;"	l	line:16
+__mcu_revid	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.s	12;"	l	line:12
+_isBOR::(state)(((state)&RCON_BOR)!=0)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	100;"	d	line:100
+_isCM::(state)(((state)&RCON_CM)!=0)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	114;"	d	line:114
+_isIOPUWR::(state)(((state)&RCON_IOPUWR)!	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	111;"	d	line:111
+_isMCLR::(state)(((state)&RCON_EXTR)!=0	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	94;"	d	line:94
+_isPOR::(state)(((state)&RCON_POR)!=0)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	97;"	d	line:97
+_isSWR::(state)(((state)&RCON_SWR)!=0)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	104;"	d	line:104
+_isTRAPR::(state)(((state)&RCON_TRAPR)!=	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	108;"	d	line:108
+_isWDTTO::(state)(((state)&RCON_WDTO)!=0	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	118;"	d	line:118
+_mcu_long	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	10;"	p	line:10	signature:(_prog_addressT addr)
+_mcu_revid	C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h	19;"	p	line:19	signature:(void)
+_page_addr	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	9;"	f	line:9	signature:(_prog_addressT addr)
+_page_addr	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	36;"	p	line:36	signature:(_prog_addressT addr)
+_row_addr	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	12;"	f	line:12	signature:(_prog_addressT addr)
+_row_addr	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	37;"	p	line:37	signature:(_prog_addressT addr)
+_user_addr	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	6;"	f	line:6	signature:(_prog_addressT addr)
+_user_addr	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	35;"	p	line:35	signature:(_prog_addressT addr)
+addr	C:\MPLAB Projects\FJ256DA206\Reset\main.c	21;"	l	line:21
+buf	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	26;"	l	line:26
+buf	C:\MPLAB Projects\FJ256DA206\Reset\main.c	22;"	l	line:22
+clr_reset_state	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	51;"	p	line:51	signature:(void)
+clr_reset_state::{RCON=3;get_reset_state;}(void	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	52;"	d	line:52
+copy_buf	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	84;"	f	line:84	file:	signature:(char* lbuf, char* buf, int nzise)
+do_reset	C:\MPLAB Projects\FJ256DA206\Reset\reset.c	9;"	f	line:9	signature:(unsigned int uParam)
+do_reset	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	49;"	p	line:49	signature:(unsigned int uParam)
+end_page	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	65;"	l	line:65
+get_reset_state	C:\MPLAB Projects\FJ256DA206\Reset\reset.c	47;"	f	line:47	signature:(void)
+get_reset_state	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	48;"	p	line:48	signature:(void)
+i	C:\MPLAB Projects\FJ256DA206\Reset\main.c	21;"	l	line:21
+isBOR::_isBOR(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	101;"	d	line:101
+isCM::_isCM(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	115;"	d	line:115
+isIOPUWR::_isIOPUWR(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	112;"	d	line:112
+isMCLR::_isMCLR(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	95;"	d	line:95
+isPOR::_isPOR(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	98;"	d	line:98
+isPOWER_ON::(i)(((i)&EXT_RESET)!=0)	C:\MPLAB Projects\FJ256DA206\Reset\main.c	8;"	d	line:8	file:
+isSWR::_isSWR(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	105;"	d	line:105
+isTRAPR::_isTRAPR(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	109;"	d	line:109
+isWDTTO::_isWDTTO(get_reset_state)	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	119;"	d	line:119
+isWDTWU::((get_reset_state&(RCON_WDTO|R	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	129;"	d	line:129
+isWU::((get_reset_state&RCON_SLEEP)!	C:\MPLAB Projects\FJ256DA206\Reset\reset.h	136;"	d	line:136
+is_valid	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	63;"	f	line:63	file:	signature:(_prog_addressT page)
+lbuf	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	96;"	l	line:96
+main	C:\MPLAB Projects\FJ256DA206\Reset\main.c	76;"	f	line:76	signature:(void)
+pm_erase_page	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	70;"	f	line:70	signature:(_prog_addressT addr)
+pm_erase_page	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	24;"	p	line:24	signature:(_prog_addressT addr)
+pm_is_clean	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	33;"	f	line:33	signature:(_prog_addressT addr, int len)
+pm_is_clean	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	23;"	p	line:23	signature:(_prog_addressT addr, int len)
+pm_read_page	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	18;"	f	line:18	signature:(_prog_addressT addr, void *buf)
+pm_read_page	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	26;"	p	line:26	signature:(_prog_addressT addr, void *buf)
+pm_read_pword	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	24;"	f	line:24	signature:(_prog_addressT addr)
+pm_read_pword	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	31;"	p	line:31	signature:(_prog_addressT addr)
+pm_read_row	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	15;"	f	line:15	signature:(_prog_addressT addr, void *buf)
+pm_read_row	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	25;"	p	line:25	signature:(_prog_addressT addr, void *buf)
+pm_read_word	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	21;"	f	line:21	signature:(_prog_addressT addr)
+pm_read_word	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	32;"	p	line:32	signature:(_prog_addressT addr)
+pm_write_page	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	112;"	f	line:112	signature:(_prog_addressT addr, void *buf)
+pm_write_page	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	28;"	p	line:28	signature:(_prog_addressT addr, void *buf)
+pm_write_pword	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	57;"	f	line:57	signature:(_prog_addressT addr, long data)
+pm_write_pword	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	29;"	p	line:29	signature:(_prog_addressT addr, long data)
+pm_write_row	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	94;"	f	line:94	signature:(_prog_addressT addr, void *buf)
+pm_write_row	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	27;"	p	line:27	signature:(_prog_addressT addr, void *buf)
+pm_write_word	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	60;"	f	line:60	signature:(_prog_addressT addr, int data)
+pm_write_word	C:\MPLAB Projects\FJ256DA206\Pm\pm.h	30;"	p	line:30	signature:(_prog_addressT addr, int data)
+power_on_init	C:\MPLAB Projects\FJ256DA206\Reset\main.c	14;"	f	line:14	file:	signature:(void)
+reset_init	C:\MPLAB Projects\FJ256DA206\Reset\reset.c	19;"	f	line:19	signature:(void)
+reset_state	C:\MPLAB Projects\FJ256DA206\Reset\reset.c	7;"	v	line:7	file:
+rst_events	C:\MPLAB Projects\FJ256DA206\Reset\main.c	11;"	v	line:11
+rst_num	C:\MPLAB Projects\FJ256DA206\Reset\main.c	12;"	v	line:12
+rst_state	C:\MPLAB Projects\FJ256DA206\Reset\main.c	10;"	v	line:10
+save_RCON_in_flash	C:\MPLAB Projects\FJ256DA206\Reset\main.c	19;"	f	line:19	signature:(void)
+uninit	C:\MPLAB Projects\FJ256DA206\Reset\main.c	21;"	l	line:21
+write_helper	C:\MPLAB Projects\FJ256DA206\Pm\pm.c	41;"	f	line:41	file:	signature:( _prog_addressT addr, long data, char mode)
