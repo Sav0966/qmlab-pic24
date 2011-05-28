@@ -1,5 +1,6 @@
 #include "main.h"
 #include "reset.h"
+#include "osc.h"
 
 /* Reinit all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)
@@ -15,6 +16,11 @@ static void power_on_init(void)
  	rst_events = 0; rst_num = 0;
 }
 
+#define OSC_PIN		15
+#define OSC_TRIS	TRISC
+#define OSC_LAT		LATC
+#define setb
+
 int main(void)
 {
 	if (!IS_MCU_PROGRAMMED()) /* Stay in programming */
@@ -29,6 +35,25 @@ int main(void)
 
 	rst_events |= rst_state; /* As RCON register */
 	++rst_num; /* Calculate session reset number */
+
+	do { // Main loop
+
+		/* Turn on external oscillator FOX924B: */
+		/* Set OSCO pin as output in low state */
+		__asm__ volatile (\
+		"	bclr	LATC, #15	; Clear latch RC15\n"
+		"	bclr	TRISC, #15	; Enables output");
+		__delay32(/* Wait FOX924 startup time 5ms */
+			(unsigned long)((5)*(FCY_UP)/1000ULL));
+
+		/* Set OSCO pin as output in hight state */
+		__asm__ volatile (\
+		"	bset	LATC, #15	; Set latch RC15\n"
+		"	bclr	TRISC, #15	; Enables output");
+
+		__delay32( /* Wait 5ms and run loop again */
+			(unsigned long)((5)*(FCY_UP)/1000ULL));
+	} while (1); // Main loop
 
 	clr_reset_state(); // Clear uParam and RCON
 
