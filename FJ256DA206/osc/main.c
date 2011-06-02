@@ -1,4 +1,5 @@
 #include "main.h"
+#include "mcu_id.h"
 #include "reset.h"
 #include "osc.h"
 
@@ -16,11 +17,6 @@ static void power_on_init(void)
  	rst_events = 0; rst_num = 0;
 }
 
-#define OSC_PIN		15
-#define OSC_TRIS	TRISC
-#define OSC_LAT		LATC
-#define setb
-
 int main(void)
 {
 	if (!IS_MCU_PROGRAMMED()) /* Stay in programming */
@@ -37,21 +33,38 @@ int main(void)
 	++rst_num; /* Calculate session reset number */
 
 	do { // Main loop
+		int cfg = MCU_CONFIG2; // Check CONFIG2 word
+		if (cfg  & ~IESO_OFF) break; // Must be off
+
+		/* Select reference clock = FCY/1024 and */
+		REFOCON = 0x0A00; /* disable it in sleep */
+		/* Select AN15/RP29/REFO/RB15 as output */
+		__asm__ volatile (/* pin in HIGHT state */\
+		"	bclr	ANSB, #15	; Disable analog\n"
+		"	bset	LATB, #15	; Set latch RB15\n"
+// LOW	"	bclr	LATB, #15	; Clear latch RB15\n"
+		"	bclr	TRISB, #15	; Enables output\n"
+		); // It's not needed, but we set it manual
+
+		REFOCONbits.ROON = 1; // Enable REFO
 
 		/* Turn on external oscillator FOX924B: */
-		/* Set OSCO pin as output in low state */
-		__asm__ volatile (\
+		__asm__ volatile (/* OSCO/CLKO/RC15 pin */\
 		"	bclr	LATC, #15	; Clear latch RC15\n"
-		"	bclr	TRISC, #15	; Enables output");
-		__delay32(/* Wait FOX924 startup time 5ms */
+		"	bclr	TRISC, #15	; Enables output\n"
+		); // Set OSCO pin as output in low state
+		__delay32(// Wait FOX924 startup time 5ms
 			(unsigned long)((5)*(FCY_UP)/1000ULL));
 
-		/* Set OSCO pin as output in hight state */
-		__asm__ volatile (\
+		/* Turn off external oscillator FOX924B: */
+		__asm__ volatile (/* OSCO/CLKO/RC15 pin */\
 		"	bset	LATC, #15	; Set latch RC15\n"
-		"	bclr	TRISC, #15	; Enables output");
+		"	bclr	TRISC, #15	; Enables output\n"
+		); // Set OSCO pin as output in hight state
 
-		__delay32( /* Wait 5ms and run loop again */
+		REFOCONbits.ROON = 0; // Disable REFO
+
+		__delay32(// Wait 5ms and run loop again
 			(unsigned long)((5)*(FCY_UP)/1000ULL));
 	} while (1); // Main loop
 
