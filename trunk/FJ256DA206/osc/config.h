@@ -5,6 +5,7 @@
 #define _CONFIG_INCL_
 #include <p24Fxxxx.h> /* PIC24F only */
 
+#define FOSC		12000000L /* Main oscillator frequency */
 #define FCY_UP		2000000L /* Default unprogrammed clock */
 #define MAIN_IPL	0	/* The value of IPL for main loop */
 

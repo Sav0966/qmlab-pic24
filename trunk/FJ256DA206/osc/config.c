@@ -7,8 +7,10 @@
 #endif
 
 _CONFIG3(CONFIG3_INIT);
+
 // Reset IESO bit (Errata DS80505)
 // Use OSCO/RC15 pin as digital IO to turn on/off
-// external ocsillator, wich is connected to OSCI
+//  external ocsillator (low -> on), wich is connected to OSCI
 _CONFIG2(CONFIG2_INIT & IESO_OFF & OSCIOFNC_ON);
+
 _CONFIG1(CONFIG1_INIT);
