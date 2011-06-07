@@ -37,14 +37,14 @@ int main(void)
 		if (cfg  & ~IESO_OFF) break; // Must be off
 
 		/* Select reference clock = FCY/1024 and */
-		REFOCON = 0x0A00; /* disable it in sleep */
+		REFOCON = 0x0200; /* disable it in sleep */
 		/* Select AN15/RP29/REFO/RB15 as output */
 		__asm__ volatile (/* pin in HIGHT state */\
 		"	bclr	ANSB, #15	; Disable analog\n"
 		"	bset	LATB, #15	; Set latch RB15\n"
 // LOW	"	bclr	LATB, #15	; Clear latch RB15\n"
 		"	bclr	TRISB, #15	; Enables output\n"
-		); // It's not needed, but we set it manual
+		); // It's not needed, but we set it by hand
 
 		REFOCONbits.ROON = 1; // Enable REFO
 
@@ -55,6 +55,24 @@ int main(void)
 		); // Set OSCO pin as output in low state
 		__delay32(// Wait FOX924 startup time 5ms
 			(unsigned long)((5)*(FCY_UP)/1000ULL));
+
+		/* Set ECPLL oscillator mode, FCY = 32 MHZ */
+		CLKDIVbits.PLLEN = 1; // Enable PLL96MHZ
+		osc_switch(FNOSC_PRIPLL); // ECPLL mode
+		/*
+		* Do something, that is't clock-sensitive
+		*/
+		while (OSCCONbits.OSWEN != 0); // Wait
+
+
+
+		/* Set FRCDIV oscillator mode, FCY = 4 MHZ */
+		osc_switch(FNOSC_FRCDIV); // FRCDIV mode
+		/*
+		* Do something, that is't clock-sensitive
+		*/
+		while (OSCCONbits.OSWEN != 0); // Wait
+		CLKDIVbits.PLLEN = 0; // Disable PLL96MHZ
 
 		/* Turn off external oscillator FOX924B: */
 		__asm__ volatile (/* OSCO/CLKO/RC15 pin */\

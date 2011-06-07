@@ -68,7 +68,7 @@
 /*	FNOSC_FRC    & 	 Fast RC Oscillator (FRC) */\
 /*	FNOSC_FRCPLL &	 Fast RC Oscillator with PLL module (FRCPLL) */\
 /*	FNOSC_PRI    & 	 Primary Oscillator (XT, HS, EC) */\
-/*	FNOSC_PRIPLL &	 Primary Oscillator with PLL module (XTPLL,HSPLL, ECPLL) */\
+/*	FNOSC_PRIPLL &	 Primary Oscillator with PLL module (XTPLL, HSPLL, ECPLL) */\
 /*	FNOSC_SOSC   &	 Secondary Oscillator (SOSC) */\
 /*	FNOSC_LPRC   &	 Low-Power RC Oscillator (LPRC) */\
 	FNOSC_FRCDIV &	/* (def) Fast RC Oscillator with Postscaler (FRCDIV) */\
