@@ -17,6 +17,14 @@ static void power_on_init(void)
  	rst_events = 0; rst_num = 0;
 }
 
+/* Oscillator fail trap handler */
+void __attribute__((__interrupt__, auto_psv))
+_OscillatorFail(void)
+{
+	CLKDIVbits.PLLEN = 1; // Enable PLL96MHZ
+	while (OSCCONbits.OSWEN != 0); // Wait locking
+}
+
 int main(void)
 {
 	if (!IS_MCU_PROGRAMMED()) /* Stay in programming */
@@ -37,7 +45,7 @@ int main(void)
 		if (cfg  & ~IESO_OFF) break; // Must be off
 
 		/* Select reference clock = FCY/1024 and */
-		REFOCON = 0x0200; /* disable it in sleep */
+		REFOCON = 0x0A00; /* disable it in sleep */
 		/* Select AN15/RP29/REFO/RB15 as output */
 		__asm__ volatile (/* pin in HIGHT state */\
 		"	bclr	ANSB, #15	; Disable analog\n"
@@ -48,37 +56,39 @@ int main(void)
 
 		REFOCONbits.ROON = 1; // Enable REFO
 
-		/* Turn on external oscillator FOX924B: */
-		__asm__ volatile (/* OSCO/CLKO/RC15 pin */\
-		"	bclr	LATC, #15	; Clear latch RC15\n"
-		"	bclr	TRISC, #15	; Enables output\n"
-		); // Set OSCO pin as output in low state
-		__delay32(// Wait FOX924 startup time 5ms
-			(unsigned long)((5)*(FCY_UP)/1000ULL));
+		/* Turn on external oscillator FOX924B */
+		if (osc_ec_on(1)) break; // break in error
+
+osc_mode(FRCDIV);
+osc_mode(FRC16);
+osc_mode(LPRC);
+osc_mode(SOSC);
+osc_mode(PRIPLL);
+osc_mode(PRI);
+osc_mode(FRCPLL);
+osc_mode(FRC);
+
 
 		/* Set ECPLL oscillator mode, FCY = 32 MHZ */
 		CLKDIVbits.PLLEN = 1; // Enable PLL96MHZ
-		osc_switch(FNOSC_PRIPLL); // ECPLL mode
+		_osc_switch(PRIPLL); // Select ECPLL mode
 		/*
-		* Do something, that is't clock-sensitive
+		* Do something, that is not clock-sensitive
 		*/
 		while (OSCCONbits.OSWEN != 0); // Wait
 
 
 
 		/* Set FRCDIV oscillator mode, FCY = 4 MHZ */
-		osc_switch(FNOSC_FRCDIV); // FRCDIV mode
+		_osc_switch(FRCDIV); // Select FRCDIV mode
 		/*
-		* Do something, that is't clock-sensitive
+		* Do something, that is not clock-sensitive
 		*/
 		while (OSCCONbits.OSWEN != 0); // Wait
 		CLKDIVbits.PLLEN = 0; // Disable PLL96MHZ
 
-		/* Turn off external oscillator FOX924B: */
-		__asm__ volatile (/* OSCO/CLKO/RC15 pin */\
-		"	bset	LATC, #15	; Set latch RC15\n"
-		"	bclr	TRISC, #15	; Enables output\n"
-		); // Set OSCO pin as output in hight state
+		/* Turn off external oscillator FOX924B */
+		if (osc_ec_on(0)) break; // break in error
 
 		REFOCONbits.ROON = 0; // Disable REFO
 
