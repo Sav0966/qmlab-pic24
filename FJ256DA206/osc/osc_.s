@@ -4,10 +4,10 @@
 .include "p24Fxxxx.inc" ; PIC24F only
 
 .section	.text, code
-.global		_osc_switch	; public
+.global		__osc_switch	; public
 
-_osc_switch:	; void osc_switch(int FNOSC_VALUE)
-	swap	w0	; Place the new oscillator selection in W0 low byte
+__osc_switch:	; void _osc_switch(FNOSC_VALUE mode) // mode = 0-7
+;	swap	w0	; Place the new oscillator selection in W0 low byte
 
 	mov 	#OSCCONH, w1
 	mov 	#0x78, w2
