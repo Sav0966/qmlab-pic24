@@ -126,19 +126,19 @@ void check_traps(void)
 	}
 }
 
-/* Trap handlers */
+/* Trap handlers, reset INTCON1 bits by hand for example */
 void __attribute__((__interrupt__, auto_psv))
-_OscillatorFail(void) { osc_ipl = get_cpu_ipl();
-		do_reset(get_reset_state() | OSC_TRAP); }
+_OscillatorFail(void) { osc_ipl = get_cpu_ipl(); INTCON1bits.OSCFAIL = 0;
+		do_reset(get_reset_state() | OSC_TRAP); } // Reset OSCFAIL bit
 
 void __attribute__((__interrupt__, auto_psv))
-_AddressError(void) { addr_ipl = get_cpu_ipl();
-		do_reset(get_reset_state() | MEM_TRAP); }
+_AddressError(void) { addr_ipl = get_cpu_ipl(); INTCON1bits.ADDRERR = 0;
+		do_reset(get_reset_state() | MEM_TRAP); } // Reset ADDRERR bit
 
 void __attribute__((__interrupt__, auto_psv))
-_StackError(void) { stack_ipl = get_cpu_ipl();
-		do_reset(get_reset_state() | STACK_TRAP); }
+_StackError(void) { stack_ipl = get_cpu_ipl(); INTCON1bits.STKERR = 0;
+		do_reset(get_reset_state() | STACK_TRAP); } // Reset STKERR bit
 
 void __attribute__((__interrupt__, auto_psv))
-_MathError(void) { math_ipl = get_cpu_ipl();
-		do_reset(get_reset_state() | MATH_TRAP); }
+_MathError(void) { math_ipl = get_cpu_ipl(); INTCON1bits.MATHERR = 0;
+		do_reset(get_reset_state() | MATH_TRAP); } // Reset MATHERR bit
