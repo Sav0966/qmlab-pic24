@@ -33,7 +33,7 @@ _CONFIG3(CONFIG3_INIT);
 // Manage PLL96MHZ by software (PLLEN bit), reset state -> off
 // Enable primary oscillator and select External-Clock mode
 // Clock switching is enabled, fail-safe monitor - enabled
-_CONFIG2(CONFIG2_INIT & IESO_OFF & /*OSCIOFNC_ON &*/ POSCMOD_EC\
+_CONFIG2(CONFIG2_INIT & IESO_OFF & OSCIOFNC_ON & POSCMOD_EC\
 	& PLL96MHZ_OFF & PLLDIV_VALUE & FCKSM_CSECME);
 
 _CONFIG1(CONFIG1_INIT);

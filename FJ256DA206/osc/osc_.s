@@ -6,7 +6,7 @@
 .section	.text, code
 .global		__osc_switch	; public
 
-__osc_switch:	; void _osc_switch(FNOSC_VALUE mode) // mode = 0-7
+__osc_switch:	; void _osc_switch(OSC_MODE mode) // mode = 0-7
 ;	swap	w0	; Place the new oscillator selection in W0 low byte
 
 	mov 	#OSCCONH, w1
