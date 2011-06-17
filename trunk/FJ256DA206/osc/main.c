@@ -10,6 +10,7 @@ unsigned int mcu_id;
 unsigned int rst_state; /* Current reset state */
 unsigned int __attribute__((persistent)) rst_events;
 unsigned int __attribute__((persistent)) rst_num;
+unsigned long nOscFail; // Trap error counter
 
 static void power_on_init(void)
 {
@@ -21,8 +22,10 @@ static void power_on_init(void)
 void __attribute__((__interrupt__, auto_psv))
 _OscillatorFail(void)
 {
-	CLKDIVbits.PLLEN = 1; // Enable PLL96MHZ
-	while (OSCCONbits.OSWEN != 0); // Wait locking
+	// Now we have FRC oscillator mode
+	osc_mode(OSCCON >> 8); // Try to restore NOSC mode
+	INTCON1bits.OSCFAIL = 0; // Clear interrupt flag
+	++nOscFail;
 }
 
 int main(void)
@@ -56,39 +59,18 @@ int main(void)
 
 		REFOCONbits.ROON = 1; // Enable REFO
 
-		/* Turn on external oscillator FOX924B */
-		if (osc_ec_on(1)) break; // break in error
-
-osc_mode(FRCDIV);
-osc_mode(FRC16);
-osc_mode(LPRC);
-osc_mode(SOSC);
-osc_mode(PRIPLL);
-osc_mode(PRI);
-osc_mode(FRCPLL);
-osc_mode(FRC);
-
-
-		/* Set ECPLL oscillator mode, FCY = 32 MHZ */
-		CLKDIVbits.PLLEN = 1; // Enable PLL96MHZ
-		_osc_switch(PRIPLL); // Select ECPLL mode
-		/*
-		* Do something, that is not clock-sensitive
-		*/
-		while (OSCCONbits.OSWEN != 0); // Wait
-
-
-
-		/* Set FRCDIV oscillator mode, FCY = 4 MHZ */
-		_osc_switch(FRCDIV); // Select FRCDIV mode
-		/*
-		* Do something, that is not clock-sensitive
-		*/
-		while (OSCCONbits.OSWEN != 0); // Wait
-		CLKDIVbits.PLLEN = 0; // Disable PLL96MHZ
+		// Set different oscillator modes, save FCY and Ip
+		osc_mode(FRCPLL);	// FRCPLL	FCY = 10,66 MHz	9.5 mA
+		osc_mode(FRCDIV);	// FRCDIV	FCY = 4 MHz		4.9 mA
+		osc_mode(FRC16);	// FRC16	FCY = 0.5 MHz	3.1 mA
+		osc_mode(FRC);		// FRC  	FCY = 8 MHz		6.9 mA
+//		osc_mode(LPRC);		// LPRC		FCY = 31857 Hz	2.6 mA
+//		osc_mode(SOSC);
+		osc_mode(PRIPLL);	// ECPLL	FCY = 32 MHZ	24.6 mA
+		osc_mode(PRI);		// EC		FCY = 12 MHz	11.0 mA
 
 		/* Turn off external oscillator FOX924B */
-		if (osc_ec_on(0)) break; // break in error
+//		if (osc_ec_on(0)) break; // break in error
 
 		REFOCONbits.ROON = 0; // Disable REFO
 
