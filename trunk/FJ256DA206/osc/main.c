@@ -74,8 +74,7 @@ int main(void)
 
 		REFOCONbits.ROON = 0; // Disable REFO
 
-		__delay32(// Wait 5ms and run loop again
-			(unsigned long)((5)*(FCY_UP)/1000ULL));
+		delay_ms(5); // Wait 5ms and run loop again
 	} while (1); // Main loop
 
 	clr_reset_state(); // Clear uParam and RCON

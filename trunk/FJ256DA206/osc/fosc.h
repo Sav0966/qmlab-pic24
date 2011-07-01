@@ -1,1 +1,1 @@
-#define FOSC	12000000L 	/* Main oscillator frequency */
+#define FOSC	12000000 	/* Main oscillator frequency */
