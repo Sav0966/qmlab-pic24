@@ -6,6 +6,20 @@
 #include "mcu_id.h"
 #include "osc.h"
 
+static const unsigned long arFCY[] =
+{	FCY_FRC, FCY_FRCPLL, FCY_PRI, FCY_PRIPLL,
+	FCY_SOSC, FCY_LPRC, FCY_FRC16, FCY_FRCDIV };
+
+unsigned long get_fcy(OSC_MODE mode) { return(arFCY[mode]); }
+
+#define MS(fcy) ((unsigned int)(fcy/1000UL))
+
+static const unsigned int const ar_ms[] =
+{	MS(FCY_FRC), MS(FCY_FRCPLL), MS(FCY_PRI), MS(FCY_PRIPLL),
+	MS(FCY_SOSC), MS(FCY_LPRC), MS(FCY_FRC16), MS(FCY_FRCDIV) };
+
+void delay_ms(int ms) { while (ms--) __delay32(ar_ms[GET_OSC_MODE()]); }
+
 int osc_ec_on(int turn_on)
 {
 	int iRet = -1;
@@ -24,8 +38,7 @@ int osc_ec_on(int turn_on)
 				"	bclr	LATC, #15	; Clear latch RC15\n"
 				"	bclr	TRISC, #15	; Enables output\n"
 				); // Set OSCO pin as output in low state
-				__delay32(// Wait FOX924 startup time - 5ms
-					(unsigned long)((5)*(FCY_UP)/1000ULL));
+				delay_ms(5);// Wait FOX924 startup time 5ms
 			} // else -> oscillator already is turned on
 		}
 		else
@@ -119,8 +132,10 @@ int osc_mode(OSC_MODE mode)
 		*/
 		WAIT_OSWEN(); // Hardware wait while OSWEN != 0
 
-		osc_pll_on(0); // Try to turn off PLL96MHz
-		osc_ec_on(0); // Try to turn off FOX924
+//		Do it directly in power management procedure:
+//		osc_pll_on(0); // Try to turn off PLL96MHz
+//		osc_ec_on(0); // Try to turn off FOX924
+
 		iRet = 0; break; // OK
 	} // for(;;)
 
