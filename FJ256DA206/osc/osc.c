@@ -18,7 +18,11 @@ static const unsigned int const ar_ms[] =
 {	MS(FCY_FRC), MS(FCY_FRCPLL), MS(FCY_PRI), MS(FCY_PRIPLL),
 	MS(FCY_SOSC), MS(FCY_LPRC), MS(FCY_FRC16), MS(FCY_FRCDIV) };
 
-void delay_ms(int ms) { while (ms--) __delay32(ar_ms[GET_OSC_MODE()]); }
+void delay_ms(int ms)
+{
+	unsigned long cur_ms = ar_ms[GET_OSC_MODE()];
+	while (ms--) __delay32(cur_ms);
+}
 
 int osc_ec_on(int turn_on)
 {
