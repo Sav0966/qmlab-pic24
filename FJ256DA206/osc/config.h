@@ -9,7 +9,7 @@
 #include "fosc.h"	/* Main oscillator frequency FOSC */
 #endif
 
-#define FCY_UP		2000000L /* Default unprogrammed clock */
+#define FCY_UP2		2000000L /* Default unprogrammed clock */
 #define MAIN_IPL	0	/* The value of IPL for main loop */
 /*
 * Definitions of FCY value in different oscillator modes
