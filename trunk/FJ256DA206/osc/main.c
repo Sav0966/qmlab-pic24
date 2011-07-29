@@ -28,8 +28,30 @@ _OscillatorFail(void)
 	++nOscFail;
 }
 
+static void test_mode(OSC_MODE mode)
+{
+	int i = 250; // 5 seccond loop time
+
+	osc_mode(mode); // Set oscillator mode
+	osc_pll_on(0); // Try to turn off PLL96MHz
+	osc_ec_on(0); // Try to turn off FOX924
+
+	REFOCONbits.ROON = 1; // Enable REFO
+	delay_ms(5000);  // Check FCY = REFO
+	REFOCONbits.ROON = 0; // Disable REFO
+	delay_ms(5000); // Wait and check Ip
+
+	while (i--) // Check delay in loop
+	{
+		REFOCONbits.ROON = 1; delay_ms(10);
+		REFOCONbits.ROON = 0; delay_ms(10);
+	}
+}
+
 int main(void)
 {
+	int cfg;
+
 	if (!IS_MCU_PROGRAMMED()) /* Stay in programming */
 	__delay32((unsigned long)((1000)*(FCY_UP2)/1000UL));
 
@@ -43,38 +65,32 @@ int main(void)
 	rst_events |= rst_state; /* As RCON register */
 	++rst_num; /* Calculate session reset number */
 
-	do { // Main loop
-		int cfg = MCU_CONFIG2; // Check CONFIG2 word
-		if (cfg  & ~IESO_OFF) break; // Must be off
+	cfg = MCU_CONFIG2; /* Check IESO bit in CONFIG2 */
+	if (cfg  & ~IESO_OFF) while(1); /* Must be off */
+	osc_mode(PRIPLL); /* Set main oscillator mode */
 
-		/* Select reference clock = FCY/1024 and */
-		REFOCON = 0x0A00; /* disable it in sleep */
-		/* Select AN15/RP29/REFO/RB15 as output */
-		__asm__ volatile (/* pin in HIGHT state */\
+	/* Select reference clock = FCY/1 and */
+	REFOCON = 0x0; /* disable it in sleep */
+	/* Select AN15/RP29/REFO/RB15 as output */
+	__asm__ volatile (/* pin in HIGHT state */\
 		"	bclr	ANSB, #15	; Disable analog\n"
 		"	bset	LATB, #15	; Set latch RB15\n"
 // LOW	"	bclr	LATB, #15	; Clear latch RB15\n"
 		"	bclr	TRISB, #15	; Enables output\n"
-		); // It's not needed, but we set it by hand
+	); // It's not needed, but we set it by hand
 
-		REFOCONbits.ROON = 1; // Enable REFO
+	do { // Main loop
 
 		// Set different oscillator modes, save FCY and Ip
-		osc_mode(FRCPLL);	// FRCPLL	FCY = 10,66 MHz	9.5 mA
-		osc_mode(FRCDIV);	// FRCDIV	FCY = 4 MHz		4.9 mA
-		osc_mode(FRC16);	// FRC16	FCY = 0.5 MHz	3.1 mA
-		osc_mode(FRC);		// FRC  	FCY = 8 MHz		6.9 mA
-//		osc_mode(LPRC);		// LPRC		FCY = 31857 Hz	2.6 mA
-//		osc_mode(SOSC);
-		osc_mode(PRIPLL);	// ECPLL	FCY = 32 MHZ	24.6 mA
-		osc_mode(PRI);		// EC		FCY = 12 MHz	11.0 mA
+		test_mode(FRCPLL);	// FRCPLL	FCY = 10,66 MHz	9.5 mA
+		test_mode(FRCDIV);	// FRCDIV	FCY = 4 MHz		4.9 mA
+		test_mode(FRC16);	// FRC16	FCY = 0.5 MHz	3.1 mA
+		test_mode(FRC);		// FRC  	FCY = 8 MHz		6.9 mA
+//		test_mode(LPRC);	// LPRC		FCY = 31857 Hz	2.6 mA
+//		test_mode(SOSC);
+		test_mode(PRIPLL);	// ECPLL	FCY = 32 MHZ	24.6 mA
+		test_mode(PRI);		// EC		FCY = 12 MHz	11.0 mA
 
-		/* Turn off external oscillator FOX924B */
-//		if (osc_ec_on(0)) break; // break in error
-
-		REFOCONbits.ROON = 0; // Disable REFO
-
-		delay_ms(5); // Wait 5ms and run loop again
 	} while (1); // Main loop
 
 	clr_reset_state(); // Clear uParam and RCON
