@@ -31,7 +31,7 @@ _OscillatorFail(void)
 int main(void)
 {
 	if (!IS_MCU_PROGRAMMED()) /* Stay in programming */
-	__delay32((unsigned long)((1000)*(FCY_UP)/1000ULL));
+	__delay32((unsigned long)((1000)*(FCY_UP2)/1000UL));
 
 	/* SIM doesn't clear SRbits.IPL, ICD2 clears it */
 	SET_CPU_IPL(MAIN_IPL); /* Set default by hands */
