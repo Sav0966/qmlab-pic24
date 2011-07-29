@@ -12,7 +12,7 @@ static const unsigned long arFCY[] =
 
 unsigned long get_fcy(OSC_MODE mode) { return(arFCY[mode]); }
 
-#define MS(fcy) ((unsigned int)(fcy/1000UL))
+#define MS(fcy) ((unsigned int)(fcy/2000UL))
 
 static const unsigned int const ar_ms[] =
 {	MS(FCY_FRC), MS(FCY_FRCPLL), MS(FCY_PRI), MS(FCY_PRIPLL),
