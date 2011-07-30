@@ -1,6 +1,7 @@
 #include "main.h"
 #include "mcu_id.h"
 #include "reset.h"
+#include "refo.h"
 #include "osc.h"
 
 /* Reinit all persistent and config data */
@@ -36,15 +37,15 @@ static void test_mode(OSC_MODE mode)
 	osc_pll_on(0); // Try to turn off PLL96MHz
 	osc_ec_on(0); // Try to turn off FOX924
 
-	REFOCONbits.ROON = 1; // Enable REFO
-	delay_ms(5000);  // Check FCY = REFO
-	REFOCONbits.ROON = 0; // Disable REFO
-	delay_ms(5000); // Wait and check Ip
+ 	// Enable REFO and Check FCY
+	refo_on(); delay_ms(5000);
+	// Disable REFO and check Ip
+	refo_off();	delay_ms(5000);
 
 	while (i--) // Check delay in loop
 	{
-		REFOCONbits.ROON = 1; delay_ms(10);
-		REFOCONbits.ROON = 0; delay_ms(10);
+		refo_on(); delay_ms(10);
+		refo_off(); delay_ms(10);
 	}
 
 	// In LPRC and SOSC modes delay 10 ms -> 17 ms
@@ -71,15 +72,8 @@ int main(void)
 	if (cfg  & ~IESO_OFF) while(1); /* Must be off */
 	osc_mode(PRIPLL); /* Set main oscillator mode */
 
-	/* Select reference clock = FCY/1 and */
-	REFOCON = 0x0; /* disable it in sleep */
-	/* Select AN15/RP29/REFO/RB15 as output */
-	__asm__ volatile (/* pin in HIGHT state */\
-		"	bclr	ANSB, #15	; Disable analog\n"
-		"	bset	LATB, #15	; Set latch RB15\n"
-// LOW	"	bclr	LATB, #15	; Clear latch RB15\n"
-		"	bclr	TRISB, #15	; Enables output\n"
-	); // It's not needed, but we set it by hand
+	/* Select reference clock = FCY/1 and enable it in */
+	refo_init(RO_RSLP | RO_SYS | RODIV_NONE); /* sleep */
 
 	do { // Main loop
 
@@ -107,6 +101,8 @@ int main(void)
 		// FCY (MHz)	0.5		4		8		10.66	12		32
 		// dIpicd2(mA)	0.7		1.0		1.2		1.3		1.3		2.5
 		// ICD2 debugger stops in breakpoint
+
+		refo_div(RODIV_1024); // Then safe power on REFO pin
 
 	} while (1); // Main loop
 
