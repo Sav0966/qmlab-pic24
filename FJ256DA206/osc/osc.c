@@ -12,17 +12,14 @@ static const unsigned long arFCY[] =
 
 unsigned long get_fcy(OSC_MODE mode) { return(arFCY[mode]); }
 
-#define MS(fcy) ((unsigned int)(fcy/2000UL))
+#define MS(fcy) ((unsigned int)(fcy/2000UL) - 19)
 
 static const unsigned int const ar_ms[] =
 {	MS(FCY_FRC), MS(FCY_FRCPLL), MS(FCY_PRI), MS(FCY_PRIPLL),
-	MS(FCY_SOSC), MS(FCY_LPRC), MS(FCY_FRC16), MS(FCY_FRCDIV) };
+	/* MS(FCY_SOSC), MS(FCY_LPRC)*/ 0,0, MS(FCY_FRC16), MS(FCY_FRCDIV) };
 
-void delay_ms(int ms)
-{
-	unsigned long cur_ms = ar_ms[GET_OSC_MODE()];
-	while (ms--) __delay32(cur_ms);
-}
+void delay_ms(int ms) // Additional 19 cycles in loop
+{	while (ms--) __delay32(ar_ms[GET_OSC_MODE()]); }
 
 int osc_ec_on(int turn_on)
 {
