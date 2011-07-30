@@ -46,6 +46,8 @@ static void test_mode(OSC_MODE mode)
 		REFOCONbits.ROON = 1; delay_ms(10);
 		REFOCONbits.ROON = 0; delay_ms(10);
 	}
+
+	// In LPRC and SOSC modes delay 10 ms -> 17 ms
 }
 
 int main(void)
@@ -82,14 +84,29 @@ int main(void)
 	do { // Main loop
 
 		// Set different oscillator modes, save FCY and Ip
-		test_mode(FRCPLL);	// FRCPLL	FCY = 10,66 MHz	9.5 mA
-		test_mode(FRCDIV);	// FRCDIV	FCY = 4 MHz		4.9 mA
-		test_mode(FRC16);	// FRC16	FCY = 0.5 MHz	3.1 mA
-		test_mode(FRC);		// FRC  	FCY = 8 MHz		6.9 mA
-//		test_mode(LPRC);	// LPRC		FCY = 31857 Hz	2.6 mA
-//		test_mode(SOSC);
-		test_mode(PRIPLL);	// ECPLL	FCY = 32 MHZ	24.6 mA
-		test_mode(PRI);		// EC		FCY = 12 MHz	11.0 mA
+		test_mode(FRCPLL);	// FRCPLL	FCY = 10,66 MHz	8.4 mA
+		test_mode(FRCDIV);	// FRCDIV	FCY = 4 MHz		4.3 mA
+		test_mode(FRC16);	// FRC16	FCY = 0.5 MHz	2.7 mA
+		test_mode(FRC);		// FRC  	FCY = 8 MHz		6.1 mA
+		test_mode(LPRC);	// LPRC		FCY = 31857 Hz	2.2 mA
+		test_mode(SOSC);	// SOSC		FCY = 32768 Hz	2.2 mA
+		test_mode(PRIPLL);	// ECPLL	FCY = 32 MHZ	22.3 mA
+		test_mode(PRI);		// EC		FCY = 12 MHz	9.8 mA
+
+		// Frequency dependence of additional current on REFO pin
+		// FCY (MHz)	0.5		4		8		10.66	12		32
+		// dIprefo(mA)	0		0.1		0.3		0.45	0.55	1.5
+		// REFOCONbits.ROON = 1 (REFO is enabled)
+
+		// Additional current if oscilloscope probe is connected
+		// to REFO pin. Probe GTP-250A-2 (x10: R = 10MOm, C ~ 17pF)
+		// FCY (MHz)	0.5		4		8		10.66	12		32
+		// dIpbrobe(mA)	0.05	0.2		0.4		0.6		0.6		1.75
+
+		// Frequency dependence of additional current in breakpoint
+		// FCY (MHz)	0.5		4		8		10.66	12		32
+		// dIpicd2(mA)	0.7		1.0		1.2		1.3		1.3		2.5
+		// ICD2 debugger stops in breakpoint
 
 	} while (1); // Main loop
 
