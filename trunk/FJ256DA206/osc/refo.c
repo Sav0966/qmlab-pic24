@@ -5,6 +5,8 @@
 
 int refo_init(int mask)
 {
+	PMD4bits.REFOMD = 0; /* Enable module */
+
 	REFOCON = mask << 8;
 	/* Select AN15/RP29/REFO/RB15 as output */
 	__asm__ volatile (/* pin in HIGHT state */\
