@@ -5,6 +5,7 @@
 #define _REFO_INCL_
 #include "p24Fxxxx.h"
 
+#define RO_ON	0x80 /* REFO enabled on REFO pin */
 #define RO_SSLP	0x0 /* REFO is disabled in Sleep mode (def) */
 #define RO_RSLP	0x20 /* REFO continues to run in Sleep mode */
 #define RO_PRI	0x10 /* Primary oscillator used as input clock */

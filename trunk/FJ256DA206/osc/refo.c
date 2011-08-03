@@ -5,9 +5,6 @@
 
 int refo_init(int mask)
 {
-	PMD4bits.REFOMD = 0; /* Enable module */
-
-	REFOCON = mask << 8;
 	/* Select AN15/RP29/REFO/RB15 as output */
 	__asm__ volatile (/* pin in HIGHT state */\
 		"	bclr	ANSB, #15	; Disable analog\n"
@@ -16,5 +13,7 @@ int refo_init(int mask)
 		"	bclr	TRISB, #15	; Enables output\n"
 	); // It's not needed, but we set it by hand
 
+	PMD4bits.REFOMD = 0; /* Enable module */
+	REFOCON = mask << 8; /* Setup mode */
 	return(0);
 }
