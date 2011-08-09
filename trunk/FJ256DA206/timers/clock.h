@@ -11,7 +11,7 @@
 
 #define CORR_CLK ((unsigned long)(CORR_TIM / CLK_TIM))
 #define PR1_PERT(t) ((unsigned long)((t * (FCY2 / 8))))
-#define PR1_START ((unsigned int)(/*65536 - */PR1_PERT(CLK_TIM)))
+#define PR1_START ((unsigned int)(PR1_PERT(CLK_TIM))-1)
 #define PR1_CORR ((unsigned int)\
 (FCY /* *(CORR_TIM/16) */ - CORR_CLK * PR1_PERT(CLK_TIM)))
 

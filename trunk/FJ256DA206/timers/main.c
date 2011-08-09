@@ -40,7 +40,7 @@ _T1Interrupt(void)
 	TIMER_SET_PR(1, PR1_START);
 
 	if ((++t_clock % 100) == 0)
-		if ((++t_time & 0xF) == 0)
+		if (!(++t_time & 0x000F))
 		{
 			__asm__ volatile ("mov #%0, W0\n add PR1"
 					:/* no outputs */: "i" (PR1_CORR));
