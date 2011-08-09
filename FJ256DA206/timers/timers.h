@@ -83,10 +83,11 @@
 *
 * timer - timer number (1 - 5)
 * mode - timer mode (T_MODE_x | [T_PS_x]|[T_SIDL] | [T_ON])
-* ipl - 
-* n - timer period register value
+* ipl - interrupt priority level, if < 0 - no unterrupt
+* n - the value of timer period register
 */
 #define TIMER_INIT(timer, mode, n, ipl) {\
+	PMD1bits.T##timer##MD = 0; /* Enable module to have access */\
 	TCON(timer) = 0x00; /* Stop Timer and reset control register  */\
 	TIMER_WRITE(timer, 0); /* Clear contents of the Timer register */\
 	TIMER_SET_PR(timer, n); /* Load the Timer period register = n */\
@@ -94,10 +95,17 @@
 \
 	if (ipl >= 0) {\
 		TIMER_SET_IPL(timer, ipl); /* Setup Timer IPL */\
-		TIMER_ENABLE_INT(timer) /* Enable interrupt */; }\
-	else TIMER_DISABLE_INT(timer); /* or disable it */\
+		TIMER_ENABLE_INT(timer); /* Enable interrupt */\
+	} else TIMER_DISABLE_INT(timer); /* or disable it */\
 \
 	TCON(timer) = mode; /* Setup Timer mode */\
+}
+
+#define TIMER_DONE(timer) {\
+	TIMER_DISABLE_INT(timer);	/* Disable the interrupt */\
+	TIMER_OFF(timer);			/* Disable timer */\
+	TIMER_CLR_INTFLAG(timer);	/* Clear Timer interrupt flag */\
+/*	PMD1bits.T##timer##MD = 1; Disable module to energy saving */\
 }
 
 #endif /*_TIMERS_INCL_*/
