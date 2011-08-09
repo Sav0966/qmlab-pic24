@@ -63,6 +63,11 @@
 #define FCY_LPRC	31000UL
 #define FCY_SOSC	32768UL
 /*
+* Definitions of peripheral (FCY) and CPU (FCY2) clock
+*/
+#define FCY 		FCY_PRIPLL
+#define FCY2		(FCY/2)
+/*
 * Definitions of Config Words
 */
 #define CONFIG1_INIT (\
