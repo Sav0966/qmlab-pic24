@@ -111,15 +111,22 @@
 	JTAGEN_ON   /* (def) Enabled */\
 ) /* #define CONFIG1_INIT */
 
+// Reset IESO bit (Errata DS80505)
+// Use OSCO/RC15 pin as digital IO to turn on/off
+//  external ocsillator (low -> on), wich is connected to OSCI
+// Enable primary oscillator and select External-Clock mode
+// Clock switching is enabled, fail-safe monitor - enabled
+// Manage PLL96MHZ by software (PLLEN bit), reset state -> off
+
 #define CONFIG2_INIT (\
 /* OSCO Pin Configuration: */\
-/*	OSCIOFNC_ON  &	 OSCO pin has digital I/O function (RA3) */\
-	OSCIOFNC_OFF &	/* (def) OSCO pin has clock out function (CLKO) */\
+	OSCIOFNC_ON  &	/* OSCO pin has digital I/O function (RA3) */\
+/*	OSCIOFNC_OFF &	 (def) OSCO pin has clock out function (CLKO) */\
 /* Primary Oscillator Select: */\
-/*	POSCMOD_EC   &	 External-Clock Mode Enabled */\
+	POSCMOD_EC   &	/* External-Clock Mode Enabled */\
 /*	POSCMOD_XT   &	 Oscillator Enabled */\
 /*	POSCMOD_HS   &	 HS Oscillator Enabled */\
-	POSCMOD_NONE &	/* (def) Primary Oscillator Disabled */\
+/*	POSCMOD_NONE &	 (def) Primary Oscillator Disabled */\
 /* Initial Oscillator Select: */\
 /*	FNOSC_FRC    & 	 Fast RC Oscillator (FRC) */\
 /*	FNOSC_FRCPLL &	 Fast RC Oscillator with PLL module (FRCPLL) */\
@@ -130,8 +137,8 @@
 	FNOSC_FRCDIV &	/* (def) Fast RC Oscillator with Postscaler (FRCDIV) */\
 \
 /* 96MHz PLL Startup Select: */\
-/*	PLL96MHZ_OFF &	 PLL Startup is enabled by user in software (PLLEN bit) */\
-	PLL96MHZ_ON  &	/* (def) PLL Startup is enabled automatically always */\
+	PLL96MHZ_OFF &	/* PLL Startup is enabled by user in software (PLLEN bit) */\
+/*	PLL96MHZ_ON  &	 (def) PLL Startup is enabled automatically always */\
 /* 96 MHz PLL Prescaler Select: */\
 /*	PLLDIV_NODIV &	 Oscillator input used directly (4 MHz input) */\
 /*	PLLDIV_DIV2  &	 Oscillator input divided by 2 (8 MHz input) */\
@@ -144,9 +151,9 @@
 	PLLDIV_MASK  &	/* Obtained from FOSC above */\
 \
 /* Clock Switching and Fail-Safe Clock Monitor: */\
-/*	FCKSM_CSECME &	 Sw Enabled, Mon Enabled */\
+	FCKSM_CSECME &	/* Sw Enabled, Mon Enabled */\
 /*	FCKSM_CSECMD &	 Sw Enabled, Mon Disabled */\
-	FCKSM_CSDCMD &	/* (def) Sw Disabled, Mon Disabled (= 10b) */\
+/*	FCKSM_CSDCMD &	 (def) Sw Disabled, Mon Disabled (= 10b) */\
 /* Unprogrammed value = 11b (can be used for IS_MCU_PROGRAMMED) */\
 \
 /* IOLOCK One-Way Set Enable: */\
