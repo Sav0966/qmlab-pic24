@@ -4,7 +4,6 @@
 #ifndef _OSC_INCL_
 #define _OSC_INCL_
 #include "p24Fxxxx.h"
-#include "config.h"
 
 typedef enum tagOSC_MODE { // Valid mode selection values
 	FRC, FRCPLL, PRI, PRIPLL, SOSC, LPRC, FRC16, FRCDIV
