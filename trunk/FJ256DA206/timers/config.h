@@ -65,7 +65,7 @@
 /*
 * Definitions of peripheral (FCY) and CPU (FCY2) clock
 */
-#define FCY 		FCY_PRIPLL
+#define FCY 		FCY_PRI
 #define FCY2		(FCY/2)
 /*
 * Definitions of Config Words
