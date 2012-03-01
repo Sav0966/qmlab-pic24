@@ -38,6 +38,7 @@
 /* Start and stop timer counting */
 #define TIMER_ON(timer)		TCONbits(timer).TON = 1
 #define TIMER_OFF(timer)	TCONbits(timer).TON = 0
+#define TIMER_IS_ON(timer)	(TCONbits(timer).TON == 1)
 
 /* Read and write timer register */
 #define TIMER_WRITE(timer, n)	TMR##timer = n
@@ -105,7 +106,11 @@
 	TIMER_DISABLE_INT(timer);	/* Disable the interrupt */\
 	TIMER_OFF(timer);			/* Disable timer */\
 	TIMER_CLR_INTFLAG(timer);	/* Clear Timer interrupt flag */\
-/*	PMD1bits.T##timer##MD = 1; Disable module to energy saving */\
+}
+
+#define TIMER_PWOFF(timer) {\
+	TIMER_DONE(timer);			/* Disable timer and interrupt */\
+	PMD1bits.T##timer##MD = 1; 	/* Disable module to energy saving */\
 }
 
 #endif /*_TIMERS_INCL_*/
