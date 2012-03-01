@@ -73,7 +73,7 @@ int main(void)
 
 	cfg = MCU_CONFIG2; /* Check IESO bit in CONFIG2 */
 	if (cfg  & ~IESO_OFF) while(1); /* Must be off */
-	osc_mode(PRI); /* Set main oscillator mode */
+	osc_mode(PRIPLL); /* Set main oscillator mode */
 
 //	delay_ms(5000); /* 22.3 mA @ PRIPLL, Fcy/2=16 MHz */
 	/* Disable timer modules only for energy saving: */
