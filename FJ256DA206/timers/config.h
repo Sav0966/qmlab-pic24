@@ -11,6 +11,7 @@
 
 #define FCY_UP2		2000000L /* Default unprogrammed clock */
 #define MAIN_IPL	0	/* The value of IPL for main loop */
+#define CLOCK_IPL	1	/* System timer (Timer1) IPL */
 /*
 * Definitions of FCY value in different oscillator modes
 */
@@ -19,11 +20,11 @@
 * Define FCY_PRIPLL for CPDIV = 0
 * and select PLLDIV value from FOSC
 */
-#if (FOSC > 47990000L) // From 48 to 32 MHz
+#if (FOSC > 47990000L) // 48 MHz
  #define FCY_RPIPLL		((2*FCY_PRI)/3UL)
  #define PLLDIV_MASK	PLLDIV_DIV12
  #define PLLDIV_N		12
-#elif (FOSC > 31990000L)  // 32 to 32 MHz
+#elif (FOSC > 31990000L)  // 32 to 48 MHz
  #define FCY_PRIPLL		FCY_PRI
  #define PLLDIV_MASK	PLLDIV_DIV8
  #define PLLDIV_N		8
@@ -31,19 +32,19 @@
  #define FCY_PRIPLL		((4*FCY_PRI)/3UL)
  #define PLLDIV_MASK	PLLDIV_DIV6
  #define PLLDIV_N		6
-#elif (FOSC > 19990000L)  // 20 to 32 MHz
+#elif (FOSC > 19990000L)  // 20 to 24 MHz
  #define FCY_PRIPLL		((8*FCY_PRI)/5UL)
  #define PLLDIV_MASK	PLLDIV_DIV5
  #define PLLDIV_N		5
-#elif (FOSC > 15990000L)  // 16 to 32 MHz
+#elif (FOSC > 15990000L)  // 16 to 20 MHz
  #define FCY_PRIPLL		(2UL*FCY_PRI)
  #define PLLDIV_MASK	PLLDIV_DIV4
  #define PLLDIV_N		4
-#elif (FOSC > 11990000L)  // 12 to 32 MHz
+#elif (FOSC > 11990000L)  // 12 to 16 MHz
  #define FCY_PRIPLL		((8*FCY_PRI)/3UL)
  #define PLLDIV_MASK	PLLDIV_DIV3
  #define PLLDIV_N		3
-#elif (FOSC > 7990000L)   //  8 to 32 MHz
+#elif (FOSC > 7990000L)   //  8 to 12 MHz
  #define FCY_PRIPLL		(4UL*FCY_PRI)
  #define PLLDIV_MASK	PLLDIV_DIV2
  #define PLLDIV_N		2
@@ -65,7 +66,7 @@
 /*
 * Definitions of peripheral (FCY) and CPU (FCY2) clock
 */
-#define FCY 		FCY_PRI
+#define FCY			FCY_PRIPLL
 #define FCY2		(FCY/2)
 /*
 * Definitions of Config Words

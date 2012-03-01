@@ -6,6 +6,8 @@
 #include "refo.h"
 #include "osc.h"
 
+#define BIOS_START_TIME	853801200L /* 20 џэт 1997 15:00:00 */
+
 /* Reinit all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)
 
@@ -14,9 +16,6 @@ unsigned int rst_state; /* Current reset state */
 unsigned int __attribute__((persistent)) rst_events;
 unsigned int __attribute__((persistent)) rst_num;
 unsigned long nOscFail; // Trap error counter
-
-int t_clock; /* System clock */
-long t_time; /* System tyme */
 
 static void power_on_init(void)
 {
@@ -34,25 +33,7 @@ _OscillatorFail(void)
 	++nOscFail;
 }
 
-void __attribute__((__interrupt__, /*shadow,*/ no_auto_psv))
-_T1Interrupt(void)
-{
-	TIMER_SET_PR(1, PR1_START);
-
-	if ((++t_clock % 100) == 0)
-		if (!(++t_time & 0x000F))
-		{
-			__asm__ volatile ("mov #%0, W0\n add PR1"
-					:/* no outputs */: "i" (PR1_CORR));
-			
-			if (!REFOCONbits.ROON) // If REFO is not used
-				__asm__ volatile (/* Mark pulse on REFO */\
-				"	btg LATB, #15 ; Toggle latch REFO\n"\
-				"	btg LATB, #15 ; Toggle latch REFO\n");
-		}
-	
-	TIMER_CLR_INTFLAG(1);
-}
+char* s = __TIME__;
 
 int main(void)
 {
@@ -72,7 +53,7 @@ int main(void)
 	++rst_num; /* Calculate session reset number */
 
 	cfg = MCU_CONFIG2; /* Check IESO bit in CONFIG2 */
-	if (cfg  & ~IESO_OFF) while(1); /* Must be off */
+	if (cfg  & ~IESO_OFF) while (1); /* Must be off */
 	osc_mode(PRIPLL); /* Set main oscillator mode */
 
 //	delay_ms(5000); /* 22.3 mA @ PRIPLL, Fcy/2=16 MHz */
@@ -81,15 +62,12 @@ int main(void)
 	PMD1bits.T4MD=1; PMD1bits.T5MD=1; // 21,9 mA
 //	delay_ms(5000); // 0.4 mA saving
 
-	/* Then disable all modules */
+	/* Then disable all modules for energy saving */
 	PMD1=-1; PMD2=-1; PMD3=-1; PMD4=-1; PMD5=-1; PMD6=-1;
 //	delay_ms(5000); // 17.4 mA @ PRIPLL (4.9 mA saving)
 
-	/* Init Timer1 (Fcy/16 = 2 MHz), 10 ms period */
-	TIMER_INIT(1, T_MODE_INT | T_PS_8, PR1_START, 1);
-	if (TIMER_GET_IPL(1) == 1) // Must be true
-		if (TIMER_READ(1) == 0) // Must be true
-			TIMER_ON(1); // Run Timer1 by hands
+	// Run Timer1 (2 MHz) whith 10 ms period
+	if (clock_init(BIOS_START_TIME) < 0) while (1);
 //	delay_ms(5000); // 17,6 mA (+0.2 mA)
 
 	/* Select reference clock = FCY/1 and disable it in */
@@ -104,8 +82,7 @@ int main(void)
 		// 2.2mA @SOSC, 5.2mA @PRI, 8.8mA @PRIPLL (Timer1 only)
 	} while (1); // Main loop
 
-	TIMER_DONE(1); // Close Timer1
-
+	clock_done(); // Disable T1Interrupt & Timer1
 	clr_reset_state(); // Clear uParam and RCON
 
 	for(;;);
