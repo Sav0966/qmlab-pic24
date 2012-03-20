@@ -4,64 +4,16 @@
 #ifndef _CONFIG_INCL_
 #define _CONFIG_INCL_
 #include <p24Fxxxx.h> /* PIC24F only */
-
-#ifndef FOSC
-#include "fosc.h"	/* Main oscillator frequency FOSC */
-#endif
-
-#define FCY_UP2		2000000L /* Default unprogrammed clock */
-#define MAIN_IPL	0	/* The value of IPL for main loop */
 /*
-* Definitions of FCY value in different oscillator modes
+* The value of oscillator mode
 */
-#define FCY_PRI	((unsigned long)FOSC)
+#include "oscdef.h"
+#define __OSC__		PRIPLL
+#include "fcy.h"
 /*
-* Define FCY_PRIPLL for CPDIV = 0
-* and select PLLDIV value from FOSC
+* Interrupt priority levels
 */
-#if (FOSC > 47990000L) // From 48 to 32 MHz
- #define FCY_RPIPLL		((2*FCY_PRI)/3UL)
- #define PLLDIV_MASK	PLLDIV_DIV12
- #define PLLDIV_N		12
-#elif (FOSC > 31990000L)  // 32 to 32 MHz
- #define FCY_PRIPLL		FCY_PRI
- #define PLLDIV_MASK	PLLDIV_DIV8
- #define PLLDIV_N		8
-#elif (FOSC > 23990000L)  // 24 to 32 MHz
- #define FCY_PRIPLL		((4*FCY_PRI)/3UL)
- #define PLLDIV_MASK	PLLDIV_DIV6
- #define PLLDIV_N		6
-#elif (FOSC > 19990000L)  // 20 to 32 MHz
- #define FCY_PRIPLL		((8*FCY_PRI)/5UL)
- #define PLLDIV_MASK	PLLDIV_DIV5
- #define PLLDIV_N		5
-#elif (FOSC > 15990000L)  // 16 to 32 MHz
- #define FCY_PRIPLL		(2UL*FCY_PRI)
- #define PLLDIV_MASK	PLLDIV_DIV4
- #define PLLDIV_N		4
-#elif (FOSC > 11990000L)  // 12 to 32 MHz
- #define FCY_PRIPLL		((8*FCY_PRI)/3UL)
- #define PLLDIV_MASK	PLLDIV_DIV3
- #define PLLDIV_N		3
-#elif (FOSC > 7990000L)   //  8 to 32 MHz
- #define FCY_PRIPLL		(4UL*FCY_PRI)
- #define PLLDIV_MASK	PLLDIV_DIV2
- #define PLLDIV_N		2
-#else // For 4 MHz PLL96MHZ clock input
- #define FCY_PRIPLL		(8UL*FCY_PRI)
- #define PLLDIV_MASK	PLLDIV_NODIV
- #define PLLDIV_N		1
-#endif
-
-#define FCY_FRC		8000000UL
-#define FCY_FRC16	(FCY_FRC/16UL)
-/* Define it for RCDIV = 2 only */
-#define FCY_FRCDIV	(FCY_FRC/2UL)
-/* Use {RCDIV, PLLDIV} = {2, 1} or {1, 2} only */
-#define FCY_FRCPLL	((8UL*FCY_FRCDIV)/PLLDIV_N)
-
-#define FCY_LPRC	31000UL
-#define FCY_SOSC	32768UL
+#define MAIN_IPL	0	// Main loop IPL
 /*
 * Definitions of Config Words
 */
@@ -141,7 +93,7 @@
 /*	PLLDIV_DIV6  &	 Oscillator input divided by 6 (24 MHz input) */\
 /*	PLLDIV_DIV8  &	 Oscillator input divided by 8 (32 MHz input) */\
 /*	PLLDIV_DIV12 &	 (def) Oscillator input divided by 12 (48 MHz) */\
-	PLLDIV_MASK  &	/* Obtained from FOSC above */\
+	PLLDIV_MASK  &	/* Calculated from FOSC, defined in "oscdef.h" */\
 \
 /* Clock Switching and Fail-Safe Clock Monitor: */\
 /*	FCKSM_CSECME &	 Sw Enabled, Mon Enabled */\
