@@ -1,3 +1,7 @@
+#include <p24Fxxxx.h>
+#include <libpic30.h>
+#include "config.h"
+
 #include "main.h"
 #include "clock.h"
 #include "timers.h"
@@ -6,7 +10,8 @@
 #include "refo.h"
 #include "osc.h"
 
-#define BIOS_START_TIME	853801200L /* 20 џэт 1997 15:00:00 */
+/* 20 џэт 1997 15:00:00 */
+#define BIOS_START_TIME	853801200L
 
 /* Reinit all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)
@@ -33,8 +38,6 @@ _OscillatorFail(void)
 	++nOscFail;
 }
 
-char* s = __TIME__;
-
 int main(void)
 {
 	int cfg;
@@ -53,8 +56,8 @@ int main(void)
 	++rst_num; /* Calculate session reset number */
 
 	cfg = MCU_CONFIG2; /* Check IESO bit in CONFIG2 */
-	if (cfg  & ~IESO_OFF) while (1); /* Must be off */
-	osc_mode(PRIPLL); /* Set main oscillator mode */
+	if (cfg  & ~IESO_OFF) while(1); /* Must be off */
+	osc_mode(__OSC__);  /* Select oscillator mode */
 
 //	delay_ms(5000); /* 22.3 mA @ PRIPLL, Fcy/2=16 MHz */
 	/* Disable timer modules only for energy saving: */

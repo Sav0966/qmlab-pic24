@@ -32,4 +32,6 @@
  #error Invalid value of __OSC__
 #endif
 
+#define FCY2	(FCY/2)
+
 #endif /*_FCY_INCL_*/

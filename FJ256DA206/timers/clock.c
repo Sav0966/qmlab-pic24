@@ -2,8 +2,8 @@
 *	System clock functions (based on Timer1)
 */
 #include "config.h"
-#include "clock.h"
 #include "timers.h"
+#include "clock.h"
 
 #define CLK_TIM		10E-3 /* Дискрет вемени системы в сек */
 #define CORR_TIM	16 /* Раз в 16 сек коррекция остатка */
@@ -14,9 +14,8 @@
 #define PR1_CORR ((unsigned int)\
 (FCY /* *(CORR_TIM/16) */ - CORR_CLK * PR1_PERT(CLK_TIM)))
 
-#ifndef CLOCK_IPL
- // Define Timer1 IPL
- #define CLOCK_IPL	1
+#ifndef SYSCLK_IPL
+ #error SYSCLK_IPL is not defined in "config.h"
 #endif
 
 static long sys_time; // System time and
@@ -57,7 +56,7 @@ int clock_init(long time)
 	sys_time = time; sys_pph = 0; // Set time, pph = 0
 
 	// Init Timer1 (Fcy/16 = 2 MHz) whith 10 ms period
-	TIMER_INIT(1, T_MODE_INT|T_PS_8, PR1_START, CLOCK_IPL);
+	TIMER_INIT(1, T_MODE_INT|T_PS_8, PR1_START, SYSCLK_IPL);
 	TIMER_ON(1); // Run Timer1
 
 	return 0;
