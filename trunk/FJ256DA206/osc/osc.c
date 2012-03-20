@@ -2,7 +2,6 @@
 *	MCU Osccillator functions
 */
 #include "p24Fxxxx.h"
-#include "config.h"
 #include "mcu_id.h"
 #include "osc.h"
 
@@ -10,7 +9,7 @@ static const unsigned long arFCY[] =
 {	FCY_FRC, FCY_FRCPLL, FCY_PRI, FCY_PRIPLL,
 	FCY_SOSC, FCY_LPRC, FCY_FRC16, FCY_FRCDIV };
 
-unsigned long get_fcy(OSC_MODE mode) { return(arFCY[mode]); }
+unsigned long get_fcy(int mode) { return(arFCY[mode]); }
 
 #define MS(fcy) ((unsigned int)(fcy/2000UL) - 19)
 
@@ -45,7 +44,7 @@ int osc_ec_on(int turn_on)
 		else
 		{
 			// Get current oscillator mode
-			OSC_MODE mode = GET_OSC_MODE();
+			int mode = GET_OSC_MODE();
 
 			// Can't turn off if EC or ECPLL mode is used
 			if (!(mode & 4)) // For PRIPLL, PRI, FRCPLL, FRC
@@ -73,7 +72,7 @@ int osc_pll_on(int turn_on)
 	else for(;;)
 	{
 		// Get current oscillator mode
-		OSC_MODE mode = GET_OSC_MODE();
+		int mode = GET_OSC_MODE();
 		iRet = -1; // May be we can't do it
 
 		// Can't turn off PPL if PRIPLL or FRCPLL is used
@@ -100,7 +99,7 @@ int osc_pll_on(int turn_on)
  #define WAIT_OSWEN()
 #endif
 
-int osc_mode(OSC_MODE mode)
+int osc_mode(int mode)
 {
 	int iRet = -1;
 
@@ -118,7 +117,7 @@ int osc_mode(OSC_MODE mode)
 
 			if (mode & 1)
 			{ // For PRIPLL, FRCPLL
-				OSC_MODE cur_mode = GET_OSC_MODE();	// Get current mode
+				int cur_mode = GET_OSC_MODE();	// Get current mode
 				if (!(cur_mode & 4)) if (cur_mode & 1) if (cur_mode != mode)
 				{ // Must switch through FRC between two different PLL modes
 						_osc_switch(FRC); WAIT_OSWEN(); /* Hardware wait */ }

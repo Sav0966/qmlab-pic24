@@ -3,20 +3,22 @@
 */
 #ifndef _OSC_INCL_
 #define _OSC_INCL_
-#include "p24Fxxxx.h"
-
-typedef enum tagOSC_MODE { // Valid mode selection values
-	FRC, FRCPLL, PRI, PRIPLL, SOSC, LPRC, FRC16, FRCDIV
-} OSC_MODE;
-
-unsigned long get_fcy(OSC_MODE mode);
+#include <p24Fxxxx.h> /* PIC24F only */
+/*
+* Valid values for oscillator modes
+*/
+#include "oscdef.h"
 /*
 * Clock source switching functions
 */
-void _osc_switch(OSC_MODE mode); // in osc_.asm
-int osc_mode(OSC_MODE mode); // Set new clock mode
-#define GET_OSC_MODE()	((OSC_MODE)(OSCCON >> 12))
-#define GET_FCY()	get_fcy(GET_OSC_MODE())
+void _osc_switch(int mode); // in osc_.asm
+int osc_mode(int mode); // Set new clock mode
+/*
+* FCY and oscillator acquisition
+*/
+unsigned long get_fcy(int mode);
+#define GET_OSC_MODE()	(OSCCON >> 12)
+#define GET_FCY() get_fcy(GET_OSC_MODE())
 /*
 * Turn on/off external oscillator, return 0 if success
 */

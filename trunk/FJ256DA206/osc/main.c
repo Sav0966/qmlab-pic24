@@ -1,3 +1,7 @@
+#include <p24Fxxxx.h>
+#include <libpic30.h>
+#include "config.h"
+
 #include "main.h"
 #include "mcu_id.h"
 #include "reset.h"
@@ -29,7 +33,7 @@ _OscillatorFail(void)
 	++nOscFail;
 }
 
-static void test_mode(OSC_MODE mode)
+static void test_mode(int mode)
 {
 	int i = 250; // 5 seccond loop time
 
@@ -70,7 +74,10 @@ int main(void)
 
 	cfg = MCU_CONFIG2; /* Check IESO bit in CONFIG2 */
 	if (cfg  & ~IESO_OFF) while(1); /* Must be off */
-	osc_mode(PRIPLL); /* Set main oscillator mode */
+	osc_mode(__OSC__);  /* Select oscillator mode */
+
+	if (GET_OSC_MODE() != __OSC__) while(1);
+	if (GET_FCY() != FCY) while(1);
 
 	/* Select reference clock = FCY/1 and enable it in */
 	refo_init(RO_RSLP | RO_SYS | RODIV_NONE); /* sleep */
