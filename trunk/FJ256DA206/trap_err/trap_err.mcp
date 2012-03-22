@@ -8,7 +8,7 @@ dir_src=
 dir_bin=bin
 dir_tmp=bin
 dir_sin=
-dir_inc=..\pm;..\reset
+dir_inc=..\incl
 dir_lib=
 dir_lkr=
 [CAT_FILTERS]
@@ -71,9 +71,9 @@ file_004=C:\MPLAB Projects\FJ256DA206\Pm\pm.c
 file_005=C:\MPLAB Projects\FJ256DA206\Reset\reset.c
 file_006=main.h
 file_007=trap_err.h
-file_008=C:\MPLAB Projects\FJ256DA206\Pm\pm.h
-file_009=C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.h
-file_010=C:\MPLAB Projects\FJ256DA206\Reset\reset.h
+file_008=C:\MPLAB Projects\FJ256DA206\incl\reset.h
+file_009=C:\MPLAB Projects\FJ256DA206\incl\mcu_id.h
+file_010=C:\MPLAB Projects\FJ256DA206\incl\pm.h
 file_011=C:\MPLAB Projects\FJ256DA206\libpic30.h
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
