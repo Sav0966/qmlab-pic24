@@ -16,6 +16,10 @@
 #define MAIN_IPL	0	// Main loop
 #define SYSCLK_IPL	1	// System timer (Timer1)
 /*
+* Definition of MCU pins configuration
+*/
+#include "pins.h"
+/*
 * Definitions of Config Words
 */
 #define CONFIG1_INIT (\
