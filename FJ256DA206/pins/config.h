@@ -20,6 +20,8 @@
 */
 #include "pins.h"
 // PORT B
+#define RB8_HIGH	// TxD output (To RS-232 driver T1in pin)
+#define RB9_IN		// RxD input (From RS-232 driver R1out pin)
 #define RB10_IN		// Inpup (~INVALID signal from RS-232 driver)
 #define RB11_LOW	// Output (~SHDN signal to RS-232 driver)
 
