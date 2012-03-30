@@ -1,6 +1,7 @@
-#include "main.h"
-#include "mcu_id.h"
-#include "pm.h"
+#include "main.h" // Must be first (define FCY)
+#include <libpic30.h> //__delay_ms() needs FCY
+#include <mcu_id.h>
+#include <pm.h>
 
 #define ARSIZE(ar) (sizeof(ar)/sizeof(ar[0]))
 

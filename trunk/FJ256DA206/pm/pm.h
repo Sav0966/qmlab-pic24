@@ -1,6 +1,6 @@
-/************************************************************/
-/*   Header for PIC24FJ programm memory library functions   */
-/************************************************************/
+/*
+*   Header for PIC24FJ programm memory library functions
+*/
 #ifndef _PM_INCL_
 #define _PM_INCL_
 #include <p24Fxxxx.h> /* PIC24F only */

@@ -7,25 +7,21 @@
 /*
 * The value of oscillator mode
 */
-#include "oscdef.h"
+#include <oscdef.h>
 #define __OSC__		PRIPLL
-#include "fcy.h"
+#include <fcy.h>
 /*
 * Interrupt priority levels (IPL)
 */
 #define MAIN_IPL	0	// Main loop
 #define SYSCLK_IPL	1	// System timer (Timer1)
 /*
-* Redefinition of default MCU pins configuration
+* Redefinition of default MCU pin configuration
 */
-#include "pins.h"
-// PORT B
-#define RB8_HIGH	// TxD output (To RS-232 driver T1in pin)
-#define RB9_IN		// RxD input (From RS-232 driver R1out pin)
-#define RB10_IN		// Inpup (~INVALID signal from RS-232 driver)
-#define RB11_LOW	// Output (~SHDN signal to RS-232 driver)
+#include <pins.h>
 
-#define RB15_HIGH	// Test pin (and REFO output)
+// Redefine pin configuration here
+
 /*
 * Definitions of Config Words
 */
@@ -130,7 +126,7 @@
 ) /* #define CONFIG2_INIT */
 
 #ifndef IS_MCU_PROGRAMMED
-#include "mcu_id.h"
+#include <mcu_id.h>
 /* The CONFIG2 (and other) is programmed the last */
 #define IS_MCU_PROGRAMMED()	(MCU_CONFIG2 != 0xFFFF)
 #endif

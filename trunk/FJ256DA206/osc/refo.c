@@ -1,7 +1,7 @@
 /*
 *	Reference Clock Output module functions
 */
-#include "refo.h"
+#include <refo.h>
 
 int refo_init(int mask)
 {

@@ -1,9 +1,6 @@
 #ifndef _MAIN_INCL_
 #define _MAIN_INCL_
 
-#include <p24Fxxxx.h>
-#include <libpic30.h>
-
 #define MAIN_IPL	0	/* Common IPL value */
 
 extern unsigned int __attribute__((persistent)) rst_events;

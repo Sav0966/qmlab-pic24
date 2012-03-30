@@ -1,6 +1,7 @@
-#include "main.h"
-#include "reset.h"
-#include "pm.h"
+#include "main.h" // Must be first (define FCY)
+#include <libpic30.h> //__delay_ms() needs FCY
+#include <reset.h>
+#include <pm.h>
 
 _CONFIG2(IESO_OFF); // Reset IESO (Errata sheet DS80505)
 

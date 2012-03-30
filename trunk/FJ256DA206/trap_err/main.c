@@ -1,6 +1,6 @@
-#include "main.h"
-#include "reset.h"
+#include <reset.h>
 #include "trap_err.h"
+#include "main.h"
 
 #ifndef FCY_UP
 #define FCY_UP 2000000L /* Default unprogrammed clock */

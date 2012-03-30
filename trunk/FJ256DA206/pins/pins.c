@@ -1,5 +1,5 @@
 #include <p24Fxxxx.h>
-#include "config.h"
+#include <config.h>
 
 #define SET_BIT(nbit) | (1 << nbit)
 

@@ -7,7 +7,7 @@
 /*
 * Valid values for oscillator modes
 */
-#include "oscdef.h"
+#include <oscdef.h>
 /*
 * Clock source switching functions
 */

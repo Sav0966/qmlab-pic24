@@ -1,9 +1,9 @@
 /*
 *	System clock functions (based on Timer1)
 */
-#include "config.h"
-#include "timers.h"
-#include "clock.h"
+#include <config.h>
+#include <timers.h>
+#include <clock.h>
 
 #define CLK_TIM		10E-3 /* Дискрет вемени системы в сек */
 #define CORR_TIM	16 /* Раз в 16 сек коррекция остатка */

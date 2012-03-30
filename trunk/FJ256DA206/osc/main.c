@@ -1,12 +1,12 @@
 #include <p24Fxxxx.h>
 #include <libpic30.h>
-#include "config.h"
+#include <config.h>
+#include <mcu_id.h>
+#include <reset.h>
+#include <refo.h>
+#include <osc.h>
 
 #include "main.h"
-#include "mcu_id.h"
-#include "reset.h"
-#include "refo.h"
-#include "osc.h"
 
 /* Reinit all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)

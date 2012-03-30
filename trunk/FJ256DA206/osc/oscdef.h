@@ -17,7 +17,7 @@
 #define FRCDIV	7
 
 #ifndef FOSC
-#include "fosc.h"	/* Main oscillator frequency FOSC */
+#include <fosc.h>	/* Main oscillator frequency FOSC */
 #endif
 
 #define FCY_PRI		((unsigned long)FOSC)

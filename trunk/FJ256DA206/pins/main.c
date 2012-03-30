@@ -1,11 +1,11 @@
 #include <p24Fxxxx.h>
 #include <libpic30.h>
-#include "config.h"
+#include <config.h>
+#include <mcu_id.h>
+#include <reset.h>
+#include <pins.h>
 
 #include "main.h"
-#include "mcu_id.h"
-#include "reset.h"
-#include "pins.h"
 
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L

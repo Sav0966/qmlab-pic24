@@ -1,7 +1,7 @@
 /*
 *	MCU Configuration Words
 */
-#include "config.h"
+#include <config.h>
 #if (defined(__PIC24FK__)) /* PIC24FJ only */
 #error -- For PIC24FJ256DA210 Family only --
 #endif
