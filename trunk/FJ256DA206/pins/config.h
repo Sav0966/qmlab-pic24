@@ -16,9 +16,14 @@
 #define MAIN_IPL	0	// Main loop
 #define SYSCLK_IPL	1	// System timer (Timer1)
 /*
-* Definition of MCU pins configuration
+* Redefinition of default MCU pins configuration
 */
 #include "pins.h"
+// PORT B
+#define RB10_IN		// Inpup (~INVALID signal from RS-232 driver)
+#define RB11_LOW	// Output (~SHDN signal to RS-232 driver)
+
+#define RB15_HIGH	// Test pin (and REFO output)
 /*
 * Definitions of Config Words
 */
