@@ -7,6 +7,7 @@
 #include "timers.h"
 #include "mcu_id.h"
 #include "reset.h"
+#include "pins.h"
 #include "refo.h"
 #include "osc.h"
 
@@ -24,6 +25,7 @@ unsigned long nOscFail; // Trap error counter
 
 static void power_on_init(void)
 {
+	pins_init(); // Initialize pins at startup
 	clr_reset_state(); // Needed for MCLR
  	rst_events = 0; rst_num = 0;
 }
