@@ -7,9 +7,9 @@
 /*
 * The value of oscillator mode
 */
-#include "oscdef.h"
+#include <oscdef.h>
 #define __OSC__		PRIPLL
-#include "fcy.h"
+#include <fcy.h>
 /*
 * Interrupt priority levels
 */
@@ -111,7 +111,7 @@
 ) /* #define CONFIG2_INIT */
 
 #ifndef IS_MCU_PROGRAMMED
-#include "mcu_id.h"
+#include <mcu_id.h>
 /* The CONFIG2 (and other) is programmed the last */
 #define IS_MCU_PROGRAMMED()	(MCU_CONFIG2 != 0xFFFF)
 #endif

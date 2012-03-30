@@ -1,9 +1,9 @@
 /*
 *	MCU Osccillator functions
 */
-#include "p24Fxxxx.h"
-#include "mcu_id.h"
-#include "osc.h"
+#include <p24Fxxxx.h>
+#include <mcu_id.h>
+#include <osc.h>
 
 static const unsigned long arFCY[] =
 {	FCY_FRC, FCY_FRCPLL, FCY_PRI, FCY_PRIPLL,

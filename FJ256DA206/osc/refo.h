@@ -3,7 +3,7 @@
 */
 #ifndef _REFO_INCL_
 #define _REFO_INCL_
-#include "p24Fxxxx.h"
+#include <p24Fxxxx.h>
 
 #define RO_ON	0x80 /* REFO enabled on REFO pin */
 #define RO_SSLP	0x0 /* REFO is disabled in Sleep mode (def) */

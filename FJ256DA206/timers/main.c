@@ -1,14 +1,14 @@
 #include <p24Fxxxx.h>
 #include <libpic30.h>
-#include "config.h"
+#include <config.h>
+#include <mcu_id.h>
+#include <timers.h>
+#include <clock.h>
+#include <reset.h>
+#include <refo.h>
+#include <osc.h>
 
 #include "main.h"
-#include "clock.h"
-#include "timers.h"
-#include "mcu_id.h"
-#include "reset.h"
-#include "refo.h"
-#include "osc.h"
 
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
@@ -58,6 +58,8 @@ int main(void)
 	cfg = MCU_CONFIG2; /* Check IESO bit in CONFIG2 */
 	if (cfg  & ~IESO_OFF) while(1); /* Must be off */
 	osc_mode(__OSC__);  /* Select oscillator mode */
+
+	if (GET_FCY() != FCY) while(1); // Check .\fosc.h
 
 //	delay_ms(5000); /* 22.3 mA @ PRIPLL, Fcy/2=16 MHz */
 	/* Disable timer modules only for energy saving: */

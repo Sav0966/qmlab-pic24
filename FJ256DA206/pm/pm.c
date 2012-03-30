@@ -1,7 +1,7 @@
 /*
 *	Functions to serve programm memory read-write operations
 */
-#include "pm.h"
+#include <pm.h>
 
 _prog_addressT _user_addr(_prog_addressT addr) /* Even */
 { return(addr & 0x7FFFFE); } /* address in user memory */

@@ -1,15 +1,15 @@
 #include <p24Fxxxx.h>
 #include <libpic30.h>
-#include "config.h"
+#include <config.h>
+#include <mcu_id.h>
+#include <timers.h>
+#include <clock.h>
+#include <reset.h>
+#include <pins.h>
+#include <refo.h>
+#include <osc.h>
 
 #include "main.h"
-#include "clock.h"
-#include "timers.h"
-#include "mcu_id.h"
-#include "reset.h"
-#include "pins.h"
-#include "refo.h"
-#include "osc.h"
 
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
@@ -25,6 +25,9 @@ unsigned long nOscFail; // Trap error counter
 
 static void power_on_init(void)
 {
+	/* JTAG must be off to use RB8-11,12,13 */
+	if (MCU_CONFIG1  & ~JTAGEN_OFF) while(1);
+
 	pins_init(); // Initialize pins at startup
 	clr_reset_state(); // Needed for MCLR
  	rst_events = 0; rst_num = 0;

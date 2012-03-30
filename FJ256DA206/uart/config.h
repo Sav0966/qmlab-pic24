@@ -7,9 +7,9 @@
 /*
 * The value of oscillator mode
 */
-#include "oscdef.h"
+#include <oscdef.h>
 #define __OSC__		PRIPLL
-#include "fcy.h"
+#include <fcy.h>
 /*
 * Interrupt priority levels (IPL)
 */
@@ -18,8 +18,9 @@
 /*
 * Redefinition of default MCU pins configuration
 */
-#include "pins.h"
+#include <pins.h>
 // PORT B
+/* To use RB8-11,12,13 JTAG must be off, check CONFIG1 word */
 #define RB8_HIGH	// TxD output (To RS-232 driver T1in pin)
 #define RB9_IN		// RxD input (From RS-232 driver R1out pin)
 #define RB10_IN		// Inpup (~INVALID signal from RS-232 driver)
@@ -71,8 +72,8 @@
 	GCP_OFF 	&	/* (def) Code protection is disabled */\
 \
 /* JTAG Port Enable: */\
-/*	JTAGEN_OFF	 Disabled */\
-	JTAGEN_ON   /* (def) Enabled */\
+	JTAGEN_OFF	/* Disabled */\
+/*	JTAGEN_ON    (def) Enabled */\
 ) /* #define CONFIG1_INIT */
 
 // Reset IESO bit (Errata DS80505)
@@ -130,7 +131,7 @@
 ) /* #define CONFIG2_INIT */
 
 #ifndef IS_MCU_PROGRAMMED
-#include "mcu_id.h"
+#include <mcu_id.h>
 /* The CONFIG2 (and other) is programmed the last */
 #define IS_MCU_PROGRAMMED()	(MCU_CONFIG2 != 0xFFFF)
 #endif

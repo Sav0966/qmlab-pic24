@@ -2,7 +2,7 @@
 *	Store RCON in user_init function and clear all it status
 *	bits. Unimplemented RCON bits is used to save perameter.
 */
-#include "reset.h"
+#include <reset.h>
 
 static unsigned int __attribute__((persistent)) reset_state;
 

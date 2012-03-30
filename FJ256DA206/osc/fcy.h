@@ -10,7 +10,7 @@
  #error Define __OSC__ simbol first
 #endif /*__OSC__*/
 
-#include "oscdef.h"
+#include <oscdef.h>
 
 #if (__OSC__ == FRC)
  #define FCY  FCY_FRC

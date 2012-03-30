@@ -3,8 +3,8 @@
 */
 #ifndef _MCU_ID_INCL_
 #define _MCU_ID_INCL_
-#include <libpic30.h>
 #include <p24Fxxxx.h> /* PIC24F only */
+#include <libpic30.h> /*_prog_addressT */
 
 /* Return two words, started from 'addr' */
 unsigned long _mcu_long(_prog_addressT addr);

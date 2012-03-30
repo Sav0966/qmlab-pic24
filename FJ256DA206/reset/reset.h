@@ -1,6 +1,6 @@
-/**********************************************************/
-/*   Header for PIC24FJ Reset/Control library functions   */
-/**********************************************************/
+/*
+*   Header for PIC24FJ Reset/Control library functions
+*/
 #ifndef _RESET_INCL_
 #define _RESET_INCL_
 
@@ -24,7 +24,7 @@
 * _CONFIG2(IESO_OFF); // Reset IESO (Errata sheet DS80505)
 */
 #ifndef IS_MCU_PROGRAMMED
-#include "mcu_id.h"
+#include <mcu_id.h>
 /* The IESO must be cleared at the last step of programming */
 #define IS_MCU_PROGRAMMED()	((MCU_CONFIG2 & ~IESO_OFF) == 0)
 #endif

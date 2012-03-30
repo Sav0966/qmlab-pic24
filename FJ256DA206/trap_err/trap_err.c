@@ -2,10 +2,10 @@
 *	Generate some traps
 */
 #include <p24Fxxxx.h> /* PIC24F only */
+#include <mcu_id.h>
+#include <reset.h>
+#include <pm.h>
 #include "main.h"
-#include "mcu_id.h"
-#include "reset.h"
-#include "pm.h"
 
 #define OSC_TRAP	0x2000	/* Unused RCON bit 13 */
 #define MEM_TRAP	0x1000	/* Unused RCON bit 12 */
