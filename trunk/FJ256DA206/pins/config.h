@@ -20,7 +20,7 @@
 */
 #include <pins.h>
 
-// Redefine pin configuration here
+// Define pin configuration here
 
 /*
 * Definitions of Config Words

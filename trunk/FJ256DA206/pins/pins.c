@@ -695,4 +695,311 @@ SET_BIT(9)
 #endif // (100-pin devices only)
 );
 
+	// Unlock Registers RPORx & RPINRx
+	asm volatile(
+		"MOV #OSCCON, w1 \n"
+		"MOV #0x46, w2 \n"
+		"MOV #0x57, w3 \n"
+		"MOV.b w2, [w1] \n"
+		"MOV.b w3, [w1] \n"
+		"BCLR OSCCON, #6");
+
+#ifndef RP0_OUT
+ #define RP0_OUT	RP_NULL
+#endif
+#ifndef RP1_OUT
+ #define RP1_OUT	RP_NULL
+#endif
+	RPOR0 = RP0_OUT | (RP1_OUT << 8);
+
+#ifndef RP2_OUT
+ #define RP2_OUT	RP_NULL
+#endif
+#ifndef RP3_OUT
+ #define RP3_OUT	RP_NULL
+#endif
+	RPOR1 = RP2_OUT | (RP3_OUT << 8);
+
+#ifndef RP4_OUT
+ #define RP4_OUT	RP_NULL
+#endif
+#ifdef _ANSA6 // (100-pin devices only)
+ #ifndef RP5_OUT
+  #define RP5_OUT	RP_NULL
+ #endif
+#else // (64-pin devices only)
+ #undef RP5_OUT
+ #define RP5_OUT	RP_NULL
+#endif
+	RPOR2 = RP4_OUT | (RP5_OUT << 8);
+
+#ifndef RP6_OUT
+ #define RP6_OUT	RP_NULL
+#endif
+#ifndef RP7_OUT
+ #define RP7_OUT	RP_NULL
+#endif
+	RPOR3 = RP6_OUT | (RP7_OUT << 8);
+
+#ifndef RP8_OUT
+ #define RP8_OUT	RP_NULL
+#endif
+#ifndef RP9_OUT
+ #define RP9_OUT	RP_NULL
+#endif
+	RPOR4 = RP8_OUT | (RP9_OUT << 8);
+
+#ifndef RP10_OUT
+ #define RP10_OUT	RP_NULL
+#endif
+#ifndef RP11_OUT
+ #define RP11_OUT	RP_NULL
+#endif
+	RPOR5 = RP10_OUT | (RP11_OUT << 8);
+
+#ifndef RP12_OUT
+ #define RP12_OUT	RP_NULL
+#endif
+#ifndef RP13_OUT
+ #define RP13_OUT	RP_NULL
+#endif
+	RPOR6 = RP12_OUT | (RP13_OUT << 8);
+
+#ifndef RP14_OUT
+ #define RP14_OUT	RP_NULL
+#endif
+#ifdef _ANSA6 // (100-pin devices only)
+ #ifndef RP15_OUT
+  #define RP15_OUT	RP_NULL
+ #endif
+#else // (64-pin devices only)
+ #undef RP15_OUT
+ #define RP15_OUT	RP_NULL
+#endif
+	RPOR7 = RP14_OUT | (RP15_OUT << 8);
+
+#ifndef RP16_OUT
+ #define RP16_OUT	RP_NULL
+#endif
+#ifndef RP17_OUT
+ #define RP17_OUT	RP_NULL
+#endif
+	RPOR8 = RP16_OUT | (RP17_OUT << 8);
+
+#ifndef RP18_OUT
+ #define RP18_OUT	RP_NULL
+#endif
+#ifndef RP19_OUT
+ #define RP19_OUT	RP_NULL
+#endif
+	RPOR9 = RP18_OUT | (RP19_OUT << 8);
+
+#ifndef RP20_OUT
+ #define RP20_OUT	RP_NULL
+#endif
+#ifndef RP21_OUT
+ #define RP21_OUT	RP_NULL
+#endif
+	RPOR10 = RP20_OUT | (RP21_OUT << 8);
+
+#ifndef RP22_OUT
+ #define RP22_OUT	RP_NULL
+#endif
+#ifndef RP23_OUT
+ #define RP23_OUT	RP_NULL
+#endif
+	RPOR11 = RP22_OUT | (RP23_OUT << 8);
+
+#ifndef RP24_OUT
+ #define RP24_OUT	RP_NULL
+#endif
+#ifndef RP25_OUT
+ #define RP25_OUT	RP_NULL
+#endif
+	RPOR12 = RP24_OUT | (RP25_OUT << 8);
+
+#ifndef RP26_OUT
+ #define RP26_OUT	RP_NULL
+#endif
+#ifndef RP27_OUT
+ #define RP27_OUT	RP_NULL
+#endif
+	RPOR13 = RP26_OUT | (RP27_OUT << 8);
+
+#ifndef RP28_OUT
+ #define RP28_OUT	RP_NULL
+#endif
+#ifndef RP29_OUT
+ #define RP29_OUT	RP_NULL
+#endif
+	RPOR14 = RP28_OUT | (RP29_OUT << 8);
+
+#ifdef _ANSA6 // (100-pin devices only)
+ #ifndef RP30_OUT
+  #define RP30_OUT	RP_NULL
+ #endif
+ #ifndef RP31_OUT
+  #define RP31_OUT	RP_NULL
+ #endif
+	RPOR15 = RP30_OUT | (RP31_OUT << 8);
+#endif // (100-pin devices only)
+
+#ifndef RP_INT1
+ #define RP_INT1 	RPI_NULL
+#endif
+	RPINR0 = RP_INT1 << 8;
+
+#ifndef RP_INT2
+ #define RP_INT2 	RPI_NULL
+#endif
+#ifndef RP_INT3
+ #define RP_INT3 	RPI_NULL
+#endif
+	RPINR1 = RP_INT2 | (RP_INT3 << 8);
+
+#ifndef RP_INT4
+ #define RP_INT4 	RPI_NULL
+#endif
+	RPINR2 = RP_INT4;
+
+#ifndef RP_T2CK
+ #define RP_T2CK 	RPI_NULL
+#endif
+#ifndef RP_T3CK
+ #define RP_T3CK 	RPI_NULL
+#endif
+	RPINR3 = RP_T2CK | (RP_T3CK << 8);
+
+#ifndef RP_T4CK
+ #define RP_T4CK 	RPI_NULL
+#endif
+#ifndef RP_T5CK
+ #define RP_T5CK 	RPI_NULL
+#endif
+	RPINR4 = RP_T4CK | (RP_T5CK << 8);
+
+#ifndef RP_IC1
+ #define RP_IC1 	RPI_NULL
+#endif
+#ifndef RP_IC2
+ #define RP_IC2 	RPI_NULL
+#endif
+	RPINR7 = RP_IC1 | (RP_IC2 << 8);
+
+#ifndef RP_IC3
+ #define RP_IC3 	RPI_NULL
+#endif
+#ifndef RP_IC4
+ #define RP_IC4 	RPI_NULL
+#endif
+	RPINR8 = RP_IC3 | (RP_IC4 << 8);
+
+#ifndef RP_IC5
+ #define RP_IC5 	RPI_NULL
+#endif
+#ifndef RP_IC6
+ #define RP_IC6 	RPI_NULL
+#endif
+	RPINR9 = RP_IC5 | (RP_IC6 << 8);
+
+#ifndef RP_IC7
+ #define RP_IC7 	RPI_NULL
+#endif
+#ifndef RP_IC8
+ #define RP_IC8 	RPI_NULL
+#endif
+	RPINR10 = RP_IC7 | (RP_IC8 << 8);
+
+#ifndef RP_OCFA
+ #define RP_OCFA 	RPI_NULL
+#endif
+#ifndef RP_OCFB
+ #define RP_OCFB 	RPI_NULL
+#endif
+	RPINR11 = RP_OCFA | (RP_OCFB << 8);
+
+#ifndef RP_IC9
+ #define RP_IC9 	RPI_NULL
+#endif
+	RPINR15 = RP_IC9 << 8;
+
+#ifndef RP_U3RX
+ #define RP_U3RX 	RPI_NULL
+#endif
+	RPINR17 = RP_U3RX << 8;
+
+#ifndef RP_U1RX
+ #define RP_U1RX 	RPI_NULL
+#endif
+#ifndef RP_U1CTS
+ #define RP_U1CTS 	RPI_NULL
+#endif
+	RPINR18 = RP_U1RX | (RP_U1CTS << 8);
+
+#ifndef RP_U2RX
+ #define RP_U2RX 	RPI_NULL
+#endif
+#ifndef RP_U2CTS
+ #define RP_U2CTS 	RPI_NULL
+#endif
+	RPINR19 = RP_U2RX | (RP_U2CTS << 8);
+
+#ifndef RP_SDI1
+ #define RP_SDI1 	RPI_NULL
+#endif
+#ifndef RP_SCK1IN
+ #define RP_SCK1IN 	RPI_NULL
+#endif
+	RPINR20 = RP_SDI1 | (RP_SCK1IN << 8);
+
+#ifndef RP_SS1IN
+ #define RP_SS1IN 	RPI_NULL
+#endif
+#ifndef RP_U3CTS
+ #define RP_U3CTS 	RPI_NULL
+#endif
+	RPINR21 = RP_SS1IN | (RP_U3CTS << 8);
+
+#ifndef RP_SDI2
+ #define RP_SDI2 	RPI_NULL
+#endif
+#ifndef RP_SCK2IN
+ #define RP_SCK2IN 	RPI_NULL
+#endif
+	RPINR22 = RP_SDI2 | (RP_SCK2IN << 8);
+
+#ifndef RP_SS2IN
+ #define RP_SS2IN 	RPI_NULL
+#endif
+	RPINR23 = RP_SS2IN;
+
+#ifndef RP_U4RX
+ #define RP_U4RX 	RPI_NULL
+#endif
+#ifndef RP_U4CTS
+ #define RP_U4CTS 	RPI_NULL
+#endif
+	RPINR27 = RP_U4RX | (RP_U4CTS << 8);
+
+#ifndef RP_SDI3
+ #define RP_SDI3 	RPI_NULL
+#endif
+#ifndef RP_SCK3IN
+ #define RP_SCK3IN 	RPI_NULL
+#endif
+	RPINR28 = RP_SDI3 | (RP_SCK3IN << 8);
+
+#ifndef RP_SS3IN
+ #define RP_SS3IN 	RPI_NULL
+#endif
+	RPINR29 = RP_SS3IN;
+
+	// Lock Registers
+	asm volatile(
+		"MOV #OSCCON, w1 \n"
+		"MOV #0x46, w2 \n"
+		"MOV #0x57, w3 \n"
+		"MOV.b w2, [w1] \n"
+		"MOV.b w3, [w1] \n"
+		"BSET OSCCON, #6");
 }
