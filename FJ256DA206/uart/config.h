@@ -21,8 +21,10 @@
 #include <pins.h>
 // PORT B
 /* To use RB8-11,12,13 JTAG must be off, check CONFIG1 word */
-#define RB8_HIGH	// TxD output (To RS-232 driver T1in pin)
-#define RB9_IN		// RxD input (From RS-232 driver R1out pin)
+#define RB8_HIGH	// TxD output (To RS-232 driver Tin pin)
+#define RP8_OUT		RP_U1TX // Map UART1 TxD output to RB8/RP8 pin
+#define RB9_IN		// RxD input (From RS-232 driver Rout pin)
+#define RP_U1RX		RP9_IN // Map UART1 TxD input to RB9/RP9 pin
 #define RB10_IN		// Inpup (~INVALID signal from RS-232 driver)
 #define RB11_LOW	// Output (~SHDN signal to RS-232 driver)
 
