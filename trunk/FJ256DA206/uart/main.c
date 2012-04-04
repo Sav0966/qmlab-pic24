@@ -77,8 +77,8 @@ int main(void)
 
 	do { // Main loop
 
-		// Once per 1.28 seccond check UART
-		if ((clock() % 128) == 0) UART_INIT(1);
+		// Once per 2.56 seccond check UART
+		if (!(sys_clock() & 0xFF)) UART_INIT(1);
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode, Ipp:
 		// 3mA @FRC, 2.7mA @FRCDIV, 2.6mA @FRC16, 4mA @FRCPLL

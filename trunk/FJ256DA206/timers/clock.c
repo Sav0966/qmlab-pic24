@@ -20,14 +20,16 @@
 
 static long sys_time; // System time and
 static int sys_pph; // its hundredth part
-static int sys_clock; // System clock
+static int _sys_clock; // System clock
+
+int sys_clock(void) { return(_sys_clock); }
 
 void __attribute__((__interrupt__, /* shadow, */ no_auto_psv))
 _T1Interrupt(void)
 {
 	TIMER_SET_PR(1, PR1_START); // Restore period register
 
-	++sys_clock;
+	++_sys_clock;
 
 	if (++sys_pph == 100)
 	{
