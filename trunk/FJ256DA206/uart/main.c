@@ -9,6 +9,7 @@
 #include <refo.h>
 #include <osc.h>
 
+#include <uart.h>
 #include "main.h"
 
 /* 20 џэт 1997 15:00:00 */
@@ -72,8 +73,12 @@ int main(void)
 	/* Select reference clock = FCY/1 and disable it in */
 	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
+	UART_INIT(1);
+
 	do { // Main loop
 
+		// Once per 1.28 seccond check UART
+		if ((clock() % 128) == 0) UART_INIT(1);
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode, Ipp:
 		// 3mA @FRC, 2.7mA @FRCDIV, 2.6mA @FRC16, 4mA @FRCPLL
