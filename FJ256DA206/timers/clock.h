@@ -11,6 +11,6 @@ void clock_done(void);
 /*
 * Return system clock (increased every 0.01 sec)
 */
-int clock(void);
+int sys_clock(void);
 
 #endif /*_CLOCK_INCL_*/
