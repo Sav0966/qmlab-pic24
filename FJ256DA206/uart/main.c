@@ -73,12 +73,12 @@ int main(void)
 	/* Select reference clock = FCY/1 and disable it in */
 	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
-	UART_INIT(1);
+	UART_INIT(1, -1, -1, -1);
 
 	do { // Main loop
 
 		// Once per 2.56 seccond check UART
-		if (!(sys_clock() & 0xFF)) UART_INIT(1);
+		if (!(sys_clock() & 0xFF)) UART_INIT(1, -1, -1, -1);
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode, Ipp:
 		// 3mA @FRC, 2.7mA @FRCDIV, 2.6mA @FRC16, 4mA @FRCPLL
