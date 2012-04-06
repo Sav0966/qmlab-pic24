@@ -78,7 +78,8 @@
 #define IFST5bits	IFS1bits
 
 /* Clear Interrupt Status bit */
-#define TIMER_CLR_INTFLAG(timer) IFST##timer##bits.T##timer##IF = 0
+#define TIMER_INTFLAG(timer) IFST##timer##bits.T##timer##IF
+#define TIMER_CLR_INTFLAG(timer) TIMER_INTFLAG(timer) = 0
 /*
 * 16-bit timer initialization
 *
