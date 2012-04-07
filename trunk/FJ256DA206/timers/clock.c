@@ -47,7 +47,7 @@ _T1Interrupt(void)
 		}
 	}
 
-	TIMER_CLR_INTFLAG(1);
+	TIMER_CLR_FLAG(1);
 }
 
 void clock_done(void) { TIMER_PWOFF(1); }

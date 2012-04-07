@@ -76,10 +76,12 @@
 #define IFST3bits	IFS0bits
 #define IFST4bits	IFS1bits
 #define IFST5bits	IFS1bits
+#define TIMER_INTFLAG(timer) IFST##timer##bits.T##timer##IF
 
 /* Clear Interrupt Status bit */
-#define TIMER_INTFLAG(timer) IFST##timer##bits.T##timer##IF
-#define TIMER_CLR_INTFLAG(timer) TIMER_INTFLAG(timer) = 0
+#define TIMER_CLR_FLAG(timer) TIMER_INTFLAG(timer) = 0
+#define TIMER_SET_FLAG(timer) TIMER_INTFLAG(timer) = 1
+#define TIMER_IS_FLAG(timer) TIMER_INTFLAG(timer)
 /*
 * 16-bit timer initialization
 *
@@ -93,7 +95,7 @@
 	TCON(timer) = 0x00; /* Stop Timer and reset control register  */\
 	TIMER_WRITE(timer, 0); /* Clear contents of the Timer register */\
 	TIMER_SET_PR(timer, n); /* Load the Timer period register = n */\
-	TIMER_CLR_INTFLAG(timer); /* Clear the interrupt status flag */\
+	TIMER_CLR_FLAG(timer); /* Clear the interrupt status flag */\
 \
 	if (ipl >= 0) {\
 		TIMER_SET_IPL(timer, ipl); /* Setup Timer IPL */\
@@ -105,8 +107,8 @@
 
 #define TIMER_DONE(timer) {\
 	TIMER_DISABLE_INT(timer);	/* Disable the interrupt */\
-	TIMER_OFF(timer);			/* Disable timer */\
-	TIMER_CLR_INTFLAG(timer);	/* Clear Timer interrupt flag */\
+	TIMER_OFF(timer);					/* Disable timer */\
+	TIMER_CLR_FLAG(timer);	/* Clear Timer interrupt flag */\
 }
 
 #define TIMER_PWOFF(timer) {\
