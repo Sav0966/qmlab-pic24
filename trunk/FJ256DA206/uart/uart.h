@@ -70,14 +70,40 @@
 #define UART_DISABLE_ER_INT(n)	IECU##n##_ERbits.U##n##ERIE = 0
 
 // IFS register definitions
-//#define IFST1bits	IFS0bits
-//#define IFST2bits	IFS0bits
-//#define IFST3bits	IFS0bits
-//#define IFST4bits	IFS1bits
+#define IFSU1_Rbits		IFS0bits
+#define IFSU1_Tbits		IFS0bits
+#define IFSU1_ERbits	IFS4bits
+#define IFSU2_Rbits		IFS1bits
+#define IFSU2_Tbits		IFS1bits
+#define IFSU2_ERbits	IFS4bits
+#define IFSU3_Rbits		IFS5bits
+#define IFSU3_Tbits		IFS5bits
+#define IFSU3_ERbits	IFS5bits
+#define IFSU4_Rbits		IFS5bits
+#define IFSU4_Tbits		IFS5bits
+#define IFSU4_ERbits	IFS5bits
+#define UART_TX_INTFLAG(n) IFSU##n##_Tbits.U##n##TXIF
+#define UART_RX_INTFLAG(n) IFSU##n##_Rbits.U##n##RXIF
+#define UART_ER_INTFLAG(n) IFSU##n##_ERbits.U##n##ERIF
 
-// Clear Interrupt Status bit
-//#define TIMER_INTFLAG(timer) IFST##timer##bits.T##timer##IF
-//#define TIMER_CLR_INTFLAG(timer) IFST##timer##bits.T##timer##IF = 0
+// Clear, Set and check Interrupt Status bit
+#define UART_CLR_RXFLAG(n)	UART_RX_INTFLAG(n) = 0
+#define UART_SET_RXFLAG(n)	UART_RX_INTFLAG(n) = 1
+#define UART_IS_RXFLAG(n)	UART_RX_INTFLAG(n)
+#define UART_CLR_TXFLAG(n)	UART_TX_INTFLAG(n) = 0
+#define UART_SET_TXFLAG(n)	UART_TX_INTFLAG(n) = 1
+#define UART_IS_TXFLAG(n)	UART_TX_INTFLAG(n)
+#define UART_CLR_ERFLAG(n)	UART_ER_INTFLAG(n) = 0
+#define UART_SET_ERFLAG(n)	UART_ER_INTFLAG(n) = 1
+#define UART_IS_ERFLAG(n)	UART_ER_INTFLAG(n)
+
+// Most usable deinitoins of inntrrupt routine functions
+#define _UART_RX_INTFUNC(n) void __attribute__((__interrupt__, no_auto_psv)) _U##n##RXInterrupt(void)
+#define _UART_TX_INTFUNC(n) void __attribute__((__interrupt__, no_auto_psv)) _U##n##TXInterrupt(void)
+#define _UART_ER_INTFUNC(n) void __attribute__((__interrupt__, no_auto_psv)) _U##n##ErrInterrupt(void)
+#define UART_RX_INTFUNC(n) _UART_RX_INTFUNC(n)
+#define UART_TX_INTFUNC(n) _UART_TX_INTFUNC(n)
+#define UART_ER_INTFUNC(n) _UART_ER_INTFUNC(n)
 /*
 * UART Initialization
 */
@@ -89,6 +115,9 @@
 		UART_SHDN(n); /* Shutdown RS-232 Driver */\
 		UART_PWOFF(n); /* Power off UART module */\
 	}\
+\
+	/* Clear all interrupt status flags (Rx, Tx and Error */\
+	UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
 \
 	if (rx_ipl >= 0) {\
 		UART_SET_RX_IPL(n, rx_ipl); /* Receive IPL */\
@@ -104,7 +133,6 @@
 		UART_SET_ER_IPL(n, er_ipl); /* Error IPL */\
 		UART_ENABLE_ER_INT(n); /* Enable interrupt */\
 	} else UART_DISABLE_ER_INT(n); /* or disable it */\
-\
 }
 
 #endif /*_UART_INCL_*/

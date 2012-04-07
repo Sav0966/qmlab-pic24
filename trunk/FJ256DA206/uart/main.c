@@ -12,6 +12,19 @@
 #include <uart.h>
 #include "main.h"
 
+#define UART_CHECKED	1 // Checked URAT module
+
+#define U2_INVALID		1 // It's undefined at this time
+#define U2_SHDN			U1_SHDN // Map it to UART1 pin
+#define U3_INVALID		1
+#define U3_SHDN			U1_SHDN
+#define U4_INVALID		1
+#define U4_SHDN			U1_SHDN
+
+UART_RX_INTFUNC(UART_CHECKED) { UART_CLR_RXFLAG(UART_CHECKED); }
+UART_TX_INTFUNC(UART_CHECKED) { UART_CLR_TXFLAG(UART_CHECKED); }
+UART_ER_INTFUNC(UART_CHECKED) { UART_CLR_ERFLAG(UART_CHECKED); }
+
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
 
@@ -73,7 +86,11 @@ int main(void)
 	/* Select reference clock = FCY/1 and disable it in */
 	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
-	UART_INIT(1, -1, -1, -1);
+	UART_INIT(UART_CHECKED, 1, 1, 1);
+
+	if (!UART_IS_RXFLAG(UART_CHECKED)) UART_SET_RXFLAG(UART_CHECKED);
+	if (!UART_IS_TXFLAG(UART_CHECKED)) UART_SET_TXFLAG(UART_CHECKED);
+	if (!UART_IS_ERFLAG(UART_CHECKED)) UART_SET_ERFLAG(UART_CHECKED);
 
 	do { // Main loop
 
