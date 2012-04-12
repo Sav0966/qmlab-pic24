@@ -81,16 +81,16 @@ int main(void)
 	/* Then disable all modules for energy saving */
 	PMD1=-1; PMD2=-1; PMD3=-1; PMD4=-1; PMD5=-1; PMD6=-1;
 
-	// Run Timer1 (2 MHz) whith 10 ms period
-	if (clock_init(BIOS_START_TIME) < 0) while (1);
-	/* Select reference clock = FCY/1 and disable it in */
-	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
-
 	UART_INIT(UART_CHECKED, 1, 1, 1);
 
 	if (!UART_IS_RXFLAG(UART_CHECKED)) UART_SET_RXFLAG(UART_CHECKED);
 	if (!UART_IS_TXFLAG(UART_CHECKED)) UART_SET_TXFLAG(UART_CHECKED);
 	if (!UART_IS_ERFLAG(UART_CHECKED)) UART_SET_ERFLAG(UART_CHECKED);
+
+	// Run Timer1 (2 MHz) whith 10 ms period
+	if (clock_init(BIOS_START_TIME) < 0) while (1);
+	/* Select reference clock = FCY/1 and disable it in */
+	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
 	do { // Main loop
 
