@@ -91,6 +91,8 @@
 * n - the value of timer period register
 */
 #define TIMER_INIT(timer, mode, n, ipl) {\
+	TIMER_DISABLE_INT(timer); /* Disable interrupt */\
+\
 	PMD1bits.T##timer##MD = 0; /* Enable module to have access */\
 	TCON(timer) = 0x00; /* Stop Timer and reset control register  */\
 	TIMER_WRITE(timer, 0); /* Clear contents of the Timer register */\
@@ -100,7 +102,7 @@
 	if (ipl >= 0) {\
 		TIMER_SET_IPL(timer, ipl); /* Setup Timer IPL */\
 		TIMER_ENABLE_INT(timer); /* Enable interrupt */\
-	} else TIMER_DISABLE_INT(timer); /* or disable it */\
+	}\
 \
 	TCON(timer) = mode; /* Setup Timer mode */\
 }
