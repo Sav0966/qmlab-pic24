@@ -12,7 +12,11 @@
 #include <uart.h>
 #include "main.h"
 
-#define UART_CHECKED	2 // Checked URAT module
+#if (!defined(__DEBUG) || defined(__MPLAB_DEBUGGER_ICD2))
+ #define UART_CHECKED	1 // Checked URAT module (hardware)
+#else /* For MPLAB SIM and other tools return 0 */
+ #define UART_CHECKED	2
+#endif
 
 #define U2_INVALID		1 // It's undefined at this time
 #define U2_SHDN			U1_SHDN // Map it to UART1 pin
@@ -81,12 +85,6 @@ int main(void)
 	/* Then disable all modules for energy saving */
 	PMD1=-1; PMD2=-1; PMD3=-1; PMD4=-1; PMD5=-1; PMD6=-1;
 
-	UART_INIT(UART_CHECKED, U_9BIT | U_EN, 0, 1, 1, 1);
-
-	if (!UART_IS_RXFLAG(UART_CHECKED)) UART_SET_RXFLAG(UART_CHECKED);
-	if (!UART_IS_TXFLAG(UART_CHECKED)) UART_SET_TXFLAG(UART_CHECKED);
-	if (!UART_IS_ERFLAG(UART_CHECKED)) UART_SET_ERFLAG(UART_CHECKED);
-
 	// Run Timer1 (2 MHz) whith 10 ms period
 	if (clock_init(BIOS_START_TIME) < 0) while (1);
 	/* Select reference clock = FCY/1 and disable it in */
@@ -94,8 +92,26 @@ int main(void)
 
 	do { // Main loop
 
-		// Once per 2.56 seccond check UART
-		if (!(sys_clock() & 0xFF)) UART_INIT(1, 0, 0, -1, -1, -1);
+		if (!(sys_clock() & 0x3F))
+		{ // Once per 0.64 seccond check UART
+			if (!UART_IS_INIT(UART_CHECKED))
+				UART_INIT(UART_CHECKED,	// Try to initialize UART
+				 U_LPBACK | U_EN,		// 8-bit, no parity; Enabled
+				 U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
+				 -1, -1, -1); // no interrupts
+
+			if (!UART_IS_INIT(UART_CHECKED)) continue;
+
+			UART_SEND_BREAK(UART_CHECKED);
+			UART_WRITE(UART_CHECKED, -1); // Write dummy character
+			UART_WRITE(UART_CHECKED, 0x55); // Write Synch character
+
+			
+			UART_WRITE(UART_CHECKED, 0xFF); // Write separator
+			while (UART_CAN_WRITE(UART_CHECKED))
+				UART_WRITE(UART_CHECKED, 0x55);
+
+		}
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode, Ipp:
 		// 3mA @FRC, 2.7mA @FRCDIV, 2.6mA @FRC16, 4mA @FRCPLL
