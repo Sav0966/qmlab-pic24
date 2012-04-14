@@ -11,6 +11,22 @@
 #define UART_WAKEUP(n)		U##n##_SHDN = 1
 #define UART_SHDN(n)		U##n##_SHDN = 0
 /*
+* UART Transmit and Receive Registers
+*/
+#define UTXREG(n)	U##n##TXREG
+#define URXREG(n)	U##n##RXREG
+#define UART_WRITE(n, ch)	UTXREG(n) = ch
+#define UART_READ(n)		((char)URXREG(n))
+#define UART_READ9(n)		((int)URXREG(n))
+/*
+* UART Baud Rate Generator Prescaler Register
+*/
+#define UBRG(n)		U##n##BRG
+// Computation of the baud rate whith RBGH = 0
+#define FCY2BRG(fcy, rate) ((int)((fcy/(16L*rate))-1))
+// Computation of the baud rate whith RBGH = 1
+#define FCY2BRGH(fcy, rate) ((int)((fcy/(4L*rate))-1))
+/*
 * UART Mode Register and appropriate mode settings
 */
 // UART Mode Register and its bits
@@ -70,6 +86,13 @@
 #define USTA(n)			U##n##STA
 #define USTAbits(n)		U##n##STAbits
 
+// By default Transmit is disabled, any pending transmission is
+// aborted and the buffer is reset; TX pin is controlled by port
+// If Transmit is enabled, TX pin controlled by UART
+#define U_TXEN			0x0400 // Transmit Enable bit
+#define UART_ENABLE_TX(n)		USTAbits(n).UTXEN = 1
+#define UART_DISABLE_TX(n)		USTAbits(n).UTXEN = 0
+
 // Transmission Interrupt Mode Selection bits:
 // (def) Interrupt when a character is transferred to the Transmit
 // Shift Register (this implies there is at least one character
@@ -81,19 +104,54 @@
 // the Transmit Shift Register; all transmit operations
 #define U_TXI_END		0x2000 // are completed
 
-// IrDA Encoder Transmit Polarity Inversion bit
-#define U_TXINV			0x4000 // TX is Idle 'IREN'
+// Receive Interrupt Mode Selection bits
+// (def) Interrupt is set when any character is received and
+// transferred from the RSR to the receive buffer; receive buffer
+#define U_RXI_ANY		0x0000 // has one or more characters
+// Interrupt is set on an RSR transfer, making the receive buffer 3/4
+#define U_RXI_3DATA		0x0080 // full (i.e., has 3 data characters)
+// Interrupt is set on an RSR transfer, making the receive buffer
+#define U_RXI_FULL		0x00C0 // full (i.e., has 4 data characters)
+
+// 0 => Transmit buffer is not full, at least one more character can
+#define UART_CAN_WRITE(n)	(USTAbits(n).UTXBF == 0) // be written
+// 1 => Transmit Shift Register is empty and transmit
+// buffer is empty (the last transmission has completed)
+#define UART_IS_TXEND(n)	(USTAbits(n).TRMT != 0)
+
+// Receive Buffer Data Available bit (read-only). Receive
+// buffer has data, at least one more character can be read
+#define UART_CAN_READ(n) (USTAbits(n).URXDA != 0)
+
+// Receiver errors:
+#define U_PERR			0x0008
+#define U_FERR			0x0004
+#define U_OERR			0x0002
+#define UART_IS_ERR(n)	((USTA(n) & (U_PERR|U_FERR|U_OERR)) != 0)
+// Receive Buffer Overrun Error Status bit (clear/read-only). Must be
+// cleared by software. Clearing a previously set OERR bit (1 -> 0
+// transition) will reset the receiver buffer and the RSR to the
+#define UART_IS_OERR(n)	(USTAbits(n).OERR != 0) //  empty state
+#define UART_CLR_OERR(n)	USTAbits(n).OERR = 0
+// Parity Error Status bit (read-only). Parity error has been detected for
+// the current character (character at the top of the receive FIFO)
+#define UART_IS_PERR(n)	(USTAbits(n).PERR != 0)
+// Framing Error Status bit (read-only). Framing error has been detected
+// for the current character (character at the top of the receive FIFO)
+#define UART_IS_FERR(n)	(USTAbits(n).FERR != 0)
+
+// Receiver Idle bit (read-only)
+#define UART_IS_RXIDLE(n)	(USTAbits(n).RIDLE !=0)
 
 // Send Sync Break on next transmission Ц Start bit, followed by twelve
 // '0' bits, followed by Stop bit; cleared by hardware upon completion
 #define UART_SEND_BREAK(n) USTAbits(n).UTXBRK = 1
 
-// By default Transmit is disabled, any pending transmission is
-// aborted and the buffer is reset; TX pin is controlled by port
-// If Transmit is enabled, TX pin controlled by UART
-#define U_TXEN			0x0400 // Transmit Enable bit
-#define UART_ENABLE_TX(n)		USTAbits(n).UTXEN = 1
-#define UART_DISABLE_TX(n)		USTAbits(n).UTXEN = 0
+// Address Character Detect bit (bit 8 of received data = 1). If 9-bit mode
+#define U_ADDEN			0x0020 //  is not selected, this does not take effect
+
+// IrDA Encoder Transmit Polarity Inversion bit
+#define U_TXINV			0x4000 // TX is Idle 'IREN'
 /*
 * Interrupt management of UART module
 */
@@ -158,6 +216,9 @@
 #define UART_RX_INTFLAG(n) IFSU##n##_Rbits.U##n##RXIF
 #define UART_ER_INTFLAG(n) IFSU##n##_ERbits.U##n##ERIF
 
+// —менить все определени€ на регистронезависимые =!=
+// #define UART_TX_INTFLAG(n) _U##n##TXIF
+
 // Clear, Set and check Interrupt Status bit
 #define UART_CLR_RXFLAG(n)	UART_RX_INTFLAG(n) = 0
 #define UART_SET_RXFLAG(n)	UART_RX_INTFLAG(n) = 1
@@ -188,7 +249,10 @@
 /*
 * UART Initialization
 */
-#define UART_INIT(n, mode, sta, rx_ipl, tx_ipl, er_ipl) {\
+#define UART_IS_INIT(n) /* Powered & Enabled */\
+(!UART_PMD(n) && UMODEbits(n).UARTEN)
+
+#define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl, er_ipl) {\
 	UART_DISABLE_RX_INT(n); /* Disable all interrupts */\
 	UART_DISABLE_TX_INT(n); UART_DISABLE_ER_INT(n);\
 \
@@ -199,6 +263,7 @@
 		/* Setup mode (UART disabled). Setup control */\
 		/* bits and clear TX buffer and RX overflow error */\
 		UMODE(n) = (mode) & ~U_EN; USTA(n) = (sta) & ~U_TXEN;\
+		UBRG(n) = brg; /* Write appropriate baud rate value */\
 		/* Clear all interrupt status flags (Rx, Tx and Error */\
 		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
 \
