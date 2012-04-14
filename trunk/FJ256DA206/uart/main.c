@@ -96,16 +96,29 @@ int main(void)
 		{ // Once per 0.64 seccond check UART
 			if (!UART_IS_INIT(UART_CHECKED))
 				UART_INIT(UART_CHECKED,	// Try to initialize UART
-				 U_LPBACK | U_EN,		// 8-bit, no parity; Enabled
-				 U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
-				 -1, -1, -1); // no interrupts
+					U_LPBACK | U_EN,		// 8-bit, no parity; Enabled
+					U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
+					1, 1, 2); // All interrupts are enabled (error level 2)
 
 			if (!UART_IS_INIT(UART_CHECKED)) continue;
 
-			UART_SEND_BREAK(UART_CHECKED);
-			UART_WRITE(UART_CHECKED, -1); // Write dummy character
-			UART_WRITE(UART_CHECKED, 0x55); // Write Synch character
+			// When the UTXEN bit is set, the UxTXIF flag bit will also be set,
+			// after two cycles, if UTXISEL<1:0> = 00, since the transmit buffer
+			// is not yet full (can move transmit data to the UxTXREG register).
 
+			// =!= So, TX interrupt may be called (if UART initialization done)
+
+			// Transmission of Break Characters:
+			while (!UART_IS_TXEND(UART_CHECKED)); // Wait for TX to be Idle
+			// The user should wait for the transmitter to be Idle (TRMT = 1)
+			// before setting the UTXBRK. The UTXBRK overrides any other
+			// transmitter activity. If the user clears the UTXBRK bit prior
+			// to sequence completion, unexpected module behavior can result.
+			// Sending a Break character does not generate a transmit interrupt
+			UART_SET_BREAK(UART_CHECKED); // Set UTXBRK bit to send Break char
+			UART_WRITE(UART_CHECKED, -1); // Write dummy character (Send Break)
+			UART_WRITE(UART_CHECKED, 0x55); // Write Synch character
+			// Don't clear UTXBRK bit manualy
 			
 			UART_WRITE(UART_CHECKED, 0xFF); // Write separator
 			while (UART_CAN_WRITE(UART_CHECKED))
@@ -115,7 +128,7 @@ int main(void)
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode, Ipp:
 		// 3mA @FRC, 2.7mA @FRCDIV, 2.6mA @FRC16, 4mA @FRCPLL
-		// 2.2mA @SOSC, 5.2mA @PRI, 8.8mA @PRIPLL (Timer1 only)
+		// 2.2mA @SOSC, 5.2mA @PRI, 8.8mA @PRIPLL (if Timer1 only)
 	} while (1); // Main loop
 
 	clock_done(); // Disable T1Interrupt & Timer1

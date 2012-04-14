@@ -145,7 +145,7 @@
 
 // Send Sync Break on next transmission – Start bit, followed by twelve
 // '0' bits, followed by Stop bit; cleared by hardware upon completion
-#define UART_SEND_BREAK(n) USTAbits(n).UTXBRK = 1
+#define UART_SET_BREAK(n) USTAbits(n).UTXBRK = 1
 
 // Address Character Detect bit (bit 8 of received data = 1). If 9-bit mode
 #define U_ADDEN			0x0020 //  is not selected, this does not take effect
@@ -282,6 +282,9 @@
 			UART_ENABLE_ER_INT(n); /* Enable interrupt */\
 		}\
 \
+		/* The UTXEN bit should not be set until the */\
+		/* UARTEN bit has been set; otherwise, UART */\
+		/* transmissions will  not be enabled */\
 		/* Enable UART if it's needed in 'mode' */\
 		if ((mode) & U_EN) UMODEbits(n).UARTEN = 1;\
 		/* Enable Transmitter if it's needed */\
