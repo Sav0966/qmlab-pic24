@@ -53,7 +53,6 @@
 #define UART_SET_LPBACK(n)	UMODEbits(n).LPBACK = 1
 #define UART_CLR_LPBACK(n)	UMODEbits(n).LPBACK = 0
 #define UART_IS_LPBACK(n)	(UMODEbits(n).LPBACK == 1)
-#define U_LPBACK	0x0040 // Loopback Mode Select bit
 
 // High-Speed mode (4 BRG clock cycles per bit); x16 - default
 #define U_BRGH			0x0008 // Not usable for IrDA support
@@ -270,34 +269,35 @@
 		UART_PMD(n) = 0; /* Power on UART module */\
 \
 		/* Setup mode (UART disabled). Setup control */\
-		/* bits and clear TX buffer and RX overflow error */\
+		/* bits, clear FIFO buffers and receiver errors */\
 		UMODE(n) = (mode) & ~U_EN; USTA(n) = (sta) & ~U_TXEN;\
 		UBRG(n) = brg; /* Write appropriate baud rate value */\
 		/* Clear all interrupt status flags (Rx, Tx and Error */\
 		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
 \
-		if (rx_ipl >= 0) {\
+		if (rx_ipl > 0) {\
 			UART_SET_RX_IPL(n, rx_ipl); /* Receive IPL */\
 			UART_ENABLE_RX_INT(n); /* Enable interrupt */\
 		}\
 \
-		if (tx_ipl >= 0) {\
+		if (tx_ipl > 0) {\
 			UART_SET_TX_IPL(n, tx_ipl); /* Transmit IPL */\
 			UART_ENABLE_TX_INT(n); /* Enable interrupt */\
 		}\
 \
-		if (er_ipl >= 0) {\
+		if (er_ipl > 0) {\
 			UART_SET_ER_IPL(n, er_ipl); /* Error IPL */\
 			UART_ENABLE_ER_INT(n); /* Enable interrupt */\
 		}\
 \
-		/* The UTXEN bit should not be set until the */\
-		/* UARTEN bit has been set; otherwise, UART */\
-		/* transmissions will  not be enabled */\
-		/* Enable UART if it's needed in 'mode' */\
-		if ((mode) & U_EN) UMODEbits(n).UARTEN = 1;\
-		/* Enable Transmitter if it's needed */\
-		if ((sta) & U_TXEN) UART_ENABLE_TX(n);\
+		if ((mode) & U_EN) { /* If it is set in 'mode' */\
+			UMODEbits(n).UARTEN = 1; /* Enable module */\
+			/* The UTXEN bit should not be set until the */\
+			/* UARTEN bit has been set; otherwise, UART */\
+			/* transmissions will  not be enabled. */\
+			/* Enable Transmitter if it's needed */\
+			if ((sta) & U_TXEN) UART_ENABLE_TX(n);\
+		}\
 \
 	} else { /* RS-232 por isn't connected  to PC */\
 		UART_SHDN(n); /* Shutdown RS-232 Driver */\

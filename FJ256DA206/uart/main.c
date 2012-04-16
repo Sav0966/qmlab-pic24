@@ -7,63 +7,12 @@
 #include <reset.h>
 #include <pins.h>
 #include <refo.h>
+#include <uart.h>
 #include <osc.h>
 
-#include <uart.h>
 #include "main.h"
 
-#if (!defined(__DEBUG) || defined(__MPLAB_DEBUGGER_ICD2))
- #define UART_CHECKED	1 // Checked URAT module (hardware)
-#else /* For MPLAB SIM and other tools return 0 */
- #define _DEBUG_SYM
- #define UART_CHECKED	2
-#endif
-
-#define U2_INVALID		1 // It's undefined at this time
-#define U2_SHDN			U1_SHDN // Map it to UART1 pin
-#define U3_INVALID		1
-#define U3_SHDN			U1_SHDN
-#define U4_INVALID		1
-#define U4_SHDN			U1_SHDN
-
-static int _rx_err_num; // = 0; Receiver Errors counter
-
-UART_ER_INTFUNC(UART_CHECKED)
-{
-	// Clear Interrupt flag first
-	UART_CLR_ERFLAG(UART_CHECKED);
-	++_rx_err_num; // Calculate errors
-
-	// Rx FIFO Buffer oveflow error
-	if (UART_IS_OERR(UART_CHECKED)) {
-			__asm__("nop"); // TODO: You can read
-			__asm__("nop"); // and store FIFO before
-			__asm__("nop"); // clear buffer and OERR
-		UART_CLR_OERR(UART_CHECKED);  // Clear flag
-		// No errors at this point (FIFO is empty)
-	} else {
-		// Frame error at the top of FIFO
-		if (UART_IS_FERR(UART_CHECKED)) {
-			// Read Data and check Break codition
-			if (0 == UART_READ9(UART_CHECKED)) {
-				// Break character is received
-				__asm__("nop"); // TODO: AutoBaud
-				__asm__("nop"); // Mode can be started
-				__asm__("nop"); // in this section
- 			}	
-		}
-
-		// Parity error at the top of FIFO
-		if (UART_IS_PERR(UART_CHECKED)) {
-			// Read the byte from the top of FIFO
-			UART_READ9(UART_CHECKED); // Dummy read
-		}
-	}
-}
-
-UART_RX_INTFUNC(UART_CHECKED) { UART_CLR_RXFLAG(UART_CHECKED); }
-
-UART_TX_INTFUNC(UART_CHECKED) { UART_CLR_TXFLAG(UART_CHECKED); }
+extern void uart_test(void);
 
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
@@ -128,45 +77,7 @@ int main(void)
 
 	do { // Main loop
 
-		if (!(sys_clock() & 0x3F))
-		{ // Once per 0.64 seccond check UART
-			if (!UART_IS_INIT(UART_CHECKED))
-				UART_INIT(UART_CHECKED,	// Try to initialize UART
-#ifdef _DEBUG_SYM
-//					U_LPBACK |
-#endif
-					U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
-					U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
-					1, 1, 2); // All interrupts are enabled (error level 2)
-
-			if (!UART_IS_INIT(UART_CHECKED)) continue;
-
-			// When the UTXEN bit is set, the UxTXIF flag bit will also be set,
-			// after two cycles, if UTXISEL<1:0> = 00, since the transmit buffer
-			// is not yet full (can move transmit data to the UxTXREG register).
-
-			// =!= So, TX interrupt may be called (if UART initialization done)
-
-			UART_SET_LPBACK(UART_CHECKED);
-
-			// Transmission of Break Characters:
-			while (!UART_IS_TXEND(UART_CHECKED)); // Wait for TX to be Idle
-			// The user should wait for the transmitter to be Idle (TRMT = 1)
-			// before setting the UTXBRK. The UTXBRK overrides any other
-			// transmitter activity. If the user clears the UTXBRK bit prior
-			// to sequence completion, unexpected module behavior can result.
-			// Sending a Break character does not generate a transmit interrupt
-			UART_SET_BREAK(UART_CHECKED); // Set UTXBRK bit to send Break char
-			UART_WRITE(UART_CHECKED, -1); // Write dummy character (Send Break)
-			UART_WRITE(UART_CHECKED, 0x55); // Write Synch character
-			// Don't clear UTXBRK bit manualy
-			
-			UART_WRITE(UART_CHECKED, 0xFF); // Write separator
-			while (!UART_IS_TXEND(UART_CHECKED)); // Wait (no OERR yet)
-			while (UART_CAN_WRITE(UART_CHECKED)) // Oferflow RX FIFO
-				UART_WRITE(UART_CHECKED, 0x55);
-
-		}
+		uart_test(); // Test UART module
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode
 	} while (1); // Main loop
