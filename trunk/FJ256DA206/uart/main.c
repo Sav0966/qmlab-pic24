@@ -15,6 +15,7 @@
 #if (!defined(__DEBUG) || defined(__MPLAB_DEBUGGER_ICD2))
  #define UART_CHECKED	1 // Checked URAT module (hardware)
 #else /* For MPLAB SIM and other tools return 0 */
+ #define _DEBUG_SYM
  #define UART_CHECKED	2
 #endif
 
@@ -96,7 +97,10 @@ int main(void)
 		{ // Once per 0.64 seccond check UART
 			if (!UART_IS_INIT(UART_CHECKED))
 				UART_INIT(UART_CHECKED,	// Try to initialize UART
-					U_LPBACK | U_EN,		// 8-bit, no parity; Enabled
+#ifdef _DEBUG_SYM
+					U_LPBACK |
+#endif
+					U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
 					U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
 					1, 1, 2); // All interrupts are enabled (error level 2)
 
@@ -107,6 +111,8 @@ int main(void)
 			// is not yet full (can move transmit data to the UxTXREG register).
 
 			// =!= So, TX interrupt may be called (if UART initialization done)
+
+			UART_SET_LPBACK(UART_CHECKED);
 
 			// Transmission of Break Characters:
 			while (!UART_IS_TXEND(UART_CHECKED)); // Wait for TX to be Idle

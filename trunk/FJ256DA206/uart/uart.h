@@ -46,7 +46,15 @@
 #define U_9BIT			0x0006 // 9-bit data, no parity
 #define U_1STOP			0x0000 // (def) One Stop bit
 #define U_2STOP			0x0001 // Two Stop bits
-#define U_LPBACK		0x0040 // UART Loopback Mode Select bit
+
+// Loopback Mode Rx<->Tx, RTS<->CTS (if used)
+// LPBACK = 1 should be set only after enabling
+// the other bits associated with the UART module
+#define UART_SET_LPBACK(n)	UMODEbits(n).LPBACK = 1
+#define UART_CLR_LPBACK(n)	UMODEbits(n).LPBACK = 0
+#define UART_IS_LPBACK(n)	(UMODEbits(n).LPBACK == 1)
+#define U_LPBACK	0x0040 // Loopback Mode Select bit
+
 
 // High-Speed mode (4 BRG clock cycles per bit); x16 - default
 #define U_BRGH			0x0008 // Not usable for IrDA support
@@ -148,7 +156,9 @@
 #define UART_SET_BREAK(n) USTAbits(n).UTXBRK = 1
 
 // Address Character Detect bit (bit 8 of received data = 1). If 9-bit mode
-#define U_ADDEN			0x0020 //  is not selected, this does not take effect
+#define U_ADDEN		0x0020 //  is not selected, this does not take effect
+#define UART_SET_ADDEN(n)	USTAbits(n).ADDEN = 1 // Wait Address byte
+#define UART_CLR_ADDEN(n)	USTAbits(n).ADDEN = 0 // Wait Data bytes
 
 // IrDA Encoder Transmit Polarity Inversion bit
 #define U_TXINV			0x4000 // TX is Idle 'IREN'
