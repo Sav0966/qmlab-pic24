@@ -55,7 +55,6 @@
 #define UART_IS_LPBACK(n)	(UMODEbits(n).LPBACK == 1)
 #define U_LPBACK	0x0040 // Loopback Mode Select bit
 
-
 // High-Speed mode (4 BRG clock cycles per bit); x16 - default
 #define U_BRGH			0x0008 // Not usable for IrDA support
 

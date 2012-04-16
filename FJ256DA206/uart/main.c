@@ -26,9 +26,44 @@
 #define U4_INVALID		1
 #define U4_SHDN			U1_SHDN
 
+static int _rx_err_num; // = 0; Receiver Errors counter
+
+UART_ER_INTFUNC(UART_CHECKED)
+{
+	// Clear Interrupt flag first
+	UART_CLR_ERFLAG(UART_CHECKED);
+	++_rx_err_num; // Calculate errors
+
+	// Rx FIFO Buffer oveflow error
+	if (UART_IS_OERR(UART_CHECKED)) {
+			__asm__("nop"); // TODO: You can read
+			__asm__("nop"); // and store FIFO before
+			__asm__("nop"); // clear buffer and OERR
+		UART_CLR_OERR(UART_CHECKED);  // Clear flag
+		// No errors at this point (FIFO is empty)
+	} else {
+		// Frame error at the top of FIFO
+		if (UART_IS_FERR(UART_CHECKED)) {
+			// Read Data and check Break codition
+			if (0 == UART_READ9(UART_CHECKED)) {
+				// Break character is received
+				__asm__("nop"); // TODO: AutoBaud
+				__asm__("nop"); // Mode can be started
+				__asm__("nop"); // in this section
+ 			}	
+		}
+
+		// Parity error at the top of FIFO
+		if (UART_IS_PERR(UART_CHECKED)) {
+			// Read the byte from the top of FIFO
+			UART_READ9(UART_CHECKED); // Dummy read
+		}
+	}
+}
+
 UART_RX_INTFUNC(UART_CHECKED) { UART_CLR_RXFLAG(UART_CHECKED); }
+
 UART_TX_INTFUNC(UART_CHECKED) { UART_CLR_TXFLAG(UART_CHECKED); }
-UART_ER_INTFUNC(UART_CHECKED) { UART_CLR_ERFLAG(UART_CHECKED); }
 
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
@@ -98,7 +133,7 @@ int main(void)
 			if (!UART_IS_INIT(UART_CHECKED))
 				UART_INIT(UART_CHECKED,	// Try to initialize UART
 #ifdef _DEBUG_SYM
-					U_LPBACK |
+//					U_LPBACK |
 #endif
 					U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
 					U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
@@ -127,14 +162,13 @@ int main(void)
 			// Don't clear UTXBRK bit manualy
 			
 			UART_WRITE(UART_CHECKED, 0xFF); // Write separator
-			while (UART_CAN_WRITE(UART_CHECKED))
+			while (!UART_IS_TXEND(UART_CHECKED)); // Wait (no OERR yet)
+			while (UART_CAN_WRITE(UART_CHECKED)) // Oferflow RX FIFO
 				UART_WRITE(UART_CHECKED, 0x55);
 
 		}
 
-		__asm__ volatile ("pwrsav	#1"); // Idle mode, Ipp:
-		// 3mA @FRC, 2.7mA @FRCDIV, 2.6mA @FRC16, 4mA @FRCPLL
-		// 2.2mA @SOSC, 5.2mA @PRI, 8.8mA @PRIPLL (if Timer1 only)
+		__asm__ volatile ("pwrsav	#1"); // Idle mode
 	} while (1); // Main loop
 
 	clock_done(); // Disable T1Interrupt & Timer1
