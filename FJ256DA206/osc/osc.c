@@ -92,10 +92,10 @@ int osc_pll_on(int turn_on)
 	return(iRet);
 }
 
-/* Wait OSWEN bit of OSCCON register for hardware only */
-#if (!defined(__DEBUG) || defined(__MPLAB_DEBUGGER_ICD2))
+#if (!defined(__MPLAB_SIM))
+/* Wait OSWEN bit of OSCCON register for hardware */
  #define WAIT_OSWEN() while (OSCCONbits.OSWEN != 0)
-#else // For MPLAB SIM and other tools don't wait
+#else // For MPLAB SIM don't wait
  #define WAIT_OSWEN()
 #endif
 
