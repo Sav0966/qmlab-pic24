@@ -44,6 +44,7 @@ file_016=.
 file_017=.
 file_018=.
 file_019=.
+file_020=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -65,6 +66,7 @@ file_016=no
 file_017=no
 file_018=no
 file_019=no
+file_020=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -82,10 +84,11 @@ file_012=no
 file_013=no
 file_014=no
 file_015=no
-file_016=yes
+file_016=no
 file_017=yes
 file_018=yes
 file_019=yes
+file_020=yes
 [FILE_INFO]
 file_000=C:\MPLAB Projects\FJ256DA206\Pm\mcu_id.s
 file_001=C:\MPLAB Projects\FJ256DA206\Reset\reset.c
@@ -103,10 +106,11 @@ file_012=fcy.h
 file_013=osc.h
 file_014=oscdef.h
 file_015=fosc.h
-file_016=C:\MPLAB Projects\FJ256DA206\libpic30.h
-file_017=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
-file_018=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
-file_019=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
+file_016=C:\MPLab Projects\FJ256DA206\pm\_tools.h
+file_017=C:\MPLAB Projects\FJ256DA206\libpic30.h
+file_018=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
+file_019=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
+file_020=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
