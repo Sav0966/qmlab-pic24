@@ -47,12 +47,19 @@
 #define U_1STOP			0x0000 // (def) One Stop bit
 #define U_2STOP			0x0001 // Two Stop bits
 
-// Loopback Mode Rx<->Tx, RTS<->CTS (if used)
+// Loopback Mode Rx<->Tx, (RTS<->CTS, if used)
 // LPBACK = 1 should be set only after enabling
 // the other bits associated with the UART module
 #define UART_SET_LPBACK(n)	UMODEbits(n).LPBACK = 1
 #define UART_CLR_LPBACK(n)	UMODEbits(n).LPBACK = 0
 #define UART_IS_LPBACK(n)	(UMODEbits(n).LPBACK == 1)
+
+// Auto Baud Mode. Enable baud rate measurement on the
+// next character Ц requires reception of a Sync field
+// (55h); cleared in hardware upon completion
+#define UART_SET_ABAUD(n)	UMODEbits(n).ABAUD = 1
+#define UART_CLR_ABAUD(n)	UMODEbits(n).ABAUD = 0
+#define UART_IS_ABAUD(n)	(UMODEbits(n).ABAUD == 1)
 
 // High-Speed mode (4 BRG clock cycles per bit); x16 - default
 #define U_BRGH			0x0008 // Not usable for IrDA support
@@ -72,16 +79,11 @@
 #define U_RTS_CTS		0x0200
 
 // Power saving and wake-up flags:
-#define U_RIDL			0x0000 // (def) Operate during idle
 #define U_SIDL			0x2000 // Stop operation during idle
 // If Wake-up on Start Bit Detect During Sleep Mode is enabled
 // UART will continue to sample the RX pin; interrupt is generated on the
 // falling edge, bit is cleared in hardware on the following rising edge
 #define U_WAKE			0x0080 // UART Wake-up enable bit
-
-// Enable baud rate measurement on the next character Ц requires reception
-// of a Sync field (55h); cleared in hardware upon completion
-#define U_ABAUD			0x0020 // Auto-Baud Enable bit
 
 // Receive Polarity Inversion bit (Idle is '1' by default)
 #define U_RXINV			0x0010 // RX Idle state is '0'
@@ -163,110 +165,69 @@
 /*
 * Interrupt management of UART module
 */
-// IPL register definitions
-#define IPCU1_Rbits		IPC2bits
-#define IPCU1_Tbits		IPC3bits
-#define IPCU1_ERbits	IPC16bits
-#define IPCU2_Rbits		IPC7bits
-#define IPCU2_Tbits		IPC7bits
-#define IPCU2_ERbits	IPC16bits
-#define IPCU3_Rbits		IPC20bits
-#define IPCU3_Tbits		IPC20bits
-#define IPCU3_ERbits	IPC20bits
-#define IPCU4_Rbits		IPC22bits
-#define IPCU4_Tbits		IPC22bits
-#define IPCU4_ERbits	IPC21bits
+// Interrupt Priority levels
+#define _URXIP(n) _U##n##RXIP
+#define _UTXIP(n) _U##n##TXIP
+#define _UERIP(n) _U##n##ERIP
+// Setup and obtain UART IPL values
+#define UART_SET_RX_IPL(n, ipl)	_URXIP(n) = ipl
+#define UART_GET_RX_IPL(n)		((int)_URXIP(n))
+#define UART_SET_TX_IPL(n, ipl)	_UTXIP(n) = ipl
+#define UART_GET_TX_IPL(n)		((int)_UTXIP(n))
+#define UART_SET_ER_IPL(n, ipl)	_UERIP(n) = ipl
+#define UART_GET_ER_IPL(n)		((int)_UERIP(n))
 
-// Setup and obtain UART interrupt pryority levels
-#define UART_SET_RX_IPL(n, ipl)	IPCU##n##_Rbits.U##n##RXIP = ipl
-#define UART_GET_RX_IPL(n)		((int)IPCU##n##_Rbits.U##n##RXIP)
-#define UART_SET_TX_IPL(n, ipl)	IPCU##n##_Tbits.U##n##TXIP = ipl
-#define UART_GET_TX_IPL(n)		((int)IPCU##n##_Tbits.U##n##TXIP)
-#define UART_SET_ER_IPL(n, ipl)	IPCU##n##_ERbits.U##n##ERIP = ipl
-#define UART_GET_ER_IPL(n)		((int)IPCU##n##_ERbits.U##n##ERIP)
-
-// IEC register definitions
-#define IECU1_Rbits		IEC0bits
-#define IECU1_Tbits		IEC0bits
-#define IECU1_ERbits	IEC4bits
-#define IECU2_Rbits		IEC1bits
-#define IECU2_Tbits		IEC1bits
-#define IECU2_ERbits	IEC4bits
-#define IECU3_Rbits		IEC5bits
-#define IECU3_Tbits		IEC5bits
-#define IECU3_ERbits	IEC5bits
-#define IECU4_Rbits		IEC5bits
-#define IECU4_Tbits		IEC5bits
-#define IECU4_ERbits	IEC5bits
-
+// Interrupt Enable bits
+#define _URXIE(n) _U##n##RXIE
+#define _UTXIE(n) _U##n##TXIE
+#define _UERIE(n) _U##n##ERIE
 // Enable and disable UART interrupts
-#define UART_ENABLE_RX_INT(n)	IECU##n##_Rbits.U##n##RXIE = 1
-#define UART_DISABLE_RX_INT(n)	IECU##n##_Rbits.U##n##RXIE = 0
-#define UART_ENABLE_TX_INT(n)	IECU##n##_Tbits.U##n##TXIE = 1
-#define UART_DISABLE_TX_INT(n)	IECU##n##_Tbits.U##n##TXIE = 0
-#define UART_ENABLE_ER_INT(n)	IECU##n##_ERbits.U##n##ERIE = 1
-#define UART_DISABLE_ER_INT(n)	IECU##n##_ERbits.U##n##ERIE = 0
+#define UART_ENABLE_RX_INT(n)	_URXIE(n) = 1
+#define UART_DISABLE_RX_INT(n)	_URXIE(n) = 0
+#define UART_ENABLE_TX_INT(n)	_UTXIE(n) = 1
+#define UART_DISABLE_TX_INT(n)	_UTXIE(n) = 0
+#define UART_ENABLE_ER_INT(n)	_UERIE(n) = 1
+#define UART_DISABLE_ER_INT(n)	_UERIE(n) = 0
 
-// IFS register definitions
-#define IFSU1_Rbits		IFS0bits
-#define IFSU1_Tbits		IFS0bits
-#define IFSU1_ERbits	IFS4bits
-#define IFSU2_Rbits		IFS1bits
-#define IFSU2_Tbits		IFS1bits
-#define IFSU2_ERbits	IFS4bits
-#define IFSU3_Rbits		IFS5bits
-#define IFSU3_Tbits		IFS5bits
-#define IFSU3_ERbits	IFS5bits
-#define IFSU4_Rbits		IFS5bits
-#define IFSU4_Tbits		IFS5bits
-#define IFSU4_ERbits	IFS5bits
-#define UART_TX_INTFLAG(n) IFSU##n##_Tbits.U##n##TXIF
-#define UART_RX_INTFLAG(n) IFSU##n##_Rbits.U##n##RXIF
-#define UART_ER_INTFLAG(n) IFSU##n##_ERbits.U##n##ERIF
+// Interrupt Status bits
+#define _URXIF(n) _U##n##RXIF
+#define _UTXIF(n) _U##n##TXIF
+#define _UERIF(n) _U##n##ERIF
+// Clear, Set and Check Interrupt Status
+#define UART_CLR_RXFLAG(n)	_URXIF(n) = 0
+#define UART_SET_RXFLAG(n)	_URXIF(n) = 1
+#define UART_IS_RXFLAG(n)	(_URXIF(n) != 0)
+#define UART_CLR_TXFLAG(n)	_UTXIF(n) = 0
+#define UART_SET_TXFLAG(n)	_UTXIF(n) = 1
+#define UART_IS_TXFLAG(n)	(_UTXIF(n) != 0)
+#define UART_CLR_ERFLAG(n)	_UERIF(n) = 0
+#define UART_SET_ERFLAG(n)	_UERIF(n) = 1
+#define UART_IS_ERFLAG(n)	(_UERIF(n) != 0)
 
-// —менить все определени€ на регистронезависимые =!=
-// #define UART_TX_INTFLAG(n) _U##n##TXIF
-
-// Clear, Set and check Interrupt Status bit
-#define UART_CLR_RXFLAG(n)	UART_RX_INTFLAG(n) = 0
-#define UART_SET_RXFLAG(n)	UART_RX_INTFLAG(n) = 1
-#define UART_IS_RXFLAG(n)	UART_RX_INTFLAG(n)
-#define UART_CLR_TXFLAG(n)	UART_TX_INTFLAG(n) = 0
-#define UART_SET_TXFLAG(n)	UART_TX_INTFLAG(n) = 1
-#define UART_IS_TXFLAG(n)	UART_TX_INTFLAG(n)
-#define UART_CLR_ERFLAG(n)	UART_ER_INTFLAG(n) = 0
-#define UART_SET_ERFLAG(n)	UART_ER_INTFLAG(n) = 1
-#define UART_IS_ERFLAG(n)	UART_ER_INTFLAG(n)
-
-// Most usable deinitoins of inntrrupt routine functions
-#define _UART_RX_INTFUNC(n) void __attribute__((__interrupt__, no_auto_psv)) _U##n##RXInterrupt(void)
-#define _UART_TX_INTFUNC(n) void __attribute__((__interrupt__, no_auto_psv)) _U##n##TXInterrupt(void)
-#define _UART_ER_INTFUNC(n) void __attribute__((__interrupt__, no_auto_psv)) _U##n##ErrInterrupt(void)
-#define UART_RX_INTFUNC(n) _UART_RX_INTFUNC(n)
-#define UART_TX_INTFUNC(n) _UART_TX_INTFUNC(n)
-#define UART_ER_INTFUNC(n) _UART_ER_INTFUNC(n)
+// UART Interrupt Service Routine template
+#define _UART_INTFUNC(n, isr) /* isr - RX, TX and Err */\
+__attribute__((__interrupt__, no_auto_psv)) _U##n##isr##Interrupt
+#define UART_INTFUNC(n, isr) _UART_INTFUNC(n, isr)
 /*
-* Power management of UART module
+* Power management of UART module (PMDx.UnMD bit)
 */
-// PMD register definitions
-#define PMDU1bits	PMD1bits
-#define PMDU2bits	PMD1bits
-#define PMDU3bits	PMD3bits
-#define PMDU4bits	PMD4bits
-#define UART_PMD(n)	PMDU##n##bits.U##n##MD
+#define _UMD(n)		_U##n##MD
 /*
 * UART Initialization
+*
+* n - UART number (1 - 4)
+* mode - UART mode ([U_EN] | [U_PARITYx] | [U_RTSx]|[...])
+* sta - UART status ([U_TXEN] | [U_TXIx]|[U_RXIx]|[...])
+* brg - BRG register value (use FCY2BRG(FCY2, baud_rate))
+* ipl - interrupt priority levels, if <= 0 - no unterrupt
 */
-#define UART_IS_INIT(n) /* Powered & Enabled */\
-(!UART_PMD(n) && UMODEbits(n).UARTEN)
-
 #define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl, er_ipl) {\
-	UART_DISABLE_RX_INT(n); /* Disable all interrupts */\
+	UART_DISABLE_RX_INT(n); /* Disable UART interrupts */\
 	UART_DISABLE_TX_INT(n); UART_DISABLE_ER_INT(n);\
 \
 	if (UART_IS_VALID(n)) { /* Valid input levels */\
+		_UMD(n) = 0;	/* Power on UART module */\
 		UART_WAKEUP(n); /* Wake-up RS-232 Driver */\
-		UART_PMD(n) = 0; /* Power on UART module */\
 \
 		/* Setup mode (UART disabled). Setup control */\
 		/* bits, clear FIFO buffers and receiver errors */\
@@ -299,10 +260,13 @@
 			if ((sta) & U_TXEN) UART_ENABLE_TX(n);\
 		}\
 \
-	} else { /* RS-232 por isn't connected  to PC */\
+	} else { /* The RS-232 port isn't connected */\
 		UART_SHDN(n); /* Shutdown RS-232 Driver */\
-		UART_PMD(n) = 1; /* Power off UART module */\
-	} /* UART_IA_VALID() */\
+		_UMD(n) = 1; /* Power off UART module */\
+	} /* UART_IS_VALID() */\
 }
+
+#define UART_IS_INIT(n) /* Powered & Enabled */\
+((_UMD(n) == 0) && (UMODEbits(n).UARTEN != 0))
 
 #endif /*_UART_INCL_*/

@@ -17,7 +17,6 @@
 #define T_PS_NONE	0x0000 /* Prescaler 1:1 (def) */
 
 #define T_SIDL		0x2000 /* Stop operation during idle */
-#define T_RIDL		0x0000 /* Operate during idle (def) */
 
 /* Timer 1 exterrnal clock input synchronization select bit */
 #define T1_SYNC		0x0004 /* Synhronize external clock input */
@@ -48,27 +47,17 @@
 #define TIMER_SET_PR(timer, n)	PR##timer = n
 #define TIMER_GET_PR(timer)		((int)PR##timer)
 
-/* IPL register definitions */
-#define IPCT1bits	IPC0bits
-#define IPCT2bits	IPC1bits
-#define IPCT3bits	IPC2bits
-#define IPCT4bits	IPC6bits
-#define IPCT5bits	IPC7bits
-
+// Interrupt Priority Level
+#define _TIP(timer)		_T##timer##IP
 /* Setup and obtain timer interrupt pryority level */
-#define TIMER_SET_IPL(timer, ipl)	IPCT##timer##bits.T##timer##IP = ipl
-#define TIMER_GET_IPL(timer)		((int)IPCT##timer##bits.T##timer##IP)
+#define TIMER_SET_IPL(timer, ipl)	_TIP(timer) = ipl
+#define TIMER_GET_IPL(timer)		((int)_TIP(timer))
 
-/* IEC register definitions */
-#define IECT1bits	IEC0bits
-#define IECT2bits	IEC0bits
-#define IECT3bits	IEC0bits
-#define IECT4bits	IEC1bits
-#define IECT5bits	IEC1bits
-
+// Interrupt Enable bits
+#define _TIE(timer)		_T##timer##IE
 /* Enable and disable timer interrupt */
-#define TIMER_ENABLE_INT(timer)		IECT##timer##bits.T##timer##IE = 1
-#define TIMER_DISABLE_INT(timer)	IECT##timer##bits.T##timer##IE = 0
+#define TIMER_ENABLE_INT(timer)		_TIE(timer) = 1
+#define TIMER_DISABLE_INT(timer)	_TIE(timer) = 0
 
 /* IFS register definitions */
 #define IFST1bits	IFS0bits
@@ -76,33 +65,38 @@
 #define IFST3bits	IFS0bits
 #define IFST4bits	IFS1bits
 #define IFST5bits	IFS1bits
-#define TIMER_INTFLAG(timer) IFST##timer##bits.T##timer##IF
+#define _TIF(timer) _T##timer##IF
 
 /* Clear Interrupt Status bit */
-#define TIMER_CLR_FLAG(timer) TIMER_INTFLAG(timer) = 0
-#define TIMER_SET_FLAG(timer) TIMER_INTFLAG(timer) = 1
-#define TIMER_IS_FLAG(timer) TIMER_INTFLAG(timer)
+#define TIMER_CLR_FLAG(timer) _TIF(timer) = 0
+#define TIMER_SET_FLAG(timer) _TIF(timer) = 1
+#define TIMER_IS_FLAG(timer) (_TIF(timer) != 0)
+
+// Timer Interrupt Service Routine template
+#define _TIMER_INTFUNC(timer) /* timer - 1-5 */\
+__attribute__((__interrupt__, no_auto_psv)) _T##n##Interrupt
+#define TIMER_INTFUNC(timer) _TIMER_INTFUNC(timer)
 /*
 * 16-bit timer initialization
 *
 * timer - timer number (1 - 5)
 * mode - timer mode (T_MODE_x | [T_PS_x]|[T_SIDL] | [T_ON])
-* ipl - interrupt priority level, if < 0 - no unterrupt
+* ipl - interrupt priority level, if <= 0 - no unterrupt
 * n - the value of timer period register
 */
 #define TIMER_INIT(timer, mode, n, ipl) {\
 	TIMER_DISABLE_INT(timer); /* Disable interrupt */\
 \
-	PMD1bits.T##timer##MD = 0; /* Enable module to have access */\
-	TCON(timer) = 0x00; /* Stop Timer and reset control register  */\
+	_T##timer##MD = 0;	/* Power on Timer module */\
+\
+	if (ipl > 0) TIMER_SET_IPL(timer, ipl); /* Setup Timer IPL */\
+\
+	TCON(timer) = 0x00; /* Stop Timer and reset control register */\
 	TIMER_WRITE(timer, 0); /* Clear contents of the Timer register */\
 	TIMER_SET_PR(timer, n); /* Load the Timer period register = n */\
-	TIMER_CLR_FLAG(timer); /* Clear the interrupt status flag */\
 \
-	if (ipl >= 0) {\
-		TIMER_SET_IPL(timer, ipl); /* Setup Timer IPL */\
-		TIMER_ENABLE_INT(timer); /* Enable interrupt */\
-	}\
+	TIMER_CLR_FLAG(timer); /* Clear the interrupt status flag */\
+	if (ipl > 0) TIMER_ENABLE_INT(timer); /* Enable interrupt */\
 \
 	TCON(timer) = mode; /* Setup Timer mode */\
 }
@@ -114,8 +108,8 @@
 }
 
 #define TIMER_PWOFF(timer) {\
-	TIMER_DONE(timer);			/* Disable timer and interrupt */\
-	PMD1bits.T##timer##MD = 1; 	/* Disable module to energy saving */\
+	TIMER_DONE(timer);	/* Disable timer and interrupt */\
+	_T##timer##MD = 1; 	/* Disable module to energy saving */\
 }
 
 #endif /*_TIMERS_INCL_*/
