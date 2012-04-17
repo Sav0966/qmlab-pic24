@@ -8,7 +8,7 @@ dir_src=
 dir_bin=bin
 dir_tmp=bin
 dir_sin=
-dir_inc=.;..\pm;..\reset;..\pins;..\osc;..\timers
+dir_inc=.;..\pm;..\reset;..\pins;..\osc;..\timers;..\incl
 dir_lib=
 dir_lkr=
 [CAT_FILTERS]
@@ -52,6 +52,7 @@ file_024=.
 file_025=.
 file_026=.
 file_027=.
+file_028=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -81,6 +82,7 @@ file_024=no
 file_025=no
 file_026=no
 file_027=no
+file_028=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -106,10 +108,11 @@ file_020=no
 file_021=no
 file_022=no
 file_023=no
-file_024=yes
+file_024=no
 file_025=yes
 file_026=yes
 file_027=yes
+file_028=yes
 [FILE_INFO]
 file_000=config.c
 file_001=main.c
@@ -135,10 +138,11 @@ file_020=C:\MPLAB Projects\FJ256DA206\osc\oscdef.h
 file_021=C:\MPLAB Projects\FJ256DA206\osc\osc.h
 file_022=C:\MPLAB Projects\FJ256DA206\osc\refo.h
 file_023=C:\MPLAB Projects\FJ256DA206\pins\pins.h
-file_024=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
-file_025=C:\MPLAB Projects\FJ256DA206\libpic30.h
-file_026=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
-file_027=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
+file_024=C:\MPLab Projects\FJ256DA206\pm\_tools.h
+file_025=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
+file_026=C:\MPLAB Projects\FJ256DA206\libpic30.h
+file_027=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
+file_028=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
