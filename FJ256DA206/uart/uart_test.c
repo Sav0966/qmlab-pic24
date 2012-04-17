@@ -1,5 +1,6 @@
 #include <p24Fxxxx.h>
 #include <config.h>
+#include <_tools.h>
 #include <clock.h>
 #include <uart.h>
 
@@ -15,9 +16,9 @@
  #define UART_SHDN(n)
 #endif
 
-#if (defined(__DEBUG) && !defined(__MPLAB_DEBUGGER_ICD2))
- /* For MPLAB SIM and unknown debugger tools (not ICD2) */
- #define _DEBUG_SIM
+#ifdef __MPLAB_SIM /* For MPLAB SIM */
+// You must enable UART1 IO in Simulator Settings Dialog
+// Check 'Enable UART1 IO', 'Rewind input', Output 'Window'
  #undef  U1_INVALID
  #define U1_INVALID		1
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
@@ -62,7 +63,7 @@ UART_RX_INTFUNC(UART_CHECKED) { UART_CLR_RXFLAG(UART_CHECKED); }
 
 UART_TX_INTFUNC(UART_CHECKED)
 {
-#ifdef _DEBUG_SIM // Poll error bits and set ERFLAG manually 
+#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG manually 
 // if (UART_IS_INIT(UART_CHECKED)) // Check OERR and call IFR
   if (UART_IS_ERR(UART_CHECKED)) UART_SET_ERFLAG(UART_CHECKED);
 #endif // SIM doesn't check receiver errors, but set OERR right
@@ -73,20 +74,19 @@ UART_TX_INTFUNC(UART_CHECKED)
 void uart_test(void)
 { // Called from Main Loop once per 10 ms
 
-#ifdef _DEBUG_SIM // Poll error bits and set ERFLAG manually 
+#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG manually 
 	if (UART_IS_INIT(UART_CHECKED))
   	 if (UART_IS_ERR(UART_CHECKED))
 	  UART_SET_ERFLAG(UART_CHECKED); // Check OERR and call IFR
 #endif // SIM doesn't check receiver errors, but set OERR right
 
 	if (sys_clock() & 0x3F) return;
-	// Once per 0.64 seccond check UART
+	// Once per 0.64 seccond test UART
 
 	if (!UART_IS_INIT(UART_CHECKED))
-		UART_INIT(
-			UART_CHECKED,	// Try to initialize UART
+		UART_INIT(UART_CHECKED,	// Try to initialize UART
 
-#if (defined(_DEBUG_SIM) && (UART_CHECKED == 2))
+#if (defined(__MPLAB_SIM) && (UART_CHECKED == 2))
 /* =!= It works with UART2 if set LPBACK here */ U_LPBACK |
 #endif // SIM supports UART1 only
 			U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
@@ -104,7 +104,7 @@ void uart_test(void)
 
 	UART_SET_LPBACK(UART_CHECKED);
 
-#if (defined(_DEBUG_SIM) && (UART_CHECKED > 2))
+#if (defined(__MPLAB_SIM) && (UART_CHECKED > 2))
 /* The next code checks compiller errors */ return;
 #endif // SIM supports UART1 only
 
