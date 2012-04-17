@@ -4,97 +4,107 @@
 #include <clock.h>
 #include <uart.h>
 
-#define UART_CHECKED	1 // Checked URAT module (1-4)
+// You must enable UART1 IO in SIM Simulator Settings Dialog
+// Check 'Enable UART1 IO', 'Rewind input', Output 'Window'
 
-#if (UART_CHECKED > 1)
-// No SHDN & INVALID pins
+#define UART_USED	1 // Checked URAT module (1-4)
+
+#if (UART_USED > 1) // No ~SHDN & ~INVALID pins
  #undef UART_SHDN
  #undef UART_WAKEUP
  #undef UART_IS_VALID
  #define UART_IS_VALID(n) 1
  #define UART_WAKEUP(n)
  #define UART_SHDN(n)
-#endif
+#endif // No ~SHDN & ~INVALID pins
 
-#ifdef __MPLAB_SIM /* For MPLAB SIM */
-// You must enable UART1 IO in Simulator Settings Dialog
-// Check 'Enable UART1 IO', 'Rewind input', Output 'Window'
+#ifdef __MPLAB_SIM // For MPLAB SIM
  #undef  U1_INVALID
- #define U1_INVALID		1
+ #define U1_INVALID		1 // UART1 ~INVALID input pin = 1
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
 #endif
 
-static int _rx_err_num; // = 0; Receiver Errors counter
+static int _rx_err_num; // = 0; Receiver Error counter
 
-UART_ER_INTFUNC(UART_CHECKED)
+// Error Interrupt Service Routine
+void UART_INTFUNC(UART_USED, Err)(void)
 {
-	// Clear Interrupt flag first
-	UART_CLR_ERFLAG(UART_CHECKED);
-	++_rx_err_num; // Calculate errors
+	// Clear Interrupt flag
+	UART_CLR_ERFLAG(UART_USED);
 
-	// Rx FIFO Buffer oveflow error
-	if (UART_IS_OERR(UART_CHECKED)) {
-			__asm__("nop"); // TODO: You can read
-			__asm__("nop"); // and store FIFO before
-			__asm__("nop"); // clear buffer and OERR
-		UART_CLR_OERR(UART_CHECKED);  // Clear flag
+	if (UART_IS_OERR(UART_USED)) {
+		// Rx FIFO Buffer overrun error:
+		__asm__("nop"); // TODO: You can read
+		__asm__("nop"); // and store FIFO before
+		__asm__("nop"); // clear buffer and OERR
+		UART_CLR_OERR(UART_USED);  // Clear flag
 		// No errors at this point (FIFO is empty)
+		++_rx_err_num; // Calculate errors
 	} else {
-		// Frame error at the top of FIFO
-		if (UART_IS_FERR(UART_CHECKED)) {
+		if (UART_IS_FERR(UART_USED)) {
+			// Frame error at the top of FIFO:
 			// Read Data and check Break codition
-			if (0 == UART_READ9(UART_CHECKED)) {
+			if (0 == UART_READ9(UART_USED)) {
 				// Break character is received
 				__asm__("nop"); // TODO: AutoBaud
 				__asm__("nop"); // Mode can be started
 				__asm__("nop"); // in this section
  			}	
+
+			++_rx_err_num; // Calculate errors
 		}
 
-		// Parity error at the top of FIFO
-		if (UART_IS_PERR(UART_CHECKED)) {
+		if (UART_IS_PERR(UART_USED)) {
+			// Parity error at the top of FIFO:
 			// Read the byte from the top of FIFO
-			UART_READ9(UART_CHECKED); // Dummy read
+			UART_READ9(UART_USED); // Dummy read
+			++_rx_err_num; // Calculate errors
 		}
 	}
 }
 
-UART_RX_INTFUNC(UART_CHECKED) { UART_CLR_RXFLAG(UART_CHECKED); }
-
-UART_TX_INTFUNC(UART_CHECKED)
+// Receiver Interrupt Service Routine
+void UART_INTFUNC(UART_USED, RX)(void)
 {
-#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG manually 
-// if (UART_IS_INIT(UART_CHECKED)) // Check OERR and call IFR
-  if (UART_IS_ERR(UART_CHECKED)) UART_SET_ERFLAG(UART_CHECKED);
-#endif // SIM doesn't check receiver errors, but set OERR right
+	// Clear Interrupt flag
+	UART_CLR_RXFLAG(UART_USED);
+}
 
-	UART_CLR_TXFLAG(UART_CHECKED);
+// Transmitter Interrupt Service Routine
+void UART_INTFUNC(UART_USED, TX)(void)
+{
+	// Clear Interrupt flag
+	UART_CLR_TXFLAG(UART_USED);
+
+#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
+ if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
+#endif // SIM doesn't check receiver errors, but set OERR
 }
 
 void uart_test(void)
 { // Called from Main Loop once per 10 ms
 
-#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG manually 
-	if (UART_IS_INIT(UART_CHECKED))
-  	 if (UART_IS_ERR(UART_CHECKED))
-	  UART_SET_ERFLAG(UART_CHECKED); // Check OERR and call IFR
-#endif // SIM doesn't check receiver errors, but set OERR right
+#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
+ if (UART_IS_INIT(UART_USED)) // Check OERR and call IFR
+  if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
+#endif // SIM doesn't check receiver errors, but set OERR
 
 	if (sys_clock() & 0x3F) return;
 	// Once per 0.64 seccond test UART
 
-	if (!UART_IS_INIT(UART_CHECKED))
-		UART_INIT(UART_CHECKED,	// Try to initialize UART
+	if (!UART_IS_INIT(UART_USED))
+		UART_INIT(UART_USED,	// Try to initialize UART
 
-#if (defined(__MPLAB_SIM) && (UART_CHECKED == 2))
-/* =!= It works with UART2 if set LPBACK here */ U_LPBACK |
-#endif // SIM supports UART1 only
+#if (defined(__MPLAB_SIM) && (UART_USED == 2))
+/* =!= It works with UART2 too if set LPBACK here */	U_LPBACK |
+#endif // SIM supports UART1 only (SIM: UART1 IO must be enabled)
+
 			U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
 
 			U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
 			1, 1, 2); // All interrupts are enabled (error level 2)
 
-	if (!UART_IS_INIT(UART_CHECKED)) return;
+	if (!UART_IS_INIT(UART_USED)) return;
 
 	// When the UTXEN bit is set, the UxTXIF flag bit will also be set,
 	// after two cycles, if UTXISEL<1:0> = 00, since the transmit buffer
@@ -102,26 +112,26 @@ void uart_test(void)
 
 	// =!= So, TX interrupt may be called (if UART initialization done)
 
-	UART_SET_LPBACK(UART_CHECKED);
+	UART_SET_LPBACK(UART_USED);
 
-#if (defined(__MPLAB_SIM) && (UART_CHECKED > 2))
-/* The next code checks compiller errors */ return;
-#endif // SIM supports UART1 only
+#if (defined(__MPLAB_SIM) && (UART_USED > 2))
+/* The next code checks compiller errors only */ return;
+#endif // SIM does not support UART3-4
 
 	// Transmission of Break Characters:
-	while (!UART_IS_TXEND(UART_CHECKED)); // Wait for TX to be Idle
+	while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
 	// The user should wait for the transmitter to be Idle (TRMT = 1)
 	// before setting the UTXBRK. The UTXBRK overrides any other
 	// transmitter activity. If the user clears the UTXBRK bit prior
 	// to sequence completion, unexpected module behavior can result.
 	// Sending a Break character does not generate a transmit interrupt
-	UART_SET_BREAK(UART_CHECKED); // Set UTXBRK bit to send Break char
-	UART_WRITE(UART_CHECKED, -1); // Write dummy character (Send Break)
-	UART_WRITE(UART_CHECKED, 0x55); // Write Synch character
+	UART_SET_BREAK(UART_USED); // Set UTXBRK bit to send Break char
+	UART_WRITE(UART_USED, -1); // Write dummy character (Send Break)
+	UART_WRITE(UART_USED, 0x55); // Write Synch character
 	// Don't clear UTXBRK bit manualy
 			
-	UART_WRITE(UART_CHECKED, 0x3F); // Write separator - '?'
-	while (!UART_IS_TXEND(UART_CHECKED)); // Wait (no OERR yet)
-	while (UART_CAN_WRITE(UART_CHECKED)) // Overflow RX FIFO
-		UART_WRITE(UART_CHECKED, 0x55);
+	UART_WRITE(UART_USED, 0x3F); // Write separator - '?'
+	while (!UART_IS_TXEND(UART_USED)); // Wait (no OERR yet)
+	while (UART_CAN_WRITE(UART_USED)) // Overflow RX FIFO
+		UART_WRITE(UART_USED, 0x55);
 }
