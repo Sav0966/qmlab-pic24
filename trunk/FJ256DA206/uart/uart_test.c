@@ -1,5 +1,6 @@
 #include <p24Fxxxx.h>
 #include <config.h>
+#include <buffer.h>
 #include <_tools.h>
 #include <clock.h>
 #include <uart.h>
@@ -24,7 +25,16 @@
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
 #endif
 
+static char QUEUE(RX, 16); // Receiver queue
+static char QUEUE(TX, 32); // Transmitter queue
 static int _rx_err_num; // = 0; Receiver Error counter
+
+void que_test(void)
+{
+//	if (QUE_BACK(RX) != 1) while(1);
+//	if (QUE_BACK(RX) != QUE_FRONT(RX)) while(1);
+}
+
 
 // Error Interrupt Service Routine
 void UART_INTFUNC(UART_USED, Err)(void)
@@ -68,6 +78,13 @@ void UART_INTFUNC(UART_USED, RX)(void)
 {
 	// Clear Interrupt flag
 	UART_CLR_RXFLAG(UART_USED);
+
+	if (QUE_FULL(RX)) {
+		// Receiver queue is full
+		__asm__("nop"); // TODO:
+		__asm__("nop"); //
+		__asm__("nop"); // Reset FIFO
+	}
 }
 
 // Transmitter Interrupt Service Routine
@@ -76,6 +93,14 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
+	while (!QUE_EMPTY(TX)) {
+	 // Load TX queue and fill TX buffer
+		if (UART_CAN_WRITE(UART_USED)) {
+			int i = QUE_POP(TX);
+			UART_WRITE(UART_USED, i);
+		} else break;
+	}
+
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
  if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
 #endif // SIM doesn't check receiver errors, but set OERR
@@ -83,7 +108,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 
 void uart_test(void)
 { // Called from Main Loop once per 10 ms
-
+que_test();
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
  if (UART_IS_INIT(UART_USED)) // Check OERR and call IFR
   if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
@@ -118,20 +143,23 @@ void uart_test(void)
 /* The next code checks compiller errors only */ return;
 #endif // SIM does not support UART3-4
 
-	// Transmission of Break Characters:
-	while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
-	// The user should wait for the transmitter to be Idle (TRMT = 1)
-	// before setting the UTXBRK. The UTXBRK overrides any other
-	// transmitter activity. If the user clears the UTXBRK bit prior
-	// to sequence completion, unexpected module behavior can result.
-	// Sending a Break character does not generate a transmit interrupt
-	UART_SET_BREAK(UART_USED); // Set UTXBRK bit to send Break char
-	UART_WRITE(UART_USED, -1); // Write dummy character (Send Break)
-	UART_WRITE(UART_USED, 0x55); // Write Synch character
-	// Don't clear UTXBRK bit manualy
+	if (_rx_err_num == 0) // Once after reset
+	{
+		// Transmission of Break Characters:
+		while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
+		// The user should wait for the transmitter to be Idle (TRMT = 1)
+		// before setting the UTXBRK. The UTXBRK overrides any other
+		// transmitter activity. If the user clears the UTXBRK bit prior
+		// to sequence completion, unexpected module behavior can result.
+		// Sending a Break character does not generate a transmit interrupt
+		UART_SET_BREAK(UART_USED); // Set UTXBRK bit to send Break char
+		UART_WRITE(UART_USED, -1); // Write dummy character (Send Break)
+		UART_WRITE(UART_USED, 0x55); // Write Synch character
+		// Don't clear UTXBRK bit manualy
 			
-	UART_WRITE(UART_USED, 0x3F); // Write separator - '?'
-	while (!UART_IS_TXEND(UART_USED)); // Wait (no OERR yet)
-	while (UART_CAN_WRITE(UART_USED)) // Overflow RX FIFO
-		UART_WRITE(UART_USED, 0x55);
+		UART_WRITE(UART_USED, 0x3F); // Write separator - '?'
+		while (!UART_IS_TXEND(UART_USED)); // Wait (no OERR yet)
+		while (UART_CAN_WRITE(UART_USED)) // Overflow RX FIFO
+			UART_WRITE(UART_USED, 0x55);
+	}
 }
