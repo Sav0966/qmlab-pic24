@@ -84,6 +84,7 @@ void UART_INTFUNC(UART_USED, RX)(void)
 		__asm__("nop"); // TODO:
 		__asm__("nop"); //
 		__asm__("nop"); // Reset FIFO
+		++_rx_err_num; // Calculate errors
 	}
 }
 
