@@ -100,6 +100,7 @@
 #define U_TXEN			0x0400 // Transmit Enable bit
 #define UART_ENABLE_TX(n)		USTAbits(n).UTXEN = 1
 #define UART_DISABLE_TX(n)		USTAbits(n).UTXEN = 0
+#define UART_IS_ENABLE_TX(n)	(USTAbits(n).UTXEN == 1)
 
 // Transmission Interrupt Mode Selection bits:
 // (def) Interrupt when a character is transferred to the Transmit
@@ -111,6 +112,9 @@
 // Interrupt when the last character is shifted out of
 // the Transmit Shift Register; all transmit operations
 #define U_TXI_END		0x2000 // are completed
+
+#define UART_SET_TXI(n, txi) /* Set new TXI value */\
+USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
 
 // Receive Interrupt Mode Selection bits
 // (def) Interrupt is set when any character is received and
@@ -182,12 +186,15 @@
 #define _UTXIE(n) _U##n##TXIE
 #define _UERIE(n) _U##n##ERIE
 // Enable and disable UART interrupts
-#define UART_ENABLE_RX_INT(n)	_URXIE(n) = 1
-#define UART_DISABLE_RX_INT(n)	_URXIE(n) = 0
-#define UART_ENABLE_TX_INT(n)	_UTXIE(n) = 1
-#define UART_DISABLE_TX_INT(n)	_UTXIE(n) = 0
-#define UART_ENABLE_ER_INT(n)	_UERIE(n) = 1
-#define UART_DISABLE_ER_INT(n)	_UERIE(n) = 0
+#define UART_ENABLE_RXINT(n)	_URXIE(n) = 1
+#define UART_DISABLE_RXINT(n)	_URXIE(n) = 0
+#define UART_IS_ENABLE_RXINT(n)	(_URXIE(n) == 1)
+#define UART_ENABLE_TXINT(n)	_UTXIE(n) = 1
+#define UART_DISABLE_TXINT(n)	_UTXIE(n) = 0
+#define UART_IS_ENABLE_TXINT(n)	(_UTXIE(n) == 1)
+#define UART_ENABLE_ERINT(n)	_UERIE(n) = 1
+#define UART_DISABLE_ERINT(n)	_UERIE(n) = 0
+#define UART_IS_ENABLE_ERINT(n)	(_UERIE(n) == 1)
 
 // Interrupt Status bits
 #define _URXIF(n) _U##n##RXIF
@@ -222,8 +229,8 @@ __attribute__((__interrupt__, no_auto_psv)) _U##n##isr##Interrupt
 * ipl - interrupt priority levels, if <= 0 - no unterrupt
 */
 #define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl, er_ipl) {\
-	UART_DISABLE_RX_INT(n); /* Disable UART interrupts */\
-	UART_DISABLE_TX_INT(n); UART_DISABLE_ER_INT(n);\
+	UART_DISABLE_RXINT(n); /* Disable UART interrupts */\
+	UART_DISABLE_TXINT(n); UART_DISABLE_ERINT(n);\
 \
 	if (UART_IS_VALID(n)) { /* Valid input levels */\
 		_UMD(n) = 0;	/* Power on UART module */\
@@ -238,17 +245,17 @@ __attribute__((__interrupt__, no_auto_psv)) _U##n##isr##Interrupt
 \
 		if (rx_ipl > 0) {\
 			UART_SET_RX_IPL(n, rx_ipl); /* Receive IPL */\
-			UART_ENABLE_RX_INT(n); /* Enable interrupt */\
+			UART_ENABLE_RXINT(n); /* Enable interrupt */\
 		}\
 \
 		if (tx_ipl > 0) {\
 			UART_SET_TX_IPL(n, tx_ipl); /* Transmit IPL */\
-			UART_ENABLE_TX_INT(n); /* Enable interrupt */\
+			UART_ENABLE_TXINT(n); /* Enable interrupt */\
 		}\
 \
 		if (er_ipl > 0) {\
 			UART_SET_ER_IPL(n, er_ipl); /* Error IPL */\
-			UART_ENABLE_ER_INT(n); /* Enable interrupt */\
+			UART_ENABLE_ERINT(n); /* Enable interrupt */\
 		}\
 \
 		if ((mode) & U_EN) { /* If it is set in 'mode' */\

@@ -11,6 +11,9 @@
 
 #define UART_USED	1 // Checked URAT module (1-4)
 
+#define TX_BUF_SIZE	32 // Size of Transmitter queue
+#define RX_BUF_SIZE	16 // Size of Receiver queue
+
 #if (UART_USED > 1) // No ~SHDN & ~INVALID pins
  #undef UART_SHDN
  #undef UART_WAKEUP
@@ -26,9 +29,30 @@
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
 #endif
 
-static char QUEUE(RX, 16); // Receiver queue
-static char QUEUE(TX, 32); // Transmitter queue
+static char QUEUE(RX, RX_BUF_SIZE); // Receiver queue
+static char QUEUE(TX, TX_BUF_SIZE); // Transmitter queue
 static int _rx_err_num; // = 0; Receiver Error counter
+
+static void rx_purge(void)
+{ // Reset RX queue and RX FIFO
+	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
+	ASSERT(UART_IS_ENABLE_RXINT(UART_USED), "UART must be init");
+
+	UART_DISABLE_RXINT(UART_USED); // Lock receiver thread and clear all
+	QUE_RESET(RX); while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
+	UART_ENABLE_RXINT(UART_USED); // Unlock receiver thread
+}
+
+static void tx_purge(void)
+{ // Reset TX queue and TX FIFO
+	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
+	ASSERT(UART_IS_ENABLE_TXINT(UART_USED), "UART must be init");
+	ASSERT(UART_IS_ENABLE_TX(UART_USED), "UART must be init");
+
+	UART_DISABLE_TXINT(UART_USED); // Lock transmitter thread and clear all
+	QUE_RESET(TX); UART_DISABLE_TX(UART_USED); UART_ENABLE_TX(UART_USED);
+	UART_ENABLE_TXINT(UART_USED); // Unlock receiver thread
+}
 
 // Error Interrupt Service Routine
 void UART_INTFUNC(UART_USED, Err)(void)
@@ -69,46 +93,45 @@ void UART_INTFUNC(UART_USED, Err)(void)
 
 // Receiver Interrupt Service Routine
 void UART_INTFUNC(UART_USED, RX)(void)
-{ // Enqueue thread for RX queue
+{
+	if (UART_IS_ERR(UART_USED)) { // It's not my job
+				UART_SET_ERFLAG(UART_USED); return; }
+
+	// No errors at the top of FIFO
+
 	// Clear Interrupt flag
 	UART_CLR_RXFLAG(UART_USED);
 
 	if (QUE_FULL(RX)) {
 		// Receiver queue is full
-		// Can't it queue here (have not right)
+		// Can't reset it here (have not right)
 		++_rx_err_num; // Calculate errors only
+	} else {
+
 	}
-}
-
-// Reset RX queue and RX hardware buffer
-static void rx_purge(void)
-{
-
 }
 
 // Transmitter Interrupt Service Routine
 void UART_INTFUNC(UART_USED, TX)(void)
-{ // Dequeue thread for TX queue
+{
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
+	if (QUE_SIZE(TX) > 3) // We'll fill FIFO
+		 UART_SET_TXI(UART_USED, U_TXI_EMPTY);
+	else UART_SET_TXI(UART_USED, U_TXI_READY);
+
 	while (!QUE_EMPTY(TX)) {
-	 // Load TX queue and fill TX buffer
+	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
 			int i = QUE_POP(TX);
 			UART_WRITE(UART_USED, i);
-		} else break;
+		} else break; // can't write
 	}
 
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
  if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
 #endif // SIM doesn't check receiver errors, but set OERR
-}
-
-// Reset TX queu and TX harware buffer
-static void tx_purge(void)
-{
-
 }
 
 void uart_test(void)
@@ -123,6 +146,7 @@ void uart_test(void)
 	// Once per 0.64 seccond test UART
 
 	if (!UART_IS_INIT(UART_USED))
+	{
 		UART_INIT(UART_USED,	// Try to initialize UART
 
 #if (defined(__MPLAB_SIM) && (UART_USED == 2))
@@ -132,9 +156,14 @@ void uart_test(void)
 			U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
 
 			U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
-			1, 1, 2); // All interrupts are enabled (error level 2)
+			1, 1, 1); // All interrupts are enabled
 
-	if (!UART_IS_INIT(UART_USED)) return;
+		if (!UART_IS_INIT(UART_USED)) return; // ~INVALID = '0'
+
+		rx_purge(); tx_purge(); // Reset queues
+	}
+
+	// UART_IS_INIT() == TRUE
 
 	// When the UTXEN bit is set, the UxTXIF flag bit will also be set,
 	// after two cycles, if UTXISEL<1:0> = 00, since the transmit buffer
