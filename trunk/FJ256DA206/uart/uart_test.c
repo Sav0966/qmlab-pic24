@@ -5,6 +5,7 @@
 #include <clock.h>
 #include <uart.h>
 
+
 // You must enable UART1 IO in SIM Simulator Settings Dialog
 // Check 'Enable UART1 IO', 'Rewind input', Output 'Window'
 
@@ -28,13 +29,6 @@
 static char QUEUE(RX, 16); // Receiver queue
 static char QUEUE(TX, 32); // Transmitter queue
 static int _rx_err_num; // = 0; Receiver Error counter
-
-void que_test(void)
-{
-//	if (QUE_BACK(RX) != 1) while(1);
-//	if (QUE_BACK(RX) != QUE_FRONT(RX)) while(1);
-}
-
 
 // Error Interrupt Service Routine
 void UART_INTFUNC(UART_USED, Err)(void)
@@ -75,22 +69,26 @@ void UART_INTFUNC(UART_USED, Err)(void)
 
 // Receiver Interrupt Service Routine
 void UART_INTFUNC(UART_USED, RX)(void)
-{
+{ // Enqueue thread for RX queue
 	// Clear Interrupt flag
 	UART_CLR_RXFLAG(UART_USED);
 
 	if (QUE_FULL(RX)) {
 		// Receiver queue is full
-		__asm__("nop"); // TODO:
-		__asm__("nop"); //
-		__asm__("nop"); // Reset FIFO
-		++_rx_err_num; // Calculate errors
+		// Can't it queue here (have not right)
+		++_rx_err_num; // Calculate errors only
 	}
+}
+
+// Reset RX queue and RX hardware buffer
+static void rx_purge(void)
+{
+
 }
 
 // Transmitter Interrupt Service Routine
 void UART_INTFUNC(UART_USED, TX)(void)
-{
+{ // Dequeue thread for TX queue
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
@@ -107,9 +105,15 @@ void UART_INTFUNC(UART_USED, TX)(void)
 #endif // SIM doesn't check receiver errors, but set OERR
 }
 
+// Reset TX queu and TX harware buffer
+static void tx_purge(void)
+{
+
+}
+
 void uart_test(void)
 { // Called from Main Loop once per 10 ms
-que_test();
+
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
  if (UART_IS_INIT(UART_USED)) // Check OERR and call IFR
   if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
@@ -163,4 +167,6 @@ que_test();
 		while (UART_CAN_WRITE(UART_USED)) // Overflow RX FIFO
 			UART_WRITE(UART_USED, 0x55);
 	}
+
+	if (_rx_err_num == 0) return; // First time after reset
 }
