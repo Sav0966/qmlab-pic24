@@ -49,7 +49,7 @@
 
 // Reset queue to Empty state (called from dequeue thread)
 #define QUE_RESET(id)	while (!QUE_EMPTY(id)) QUE_POP(id)
-// Don't reset 'len' directly if you don't sure in your right
+// Don't reset 'len' directly if you don't sure with your right
 
 #define QUE_PUSH(id, val) /* Adds an element to the back of the queue */\
  if (!QUE_FULL(id)) { *que_##id.back = val; _QUE_INC_SIZE(id); _QUE_MOVE_BACK(id); }
