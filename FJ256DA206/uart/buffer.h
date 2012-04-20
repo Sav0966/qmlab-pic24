@@ -19,18 +19,18 @@
 
 // Thread synchronization
 
-#ifndef INTERLOCKED_INCREMENT
+#ifndef INTERLOCKED_INCREMENT // Blocked operation with integer
 #define INTERLOCKED_INCREMENT(i) __asm__ volatile ("disi #3"); ++i
 #define INTERLOCKED_DECREMENT(i) __asm__ volatile ("disi #3"); --i
 #endif
 
-#define _QUE_MOVE_FRONT(id) /* Not lock, only one thread can dequeue */\
+#define _QUE_MOVE_FRONT(id) /* Not locked, only one thread can dequeue */\
  if (++que_##id.front == _QUE_BUF_END(id)) que_##id.front = que_##id##_buf
 
-#define _QUE_MOVE_BACK(id) /* Not lock, only one thread can enqueue */\
+#define _QUE_MOVE_BACK(id) /* Not locked, only one thread can enqueue */\
  if (++que_##id.back == _QUE_BUF_END(id)) que_##id.back = que_##id##_buf
 
-// One thread can enqueue, another - dequeue
+// Locked, one thread can enqueue, another - dequeue
 #define _QUE_DEC_SIZE(id)	INTERLOCKED_DECREMENT(que_##id.len)
 #define _QUE_INC_SIZE(id)	INTERLOCKED_INCREMENT(que_##id.len)
 
@@ -47,11 +47,15 @@
 #define QUE_POP(id) /* Removes an element from the front of the queue */\
  QUE_FRONT(id); if (!QUE_EMPTY(id)) { _QUE_DEC_SIZE(id); _QUE_MOVE_FRONT(id); }
 
+// Reset queue to Empty state (called from dequeue thread)
+#define QUE_RESET(id)	while (!QUE_EMPTY(id)) QUE_POP(id)
+// Don't reset 'len' directly if you don't sure in your right
+
 #define QUE_PUSH(id, val) /* Adds an element to the back of the queue */\
  if (!QUE_FULL(id)) { *que_##id.back = val; _QUE_INC_SIZE(id); _QUE_MOVE_BACK(id); }
 
-// Last and most recently added element at the back of the queue
-//#define QUE_BACKREF(id)  (*que_##id.back)
-//#define QUE_BACK(id)  ((_QUE_TYPE(id))QUE_BACKREF(id))
+#define QUE_BACK(id)\
+ /* Last and most recently added element at the back of the queue */\
+ (que_##id.back != que_##id##_buf)? (*(que_##id.back-1)): (*(_QUE_BUF_END(id)-1))
 
 #endif /*BUFFER_INCL_*/
