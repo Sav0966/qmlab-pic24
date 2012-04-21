@@ -64,35 +64,37 @@ void UART_INTFUNC(UART_USED, Err)(void)
 	// Clear Interrupt flag
 	UART_CLR_ERFLAG(UART_USED);
 
-	if (UART_IS_OERR(UART_USED)) {
-		// Rx FIFO Buffer overrun error:
-		__asm__("nop"); // TODO: You can read
-		__asm__("nop"); // and store FIFO before
-		__asm__("nop"); // clear buffer and OERR
-		UART_CLR_OERR(UART_USED);  // Clear flag
-		// No errors at this point (FIFO is empty)
-		++_rx_err_num; // Calculate errors
-	} else {
-		if (UART_IS_FERR(UART_USED)) {
-			// Frame error at the top of FIFO:
-			// Read Data and check Break codition
-			if (0 == UART_READ9(UART_USED)) {
-				// Break character is received
-				__asm__("nop"); // TODO: AutoBaud
-				__asm__("nop"); // Mode can be started
-				__asm__("nop"); // in this section
- 			}	
-
+	while (UART_IS_ERR(UART_USED)) {
+		if (UART_IS_OERR(UART_USED)) {
+			// Rx FIFO Buffer overrun error:
+			__asm__("nop"); // TODO: You can read
+			__asm__("nop"); // and store FIFO before
+			__asm__("nop"); // clear buffer and OERR
+			UART_CLR_OERR(UART_USED);  // Clear flag
+			// No errors at this point (FIFO is empty)
 			++_rx_err_num; // Calculate errors
-		}
+		} else {
+			if (UART_IS_FERR(UART_USED)) {
+				// Frame error at the top of FIFO:
+				// Read Data and check Break codition
+				if (0 == UART_READ9(UART_USED)) {
+					// Break character is received
+					__asm__("nop"); // TODO: AutoBaud
+					__asm__("nop"); // Mode can be started
+					__asm__("nop"); // in this section
+	 			}	
 
-		if (UART_IS_PERR(UART_USED)) {
-			// Parity error at the top of FIFO:
-			// Read the byte from the top of FIFO
-			UART_READ9(UART_USED); // Dummy read
-			++_rx_err_num; // Calculate errors
+				++_rx_err_num; // Calculate errors
+			}
+
+			if (UART_IS_PERR(UART_USED)) {
+				// Parity error at the top of FIFO:
+				// Read the byte from the top of FIFO
+				UART_READ9(UART_USED); // Dummy read
+				++_rx_err_num; // Calculate errors
+			}
 		}
-	}
+	} //  while (UART_IS_ERR(UART_USED))
 }
 
 // Receiver Interrupt Service Routine
@@ -118,19 +120,20 @@ void UART_INTFUNC(UART_USED, RX)(void)
 // Transmitter Interrupt Service Routine
 void UART_INTFUNC(UART_USED, TX)(void)
 {
+	int i;
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	if (QUE_SIZE(TX) > 1) // We'll fill FIFO
-		 UART_SET_TXI(UART_USED, U_TXI_EMPTY);
-	else UART_SET_TXI(UART_USED, U_TXI_READY);
+	if (QUE_SIZE(TX) < 2) i = U_TXI_READY;
+	else i = U_TXI_EMPTY; // We'll fill FIFO
+	UART_SET_TXI(UART_USED, i);
 
 	while (!QUE_EMPTY(TX)) {
 	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			int i = QUE_POP(TX);
+			i = QUE_POP(TX);
 			UART_WRITE(UART_USED, i);
-		} else break; // can't write
+		} else break; // FIFO is full
 	}
 
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
@@ -164,6 +167,9 @@ void uart_test(void)
 
 	if (!UART_IS_INIT(UART_USED))
 	{
+		QUE_INIT(RX); // RX and TX queues initialization
+		QUE_INIT(TX); // May be called - UART Disabled
+
 		UART_INIT(UART_USED,	// Try to initialize UART
 
 #if (defined(__MPLAB_SIM) && (UART_USED == 2))
@@ -177,7 +183,6 @@ void uart_test(void)
 
 		if (!UART_IS_INIT(UART_USED)) return; // ~INVALID = '0'
 
-		rx_purge(); tx_purge(); // Reset queues
 	}
 
 	// UART_IS_INIT() == TRUE
@@ -219,7 +224,7 @@ void uart_test(void)
 	if (_rx_err_num < 100) {
 		if ((sizeof(SMALL_STRING)-1) !=
 			uart_write(SMALL_STRING, sizeof(SMALL_STRING)-1))
-			{_rx_err_num = 100; stage = 1; } // Overrun TX queue
+			{_rx_err_num = 100; stage = 1; } // TX queue is full
 		else return; // Overrun later
 	}
 
