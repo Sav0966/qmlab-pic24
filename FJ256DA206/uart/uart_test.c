@@ -13,6 +13,9 @@
 
 #define TX_BUF_SIZE	32 // Size of Transmitter queue
 #define RX_BUF_SIZE	16 // Size of Receiver queue
+static int stage = 0; // Tesg Flag
+
+#define SMALL_STRING "\nThere is a small string"
 
 #if (UART_USED > 1) // No ~SHDN & ~INVALID pins
  #undef UART_SHDN
@@ -32,6 +35,7 @@
 static char QUEUE(RX, RX_BUF_SIZE); // Receiver queue
 static char QUEUE(TX, TX_BUF_SIZE); // Transmitter queue
 static int _rx_err_num; // = 0; Receiver Error counter
+
 
 static void rx_purge(void)
 { // Reset RX queue and RX FIFO
@@ -117,7 +121,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	if (QUE_SIZE(TX) > 3) // We'll fill FIFO
+	if (QUE_SIZE(TX) > 1) // We'll fill FIFO
 		 UART_SET_TXI(UART_USED, U_TXI_EMPTY);
 	else UART_SET_TXI(UART_USED, U_TXI_READY);
 
@@ -132,6 +136,19 @@ void UART_INTFUNC(UART_USED, TX)(void)
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
  if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
 #endif // SIM doesn't check receiver errors, but set OERR
+}
+
+static int uart_write (char *buf, int len)
+{
+	int n = 0;
+	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
+
+	while (n != len) {
+		if (QUE_FULL(TX)) break;
+		QUE_PUSH(TX, *buf++); ++n;
+	} // Write n chars in TX queue
+	UART_SET_TXFLAG(UART_USED);
+	return(n);
 }
 
 void uart_test(void)
@@ -195,7 +212,19 @@ void uart_test(void)
 		while (!UART_IS_TXEND(UART_USED)); // Wait (no OERR yet)
 		while (UART_CAN_WRITE(UART_USED)) // Overflow RX FIFO
 			UART_WRITE(UART_USED, 0x55);
+
+		return; // First time after reset
 	}
 
-	if (_rx_err_num == 0) return; // First time after reset
-}
+	if (_rx_err_num < 100) {
+		if ((sizeof(SMALL_STRING)-1) !=
+			uart_write(SMALL_STRING, sizeof(SMALL_STRING)-1))
+			{_rx_err_num = 100; stage = 1; } // Overrun TX queue
+		else return; // Overrun later
+	}
+
+	// Wait end of trnsmittion of the TX queue
+	if ((stage == 1) && QUE_FULL(TX)) return;
+
+	ASSERT(0,"?");
+} 

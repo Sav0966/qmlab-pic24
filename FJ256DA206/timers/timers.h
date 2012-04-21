@@ -60,11 +60,6 @@
 #define TIMER_DISABLE_INT(timer)	_TIE(timer) = 0
 
 /* IFS register definitions */
-#define IFST1bits	IFS0bits
-#define IFST2bits	IFS0bits
-#define IFST3bits	IFS0bits
-#define IFST4bits	IFS1bits
-#define IFST5bits	IFS1bits
 #define _TIF(timer) _T##timer##IF
 
 /* Clear Interrupt Status bit */
