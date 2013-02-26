@@ -7,12 +7,11 @@
 #include <reset.h>
 #include <pins.h>
 #include <refo.h>
-//#include <uart.h>
+#include <uart.h>
 #include <osc.h>
+#include <spi.h>
 
 #include "main.h"
-
-//extern void uart_test(void);
 
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
@@ -68,7 +67,7 @@ int main(void)
 	osc_mode(__OSC__);  /* Select oscillator mode */
 
 	/* Then disable all modules for energy saving */
-	PMD1=-1; PMD2=-1; PMD3=-1; PMD4=-1; PMD5=-1; PMD6=-1;
+	PMD1 = PMD2 = PMD3 = PMD4 = PMD5 = PMD6 = -1;
 
 	// Run Timer1 (2 MHz) whith 10 ms period
 	if (clock_init(BIOS_START_TIME) < 0) while (1);
@@ -76,8 +75,6 @@ int main(void)
 	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
 	do { // Main loop
-
-//		uart_test(); // Test UART module
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode
 	} while (1); // Main loop

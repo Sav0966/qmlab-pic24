@@ -32,6 +32,15 @@
 #define U1_SHDN		_LATB11 // C definitions of ~SHDN signal
 
 #define RB15_HIGH	// Test pin (and REFO output)
+
+// PORT D
+// SPI1 Master Mode (SDO - RD0, SDI - RD2, SCK - RD11)
+#define RD0_LOW		// SDO output (to DataFlash SI input)
+#define RP11_OUT	RP_SDO1 // Map SDO1 to RD0/RP11 pin
+#define RD2_IN		// SDI input (from DataFlash SO output)
+#define RP_SDI1		RP23_IN // Map SDI1 to RD2/RP23 pin
+#define RD11_HIGH	// SCK output (to DataFlash SCK input)
+#define RP12_OUT	RP_SCK1OUT // Map SCK1 to RD11/RP12 pin
 /*
 * Definitions of Config Words
 */
