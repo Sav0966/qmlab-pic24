@@ -14,9 +14,6 @@
 
 extern void uart_test(void);
 
-/* 20 џэт 1997 15:00:00 */
-#define BIOS_START_TIME	853801200L
-
 /* Reinit all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)
 
