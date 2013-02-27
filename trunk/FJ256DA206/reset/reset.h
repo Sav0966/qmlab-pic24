@@ -7,7 +7,7 @@
 #include <p24Fxxxx.h> /* PIC24F only */
 
 #if (defined(__PIC24FK__)) /* PIC24FJ only */
-#error -- For PIC24FJ256DA210 Family only --
+#error "-- For PIC24FJ256DA210 Family only --"
 #endif
 /*
 * PIC24FJ256DA210 Family Silicon Errata (DS80505B)
