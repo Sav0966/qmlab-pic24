@@ -9,7 +9,9 @@
 // Check 'Enable UART1 IO', 'Rewind input', Output 'Window'
 #define UART_TXBUF_SIZE	32 // Size of Transmitter queue
 #define UART_RXBUF_SIZE	16 // Size of Receiver queue
+
 //#include "uart.c"			Include it at the bottom
+
 DECL_UART_UI(UART_USED);
 
 static int stage = 0; // Tesg Flag
@@ -115,7 +117,8 @@ void uart_test(void)
 	ASSERT(0,"?");
 } 
 
-// #include "uart.c"	Include it here for valid debbuging
+// #include "uart.c"
+
 #ifdef UART_USED // Only for used UART
 #include <buffer.h>
 #include <_tools.h>
