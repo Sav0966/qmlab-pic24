@@ -2,17 +2,16 @@
 #include <libpic30.h>
 #include <config.h>
 #include <mcu_id.h>
-#include <timers.h>
 #include <clock.h>
 #include <reset.h>
-#include <pins.h>
 #include <refo.h>
-#include <uart.h>
 #include <osc.h>
 
 #include "main.h"
 
 extern void uart_test(void);
+
+#define BIOS_START_TIME	853801200L	// 20 џэт 1997 15:00:00
 
 /* Reinit all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)
