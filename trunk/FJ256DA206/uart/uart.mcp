@@ -55,6 +55,7 @@ file_027=.
 file_028=.
 file_029=.
 file_030=.
+file_031=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -87,6 +88,7 @@ file_027=no
 file_028=no
 file_029=no
 file_030=no
+file_031=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -115,10 +117,11 @@ file_023=no
 file_024=no
 file_025=no
 file_026=no
-file_027=yes
+file_027=no
 file_028=yes
 file_029=yes
 file_030=yes
+file_031=yes
 [FILE_INFO]
 file_000=config.c
 file_001=main.c
@@ -147,10 +150,11 @@ file_023=C:\MPLAB Projects\FJ256DA206\pins\pins.h
 file_024=C:\MPLab Projects\FJ256DA206\pm\_tools.h
 file_025=buffer.h
 file_026=uartui.h
-file_027=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
-file_028=C:\MPLAB Projects\FJ256DA206\libpic30.h
-file_029=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
-file_030=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
+file_027=C:\MPLab Projects\FJ256DA206\incl\pinscfg.h
+file_028=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
+file_029=C:\MPLAB Projects\FJ256DA206\libpic30.h
+file_030=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
+file_031=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
