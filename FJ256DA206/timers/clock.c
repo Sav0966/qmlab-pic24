@@ -15,7 +15,7 @@
 (FCY /* *(CORR_TIM/16) */ - CORR_CLK * PR1_PERT(CLK_TIM)))
 
 #ifndef SYSCLK_IPL
- #error SYSCLK_IPL is not defined in "config.h"
+#error "SYSCLK_IPL is not defined in config.h"
 #endif
 
 static long sys_time; // System time and

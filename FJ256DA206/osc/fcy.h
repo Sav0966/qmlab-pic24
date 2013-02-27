@@ -7,7 +7,7 @@
 #include <p24Fxxxx.h> /* PIC24F only */
 
 #ifndef __OSC__
- #error Define __OSC__ simbol first
+ #error "Define __OSC__ simbol first"
 #endif /*__OSC__*/
 
 #include <oscdef.h>
@@ -29,7 +29,7 @@
 #elif (__OSC__ == FRCDIV)
  #define FCY  FCY_FRCDIV
 #else
- #error Invalid value of __OSC__
+ #error "Invalid value of __OSC__"
 #endif
 
 #define FCY2	(FCY/2)
