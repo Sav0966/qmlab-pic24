@@ -56,7 +56,6 @@ file_028=.
 file_029=.
 file_030=.
 file_031=.
-file_032=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -90,7 +89,6 @@ file_028=no
 file_029=no
 file_030=no
 file_031=no
-file_032=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -120,11 +118,10 @@ file_024=no
 file_025=no
 file_026=no
 file_027=no
-file_028=no
+file_028=yes
 file_029=yes
 file_030=yes
 file_031=yes
-file_032=yes
 [FILE_INFO]
 file_000=config.c
 file_001=main.c
@@ -154,18 +151,17 @@ file_024=uartui.h
 file_025=C:\MPLab Projects\FJ256DA206\incl\pinscfg.h
 file_026=C:\MPLab Projects\FJ256DA206\incl\_tools.h
 file_027=C:\MPLab Projects\FJ256DA206\incl\fosc.h
-file_028=..\..\..\program files\microchip\mplab c30\include\assert.h
-file_029=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
-file_030=C:\MPLAB Projects\FJ256DA206\libpic30.h
-file_031=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
-file_032=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
+file_028=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.gld
+file_029=C:\MPLAB Projects\FJ256DA206\libpic30.h
+file_030=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.h
+file_031=C:\MPLAB Projects\FJ256DA206\p24FJ256DA206.inc
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
 [TOOL_SETTINGS]
 TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}=-g
 TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -Wall
-TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}=-Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
+TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}=--heap=1024 -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
 TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}=
 [INSTRUMENTED_TRACE]
 enable=0
