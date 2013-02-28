@@ -4,9 +4,9 @@
 #include <uartui.h>
 #include <clock.h>
 
-#define UART_USED		1	// Checked UART module
-#define UART_TXBUF_SIZE	32	// Size of Transmitter queue
+#define UART_USED		2	// Checked UART module
 #define UART_RXBUF_SIZE	16	// Size of Receiver queue
+#define UART_TXBUF_SIZE	32	// Size of Transmitter queue
 //#include "uartui.c" Insert code directly at the bottom
 
 DECL_UART_UI(UART_USED);
