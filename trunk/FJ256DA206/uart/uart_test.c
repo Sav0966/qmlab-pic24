@@ -1,15 +1,12 @@
 #include <p24Fxxxx.h>
-#include <config.h>
 #include <_tools.h>
+#include <config.h>
 #include <uartui.h>
 #include <clock.h>
 
-#define UART_USED	2			// Checked URAT module (1-4)
-// You must enable UART1 IO in SIM Simulator Settings Dialog
-// Check 'Enable UART1 IO', 'Rewind input', Output 'Window'
-#define UART_TXBUF_SIZE	32 // Size of Transmitter queue
-#define UART_RXBUF_SIZE	16 // Size of Receiver queue
-
+#define UART_USED		2	// Checked UART module (1-4)
+#define UART_TXBUF_SIZE	32	// Size of Transmitter queue
+#define UART_RXBUF_SIZE	16	// Size of Receiver queue
 //#include "uart.c"			Include it at the bottom
 
 DECL_UART_UI(UART_USED);
@@ -18,7 +15,7 @@ static int stage = 0; // Tesg Flag
 
 #define SMALL_STRING "\nThere is a small string"
 
-#if (UART_USED != 1) // No ~SHDN & ~INVALID pins
+#if (UART_USED != 2) // No ~SHDN & ~INVALID pins
  #undef UART_SHDN
  #undef UART_WAKEUP
  #undef UART_IS_VALID
@@ -28,8 +25,8 @@ static int stage = 0; // Tesg Flag
 #endif // No ~SHDN & ~INVALID pins
 
 #ifdef __MPLAB_SIM // For MPLAB SIM
- #undef  U1_INVALID
- #define U1_INVALID		1 // UART1 ~INVALID input pin = 1
+ #undef  U2_INVALID
+ #define U2_INVALID		1 // UART2 ~INVALID input pin = 1
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
 #endif
 
@@ -79,6 +76,7 @@ void uart_test(void)
 
 	if (!uart_is_error(UART_USED)) // Once after reset
 	{
+		TRACE("Transmission of Break Characters\n");
 		// Transmission of Break Characters:
 		while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
 		// The user should wait for the transmitter to be Idle (TRMT = 1)
@@ -114,7 +112,7 @@ void uart_test(void)
 	// Wait end of trnsmittion from the TX queue
 	if ((stage == 1) && uart_tx_full(UART_USED)) return;
 
-	ASSERT(0,"?");
+	ASSERT(0); // ?
 } 
 
 // #include "uart.c"
@@ -141,7 +139,7 @@ static char QUEUE(TXB, UART_TXBUF_SIZE); // Transmitter queue
 #define UART_ERR_NUM(n)		_UART_ERR_NUM(n)
 static int UART_ERR_NUM(UART_USED); // = 0
 
-IMPL_UBUF_COUNT(URAT_USED, TX) { return QUE_SIZE(TXB); }
+IMPL_UBUF_COUNT(UART_USED, TX) { return QUE_SIZE(TXB); }
 IMPL_UBUF_COUNT(UART_USED, RX) { return QUE_SIZE(RXB); }
 IMPL_UBUF_COUNT(UART_USED, ER) { return UART_ERR_NUM(UART_USED); }
 
@@ -150,8 +148,8 @@ IMPL_UBUF_FULL(UART_USED, RX)  { return QUE_FULL(RXB); }
 
 IMPL_UBUF_PURGE(UART_USED, RX)
 { // Reset RX queue and RX FIFO
-	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
-	ASSERT(UART_IS_ENABLE_RXINT(UART_USED), "UART must be init");
+	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
+	ASSERT(UART_IS_ENABLE_RXINT(UART_USED)); // UART must be init
 
 	UART_DISABLE_RXINT(UART_USED); // Lock receiver thread and clear all
 	QUE_RESET(RXB); while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
@@ -161,9 +159,9 @@ IMPL_UBUF_PURGE(UART_USED, RX)
 
 IMPL_UBUF_PURGE(UART_USED, TX)
 { // Reset TX queue and TX FIFO
-	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
-	ASSERT(UART_IS_ENABLE_TXINT(UART_USED), "UART must be init");
-	ASSERT(UART_IS_ENABLE_TX(UART_USED), "UART must be init");
+	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
+	ASSERT(UART_IS_ENABLE_TXINT(UART_USED)); // UART must be init
+	ASSERT(UART_IS_ENABLE_TX(UART_USED));   // UART must be init
 
 	UART_DISABLE_TXINT(UART_USED); // Lock transmitter thread and clear all
 	QUE_RESET(TXB); UART_DISABLE_TX(UART_USED); UART_ENABLE_TX(UART_USED);
@@ -173,7 +171,7 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 IMPL_UART_WRITE(UART_USED)
 {
 	int n = 0;
-	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
+	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
 
 	while (n != len) {
 		if (QUE_FULL(TXB)) break;
@@ -272,8 +270,12 @@ void UART_INTFUNC(UART_USED, Err)(void)
 		}
 	} //  while (UART_IS_ERR(UART_USED))
 
-	// There is any bytes to read - set interrupt flag only
-	if (UART_CAN_READ(UART_USED)) UART_SET_RXFLAG(UART_USED);
+	if (UART_CAN_READ(UART_USED)) // There is any bytes to read
+		 UART_SET_RXFLAG(UART_USED); // Set interrupt flag only
 }
 
 #endif // UART_USED
+
+//#undef UART_USED
+//#define UART_USED	3
+//#include "uart.c"

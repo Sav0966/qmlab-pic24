@@ -24,8 +24,8 @@
 #endif
 
 #ifdef UART_USED // Only for used UART
-#include <buffer.h>
 #include <_tools.h>
+#include <buffer.h>
 #include <uartui.h>
 
 #ifndef UART_TXBUF_SIZE
@@ -45,7 +45,7 @@ static char QUEUE(TXB, UART_TXBUF_SIZE); // Transmitter queue
 #define UART_ERR_NUM(n)		_UART_ERR_NUM(n)
 static int UART_ERR_NUM(UART_USED); // = 0
 
-IMPL_UBUF_COUNT(URAT_USED, TX) { return QUE_SIZE(TXB); }
+IMPL_UBUF_COUNT(UART_USED, TX) { return QUE_SIZE(TXB); }
 IMPL_UBUF_COUNT(UART_USED, RX) { return QUE_SIZE(RXB); }
 IMPL_UBUF_COUNT(UART_USED, ER) { return UART_ERR_NUM(UART_USED); }
 
@@ -54,8 +54,8 @@ IMPL_UBUF_FULL(UART_USED, RX)  { return QUE_FULL(RXB); }
 
 IMPL_UBUF_PURGE(UART_USED, RX)
 { // Reset RX queue and RX FIFO
-	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
-	ASSERT(UART_IS_ENABLE_RXINT(UART_USED), "UART must be init");
+	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
+	ASSERT(UART_IS_ENABLE_RXINT(UART_USED)); // UART must be init
 
 	UART_DISABLE_RXINT(UART_USED); // Lock receiver thread and clear all
 	QUE_RESET(RXB); while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
@@ -65,9 +65,9 @@ IMPL_UBUF_PURGE(UART_USED, RX)
 
 IMPL_UBUF_PURGE(UART_USED, TX)
 { // Reset TX queue and TX FIFO
-	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
-	ASSERT(UART_IS_ENABLE_TXINT(UART_USED), "UART must be init");
-	ASSERT(UART_IS_ENABLE_TX(UART_USED), "UART must be init");
+	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
+	ASSERT(UART_IS_ENABLE_TXINT(UART_USED)); // UART must be init
+	ASSERT(UART_IS_ENABLE_TX(UART_USED));   // UART must be init
 
 	UART_DISABLE_TXINT(UART_USED); // Lock transmitter thread and clear all
 	QUE_RESET(TXB); UART_DISABLE_TX(UART_USED); UART_ENABLE_TX(UART_USED);
@@ -77,7 +77,7 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 IMPL_UART_WRITE(UART_USED)
 {
 	int n = 0;
-	ASSERT(SRbits.IPL == MAIN_IPL, "Access from main thread only");
+	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
 
 	while (n != len) {
 		if (QUE_FULL(TXB)) break;
@@ -176,8 +176,8 @@ void UART_INTFUNC(UART_USED, Err)(void)
 		}
 	} //  while (UART_IS_ERR(UART_USED))
 
-	// There is any bytes to read - set interrupt flag only
-	if (UART_CAN_READ(UART_USED)) UART_SET_RXFLAG(UART_USED);
+	if (UART_CAN_READ(UART_USED)) // There is any bytes to read
+		 UART_SET_RXFLAG(UART_USED); // Set interrupt flag only
 }
 
 #endif // UART_USED
