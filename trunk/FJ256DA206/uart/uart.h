@@ -4,13 +4,6 @@
 #ifndef _UART_INCL_
 #define _UART_INCL_
 /*
-* ~SHDN and ~INVALID lines of RS-232 Driver (if present)
-*/
-#define UART_IS_VALID(n)	!(U##n##_INVALID == 0)
-#define UART_IS_SHDN(n)		(U##n##_SHDN == 0)
-#define UART_WAKEUP(n)		U##n##_SHDN = 1
-#define UART_SHDN(n)		U##n##_SHDN = 0
-/*
 * UART Transmit and Receive Registers
 */
 #define UTXREG(n)	U##n##TXREG

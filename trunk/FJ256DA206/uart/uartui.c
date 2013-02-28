@@ -5,6 +5,11 @@
 #include <config.h>
 
 #ifdef UART_USED
+#ifdef	RXB
+ #undef	RXB
+ #undef	TXB
+#endif
+// Define Buffers IDs
  #if (UART_USED == 1)
   #define RXB		UBUF1_RX
   #define TXB		UBUF1_TX
@@ -17,8 +22,8 @@
  #elif (UART_USED == 4)
   #define RXB		UBUF4_RX
   #define TXB		UBUF4_TX
- #else	// UART_USED != 1-4
-  #undef UART_USED
+ #else	// UART_USED == 1-4
+  #undef UART_USED // Error
  #endif
 #else
 #endif

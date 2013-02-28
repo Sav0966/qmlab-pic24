@@ -4,29 +4,25 @@
 #include <uartui.h>
 #include <clock.h>
 
-#define UART_USED		2	// Checked UART module (1-4)
+#define UART_USED		1	// Checked UART module
 #define UART_TXBUF_SIZE	32	// Size of Transmitter queue
 #define UART_RXBUF_SIZE	16	// Size of Receiver queue
-//#include "uart.c"			Include it at the bottom
+//#include "uartui.c" Insert code directly at the bottom
 
 DECL_UART_UI(UART_USED);
 
-static int stage = 0; // Tesg Flag
+#if (UART_USED == 1)	// UART1 is used for tracing
+#undef ASSERT
+#undef TRACE
+#define ASSERT(f)
+#define TRACE(sz)
+#endif
+
+static int stage = 0; // Test Flag
 
 #define SMALL_STRING "\nThere is a small string"
 
-#if (UART_USED != 2) // No ~SHDN & ~INVALID pins
- #undef UART_SHDN
- #undef UART_WAKEUP
- #undef UART_IS_VALID
- #define UART_IS_VALID(n) 1
- #define UART_WAKEUP(n)
- #define UART_SHDN(n)
-#endif // No ~SHDN & ~INVALID pins
-
 #ifdef __MPLAB_SIM // For MPLAB SIM
- #undef  U2_INVALID
- #define U2_INVALID		1 // UART2 ~INVALID input pin = 1
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
 #endif
 
@@ -70,14 +66,14 @@ void uart_test(void)
 
 	UART_SET_LPBACK(UART_USED);
 
-#if (defined(__MPLAB_SIM) && (UART_USED > 2))
+#if (defined(__MPLAB_SIM) && (UART_USED > 2)) // UART3-4
 /* The next code checks compiller errors only */ return;
 #endif // SIM does not support UART3-4
 
 	if (!uart_is_error(UART_USED)) // Once after reset
 	{
 		TRACE("Transmission of Break Characters\n");
-		// Transmission of Break Characters:
+
 		while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
 		// The user should wait for the transmitter to be Idle (TRMT = 1)
 		// before setting the UTXBRK. The UTXBRK overrides any other
@@ -88,7 +84,7 @@ void uart_test(void)
 		UART_WRITE(UART_USED, -1); // Write dummy character (Send Break)
 		UART_WRITE(UART_USED, 0x55); // Write Synch character
 		// Don't clear UTXBRK bit manualy
-			
+
 		UART_WRITE(UART_USED, 0x3F); // Write separator - '?'
 		while (!UART_IS_TXEND(UART_USED)); // Wait (no OERR yet)
 		while (UART_CAN_WRITE(UART_USED)) // Overflow RX FIFO
@@ -116,10 +112,11 @@ void uart_test(void)
 } 
 
 // #include "uart.c"
+// Insert code directly for debbugin
 
 #ifdef UART_USED // Only for used UART
-#include <buffer.h>
 #include <_tools.h>
+#include <buffer.h>
 #include <uartui.h>
 
 #ifndef UART_TXBUF_SIZE
@@ -276,6 +273,12 @@ void UART_INTFUNC(UART_USED, Err)(void)
 
 #endif // UART_USED
 
-//#undef UART_USED
-//#define UART_USED	3
-//#include "uart.c"
+// The same for UART3-4
+
+#undef UART_USED
+#define UART_USED	3
+#include "uartui.c"
+
+#undef UART_USED
+#define UART_USED	4
+#include "uartui.c"
