@@ -4,7 +4,7 @@
 #include <uartui.h>
 #include <clock.h>
 
-#define UART_USED	1			// Checked URAT module (1-4)
+#define UART_USED	2			// Checked URAT module (1-4)
 // You must enable UART1 IO in SIM Simulator Settings Dialog
 // Check 'Enable UART1 IO', 'Rewind input', Output 'Window'
 #define UART_TXBUF_SIZE	32 // Size of Transmitter queue
