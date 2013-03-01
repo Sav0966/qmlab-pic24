@@ -18,9 +18,9 @@
 #error "SYSCLK_IPL is not defined in config.h"
 #endif
 
-static long sys_time; // System time and
-static int sys_pph; // its hundredth part
-static int _sys_clock; // System clock
+static volatile long sys_time; // System time and
+static volatile int sys_pph; // its hundredth part
+static volatile int _sys_clock; // System clock
 
 int sys_clock(void) { return(_sys_clock); }
 
