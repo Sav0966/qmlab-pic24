@@ -31,3 +31,4 @@ if exist *.plg del *.plg
 if exist *.bak del *.bak
 if exist *.dep del *.dep
 
+if exist source\tnkernel\_lib\*.o del source\tnkernel\_lib\*.o
