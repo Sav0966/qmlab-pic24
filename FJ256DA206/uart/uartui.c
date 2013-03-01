@@ -43,8 +43,9 @@
 #define UART_RXBUF_SIZE				32
 #endif
 
-static char QUEUE(RXB, UART_RXBUF_SIZE); // Receiver queue
-static char QUEUE(TXB, UART_TXBUF_SIZE); // Transmitter queue
+// Receiver and transmitterqueue queues
+static char QUEUE(RXB, UART_RXBUF_SIZE);
+static char QUEUE(TXB, UART_TXBUF_SIZE);
 
 #define _UART_ERR_NUM(n)	uart_##n##_RXERR_num
 #define UART_ERR_NUM(n)		_UART_ERR_NUM(n)
