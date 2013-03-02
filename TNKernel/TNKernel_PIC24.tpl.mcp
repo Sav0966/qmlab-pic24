@@ -171,6 +171,12 @@ file_143=.
 file_144=.
 file_145=.
 file_146=.
+file_147=.
+file_148=.
+file_149=.
+file_150=.
+file_151=.
+file_152=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -319,6 +325,12 @@ file_143=no
 file_144=no
 file_145=no
 file_146=no
+file_147=no
+file_148=no
+file_149=no
+file_150=no
+file_151=no
+file_152=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -467,6 +479,12 @@ file_143=no
 file_144=no
 file_145=no
 file_146=no
+file_147=no
+file_148=no
+file_149=no
+file_150=no
+file_151=no
+file_152=no
 [FILE_INFO]
 file_000=source\tnkernel\portable\mchp_c30_pic24\port.S
 file_001=source\tnkernel\core\common\cm_rtns.c
@@ -615,6 +633,12 @@ file_143=source\tnkernel\portable\mchp_c30_pic24\port_defs.h
 file_144=source\tnkernel\core\common\cm_extr.h
 file_145=source\tnkernel\core\mutex\mx_extr.h
 file_146=source\tnkernel\portable\port_extr.h
+file_147=source\tnkernel\core\event\ev_extr.h
+file_148=source\tnkernel\core\system\sy_extr.h
+file_149=source\tnkernel\core\mpool\mp_extr.h
+file_150=source\tnkernel\core\queue\dq_extr.h
+file_151=source\tnkernel\core\semph\sm_extr.h
+file_152=source\tnkernel\core\task\ts_extr.h
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=-omf=elf build-library
