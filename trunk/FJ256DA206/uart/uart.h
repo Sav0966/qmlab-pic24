@@ -146,7 +146,7 @@ USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
 #define UART_IS_FERR(n)	(USTAbits(n).FERR != 0)
 
 // Receiver Idle bit (read-only)
-#define UART_IS_RXIDLE(n)	(USTAbits(n).RIDLE !=0)
+#define UART_IS_RXIDLE(n)	(USTAbits(n).RIDLE != 0)
 
 // Send Sync Break on next transmission – Start bit, followed by twelve
 // '0' bits, followed by Stop bit; cleared by hardware upon completion

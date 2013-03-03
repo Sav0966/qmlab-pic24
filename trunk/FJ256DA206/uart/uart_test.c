@@ -114,6 +114,30 @@ void uart_test(void)
 // #include "uart.c"
 // Insert code directly for debbugin
 
+#ifdef UART_USED
+ #ifdef	RXB
+  #undef	RXB
+  #undef	TXB
+ #endif
+ // Define Buffers IDs
+ #if (UART_USED == 1)
+  #define RXB		UBUF1_RX
+  #define TXB		UBUF1_TX
+ #elif (UART_USED == 2)
+  #define RXB		UBUF2_RX
+  #define TXB		UBUF2_TX
+ #elif (UART_USED == 3)
+  #define RXB		UBUF3_RX
+  #define TXB		UBUF3_TX
+ #elif (UART_USED == 4)
+  #define RXB		UBUF4_RX
+  #define TXB		UBUF4_TX
+ #else	// UART_USED == 1-4
+  #undef UART_USED // Error
+ #endif
+#else
+#endif
+
 #ifdef UART_USED // Only for used UART
 #include <_tools.h>
 #include <buffer.h>
@@ -130,19 +154,19 @@ void uart_test(void)
 #endif
 
 // Receiver and transmitterqueue queues
-static char QUEUE(RXB, UART_RXBUF_SIZE);
-static char QUEUE(TXB, UART_TXBUF_SIZE);
+static char QUEBUF(RXB, UART_RXBUF_SIZE);
+static char QUEBUF(TXB, UART_TXBUF_SIZE);
 
 #define _UART_ERR_NUM(n)	uart_##n##_RXERR_num
-#define UART_ERR_NUM(n)		_UART_ERR_NUM(n)
-static int UART_ERR_NUM(UART_USED); // = 0
+#define UART_ERR_NUM(n)	_UART_ERR_NUM(n)
+static int UART_ERR_NUM(UART_USED) = 0;
 
-IMPL_UBUF_COUNT(UART_USED, TX) { return QUE_SIZE(TXB); }
-IMPL_UBUF_COUNT(UART_USED, RX) { return QUE_SIZE(RXB); }
+IMPL_UBUF_COUNT(UART_USED, TX) { return QUE_BUF_LEN(TXB); }
+IMPL_UBUF_COUNT(UART_USED, RX) { return QUE_BUF_LEN(RXB); }
 IMPL_UBUF_COUNT(UART_USED, ER) { return UART_ERR_NUM(UART_USED); }
 
-IMPL_UBUF_FULL(UART_USED, TX)  { return QUE_FULL(TXB); }
-IMPL_UBUF_FULL(UART_USED, RX)  { return QUE_FULL(RXB); }
+IMPL_UBUF_FULL(UART_USED, TX)  { return QUE_BUF_FULL(TXB); }
+IMPL_UBUF_FULL(UART_USED, RX)  { return QUE_BUF_FULL(RXB); }
 
 IMPL_UBUF_PURGE(UART_USED, RX)
 { // Reset RX queue and RX FIFO
@@ -150,7 +174,7 @@ IMPL_UBUF_PURGE(UART_USED, RX)
 	ASSERT(UART_IS_ENABLE_RXINT(UART_USED)); // UART must be init
 
 	UART_DISABLE_RXINT(UART_USED); // Lock receiver thread and clear all
-	QUE_RESET(RXB); while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
+	QUE_BUF_RESET(RXB); while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
 	UART_ERR_NUM(UART_USED) = 0; // Reset receiver error counter (no errors)
 	UART_ENABLE_RXINT(UART_USED); // Unlock receiver thread
 }
@@ -162,7 +186,7 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 	ASSERT(UART_IS_ENABLE_TX(UART_USED));   // UART must be init
 
 	UART_DISABLE_TXINT(UART_USED); // Lock transmitter thread and clear all
-	QUE_RESET(TXB); UART_DISABLE_TX(UART_USED); UART_ENABLE_TX(UART_USED);
+	QUE_BUF_RESET(TXB); UART_DISABLE_TX(UART_USED); UART_ENABLE_TX(UART_USED);
 	UART_ENABLE_TXINT(UART_USED); // Unlock receiver thread
 }
 
@@ -172,8 +196,8 @@ IMPL_UART_WRITE(UART_USED)
 	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
 
 	while (n != len) {
-		if (QUE_FULL(TXB)) break;
-		QUE_PUSH(TXB, *buf++); ++n;
+		if (QUE_BUF_FULL(TXB)) break;
+		QUE_BUF_PUSH(TXB, *buf++); ++n;
 	} // Write n chars in TX queue
 	UART_SET_TXFLAG(UART_USED);
 	return(n);
@@ -186,14 +210,14 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	if (QUE_SIZE(TXB) < 2) i = U_TXI_READY;
+	if (QUE_BUF_LEN(TXB) < 2) i = U_TXI_READY;
 	else i = U_TXI_EMPTY; // We'll fill FIFO
 	UART_SET_TXI(UART_USED, i);
 
-	while (!QUE_EMPTY(TXB)) {
+	while (!QUE_BUF_EMPTY(TXB)) {
 	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			i = QUE_POP(TXB);
+			i = QUE_BUF_POP(TXB);
 			UART_WRITE(UART_USED, i);
 		} else break; // FIFO is full
 	}
@@ -214,14 +238,14 @@ void UART_INTFUNC(UART_USED, RX)(void)
 
 	// No errors at the top of FIFO
 
-	if (QUE_FULL(RXB)) {
+	if (QUE_BUF_FULL(RXB)) {
 		// Receiver queue is full
 		// Can't reset it here (have not right)
 
 		// Calculate errors only
 		++UART_ERR_NUM(UART_USED);
 	} else {
-
+		QUE_BUF_PUSH(RXB, 
 	}
 }
 
