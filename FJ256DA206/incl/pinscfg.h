@@ -14,7 +14,7 @@
 #define RB9_IN		// RxD input (From RS-232 driver Rout pin)
 #define RP_U2RX		RP9_IN // Map UART1 TxD input to RB9/RP9 pin
 #define RB10_IN		// ~INVALID input signal from RS-232 driver
-#define U2_INVALID	_RB10 // C definitions of ~INVALID signal
+#define U2_VALID	_RB10 // C definitions of ~INVALID signal
 #define RB11_LOW	// ~SHDN output signal to RS-232 driver
 #define U2_SHDN		_LATB11 // C definitions of ~SHDN signal
 
