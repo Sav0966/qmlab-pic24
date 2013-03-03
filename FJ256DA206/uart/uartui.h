@@ -83,17 +83,6 @@ DECL_UART_READ(n)
 #define U4_VALID	1
 #endif
 
-#ifdef __MPLAB_SIM		// For MPLAB SIM UARTs are valid
- #undef  U1_VALID
- #undef  U2_VALID
- #undef  U3_VALID
- #undef  U4_VALID
- #define U1_VALID		1 // UART1 ~INVALID input pin = 1
- #define U2_VALID		1 // UART2 ~INVALID input pin = 1
- #define U3_VALID		1 // UART3 ~INVALID input pin = 1
- #define U4_VALID		1 // UART4 ~INVALID input pin = 1
-#endif //__MPLAB_SIM
-
 #ifndef U1_SHDN
 #define U1_SHDN		U1STAbits.RIDLE // For dummy write
 #endif
@@ -111,6 +100,20 @@ DECL_UART_READ(n)
 #define UART_IS_SHDN(n)		(U##n##_SHDN == 0)
 #define UART_WAKEUP(n)		U##n##_SHDN = 1
 #define UART_SHDN(n)		U##n##_SHDN = 0
+
+#ifdef __MPLAB_SIM		// For MPLAB SIM UARTs are valid
+ #undef  U1_VALID
+ #undef  U2_VALID
+ #undef  U3_VALID
+ #undef  U4_VALID
+ #define U1_VALID		1 // UART1 ~INVALID input pin = 1
+ #define U2_VALID		1 // UART2 ~INVALID input pin = 1
+ #define U3_VALID		1 // UART3 ~INVALID input pin = 1
+ #define U4_VALID		1 // UART4 ~INVALID input pin = 1
+
+ #undef  UART_IS_SHDN
+ #define UART_IS_SHDN(n)	0 // UARTs are turned on
+#endif //__MPLAB_SIM
 /*
 * UART Initialization
 *
