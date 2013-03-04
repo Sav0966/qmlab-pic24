@@ -30,6 +30,13 @@ __attribute__((__interrupt__, auto_psv)) _U##n##isr##Interrupt
 /*
 *	Templates of writing and reading functions
 */
+#define _UART_GETC(n)		uart_##n##_getc
+#define _UART_PUTC(n)		uart_##n##_putc
+#define IMPL_UART_GETC(n)	int _UART_GETC(n)(void)
+#define IMPL_UART_PUTC(n)	int _UART_PUTC(n)(int c)
+#define DECL_UART_GETC(n)	extern IMPL_UART_GETC(n)
+#define DECL_UART_PUTC(n)	extern IMPL_UART_PUTC(n)
+
 #define _UART_WRITE(n)		uart_##n##_write
 #define _UART_READ(n)		uart_##n##_read
 #define IMPL_UART_WRITE(n)	int _UART_WRITE(n)(const char* buf, int len)
@@ -40,15 +47,10 @@ __attribute__((__interrupt__, auto_psv)) _U##n##isr##Interrupt
 *	Template of user interface declaration
 */
 #define DECL_UART_UI(n)\
-DECL_UBUF_COUNT(n, TX);\
-DECL_UBUF_COUNT(n, RX);\
-DECL_UBUF_COUNT(n, ER);\
-DECL_UBUF_FULL(n, TX);\
-DECL_UBUF_FULL(n, RX);\
-DECL_UBUF_PURGE(n, TX);\
-DECL_UBUF_PURGE(n, RX);\
-DECL_UART_WRITE(n);\
-DECL_UART_READ(n)
+DECL_UBUF_COUNT(n, TX); DECL_UBUF_COUNT(n, RX); DECL_UBUF_COUNT(n, ER);\
+DECL_UBUF_FULL(n, TX); DECL_UBUF_FULL(n, RX); DECL_UBUF_PURGE(n, TX);\
+DECL_UBUF_PURGE(n, RX); DECL_UART_WRITE(n); DECL_UART_READ(n);\
+DECL_UART_GETC(n); DECL_UART_PUTC(n)
 /*
 *	User interface functions (n - ordinal number of UART module)
 */
@@ -68,6 +70,8 @@ DECL_UART_READ(n)
 
 #define uart_write(n, buf, len)		_UART_WRITE(n)(buf, len)
 #define uart_read(n, buf, len)		_UART_READ(n)(buf, len)
+#define uart_putc(c, n)				_UART_PUTC(n)(c)
+#define uart_getc(n)				_UART_GETC(n)()
 /*
 * ~SHDN and ~INVALID lines of RS-232 Driver (if present)
 */
