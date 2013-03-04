@@ -82,15 +82,27 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 
 IMPL_UART_WRITE(UART_USED)
 {
-	int n = 0;
-	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
+	int n;
+	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	while (n != len) {
+	// Access from main thread only
+	for (n = 0; n != len; n++) {
 		if (QUE_BUF_FULL(TXB)) break;
-		QUE_BUF_PUSH(TXB, *buf++); ++n;
+		QUE_BUF_PUSH(TXB, *buf++);
 	} // Write n chars in TX queue
 	UART_SET_TXFLAG(UART_USED);
 	return(n);
+}
+
+IMPL_UART_GETC(UART_USED)
+{
+	int c;
+	ASSERT(SRbits.IPL == MAIN_IPL);
+
+	// Access from main thread only
+	if (QUE_BUF_EMPTY(RXB)) c = EOF;
+	else { c = QUE_BUF_POP(RXB); }
+	return(c);
 }
 
 // Transmitter Interrupt Service Routine
@@ -100,8 +112,12 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	if (QUE_BUF_LEN(TXB) < 2) i = U_TXI_READY;
-	else i = U_TXI_EMPTY; // We'll fill FIFO
+	switch(QUE_BUF_LEN(TXB)) {
+		case 0: i = U_TXI_END; break;
+		case 1: i = U_TXI_READY; break;
+		default: i = U_TXI_EMPTY; // We'll fill FIFO
+	}
+
 	UART_SET_TXI(UART_USED, i);
 
 	while (!QUE_BUF_EMPTY(TXB)) {

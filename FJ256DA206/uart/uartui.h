@@ -119,6 +119,11 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
  #undef  _UART_IS_SHDN
  #define _UART_IS_SHDN(n)	0 // UARTs are turned on
 #endif //__MPLAB_SIM
+
+#define UART_IS_VALID(n)	_UART_IS_VALID(n)
+#define UART_IS_SHDN(n)		_UART_IS_SHDN(n)
+#define UART_WAKEUP(n)		_UART_WAKEUP(n)
+#define UART_SHDN(n)		_UART_SHDN(n)
 /*
 * UART Initialization
 *
@@ -164,13 +169,21 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 			if ((sta) & U_TXEN) UART_ENABLE_TX(n);\
 		}\
 \
-	} else { /* The RS-232 port isn't connected */\
-		_UART_SHDN(n); /* Shutdown RS-232 Driver */\
-		_UMD(n) = 1; /* Power off UART module */\
 	} /* UART_IS_VALID() */\
 }
 
 #define UART_IS_INIT(n) /* Powered & Enabled */\
 ((_UMD(n) == 0) && (UMODEbits(n).UARTEN != 0))
+
+#define UART_DONE(n)\
+	UART_DISABLE_RXINT(n); /* Disable interrupts */\
+	UART_DISABLE_TXINT(n); UART_DISABLE_ERINT(n);\
+	/* Clear all interrupt status flags (Rx, Tx and Error */\
+	UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n)
+
+#define UART_PWOFF(n)\
+	UART_DONE(n); /* Disable UART and interrupt */\
+	_UART_SHDN(n); /* Shutdown RS-232 Driver */\
+	_UMD(n) = 1 /* Power off UART module */
 
 #endif /*_UARTUI_INCL_*/
