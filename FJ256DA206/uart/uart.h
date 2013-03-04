@@ -132,7 +132,7 @@ USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
 #define U_PERR			0x0008
 #define U_FERR			0x0004
 #define U_OERR			0x0002
-#define UART_IS_ERR(n)	((USTA(n) & (U_PERR|U_FERR|U_OERR)) != 0)
+#define UART_IS_RXERR(n)	((USTA(n) & (U_PERR|U_FERR|U_OERR)) != 0)
 // Receive Buffer Overrun Error Status bit (clear/read-only). Must be
 // cleared by software. Clearing a previously set OERR bit (1 -> 0
 // transition) will reset the receiver buffer and the RSR to the

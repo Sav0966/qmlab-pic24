@@ -5,11 +5,12 @@
 #define _UARTUI_INCL_
 
 #include <uart.h>
+#include <pinscfg.h>
 /*
 *	Template of UART Interrupt Service Routines
 */
 #define _UART_INTFUNC(n, isr) /* isr - RX, TX and Err */\
-__attribute__((__interrupt__, no_auto_psv)) _U##n##isr##Interrupt
+__attribute__((__interrupt__, auto_psv)) _U##n##isr##Interrupt
 #define UART_INTFUNC(n, isr) _UART_INTFUNC(n, isr)
 /*
 *	Templates of buffer counter functions: int func(void)
@@ -49,7 +50,7 @@ DECL_UBUF_PURGE(n, RX);\
 DECL_UART_WRITE(n);\
 DECL_UART_READ(n)
 /*
-*	User interface functions (n - number of UART module)
+*	User interface functions (n - ordinal number of UART module)
 */
 #define uart_tx_count(n)	_UBUF_COUNT(n, TX)() // TX buffer count
 #define uart_rx_count(n)	_UBUF_COUNT(n, RX)() // RX buffer count
@@ -84,22 +85,22 @@ DECL_UART_READ(n)
 #endif
 
 #ifndef U1_SHDN
-#define U1_SHDN		U1STAbits.RIDLE // For dummy write
+#define U1_SHDN		U1STAbits.URXDA // For dummy write
 #endif
 #ifndef U2_SHDN
-#define U2_SHDN		U2STAbits.RIDLE
+#define U2_SHDN		U2STAbits.URXDA
 #endif
 #ifndef U3_SHDN
-#define U3_SHDN		U3STAbits.RIDLE
+#define U3_SHDN		U3STAbits.URXDA
 #endif
 #ifndef U4_SHDN
-#define U4_SHDN		U4STAbits.RIDLE
+#define U4_SHDN		U4STAbits.URXDA
 #endif
 
-#define UART_IS_VALID(n)	(U##n##_VALID != 0)
-#define UART_IS_SHDN(n)		(U##n##_SHDN == 0)
-#define UART_WAKEUP(n)		U##n##_SHDN = 1
-#define UART_SHDN(n)		U##n##_SHDN = 0
+#define _UART_IS_VALID(n)	(U##n##_VALID != 0)
+#define _UART_IS_SHDN(n)	(U##n##_SHDN == 0)
+#define _UART_WAKEUP(n)		U##n##_SHDN = 1
+#define _UART_SHDN(n)		U##n##_SHDN = 0
 
 #ifdef __MPLAB_SIM		// For MPLAB SIM UARTs are valid
  #undef  U1_VALID
@@ -111,8 +112,8 @@ DECL_UART_READ(n)
  #define U3_VALID		1 // UART3 ~INVALID input pin = 1
  #define U4_VALID		1 // UART4 ~INVALID input pin = 1
 
- #undef  UART_IS_SHDN
- #define UART_IS_SHDN(n)	0 // UARTs are turned on
+ #undef  _UART_IS_SHDN
+ #define _UART_IS_SHDN(n)	0 // UARTs are turned on
 #endif //__MPLAB_SIM
 /*
 * UART Initialization
@@ -123,13 +124,13 @@ DECL_UART_READ(n)
 * brg - BRG register value (use FCY2BRG(FCY2, baud_rate))
 * ipl - interrupt priority levels, if <= 0 - no unterrupt
 */
-#define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl, er_ipl) {\
+#define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl) {\
 	UART_DISABLE_RXINT(n); /* Disable UART interrupts */\
 	UART_DISABLE_TXINT(n); UART_DISABLE_ERINT(n);\
 \
-	if (UART_IS_VALID(n)) { /* Valid input levels */\
+	if (_UART_IS_VALID(n)) {/* Valid input levels */\
 		_UMD(n) = 0;	/* Power on UART module */\
-		UART_WAKEUP(n); /* Wake-up RS-232 Driver */\
+		_UART_WAKEUP(n); /* Wake-up RS-232 Driver */\
 \
 		/* Setup mode (UART disabled). Setup control */\
 		/* bits, clear FIFO buffers and receiver errors */\
@@ -140,17 +141,14 @@ DECL_UART_READ(n)
 \
 		if (rx_ipl > 0) {\
 			UART_SET_RX_IPL(n, rx_ipl); /* Receive IPL */\
+			UART_SET_ER_IPL(n, rx_ipl); /* Set the same */\
+			UART_ENABLE_ERINT(n); /* Enable interrupt */\
 			UART_ENABLE_RXINT(n); /* Enable interrupt */\
 		}\
 \
 		if (tx_ipl > 0) {\
 			UART_SET_TX_IPL(n, tx_ipl); /* Transmit IPL */\
 			UART_ENABLE_TXINT(n); /* Enable interrupt */\
-		}\
-\
-		if (er_ipl > 0) {\
-			UART_SET_ER_IPL(n, er_ipl); /* Error IPL */\
-			UART_ENABLE_ERINT(n); /* Enable interrupt */\
 		}\
 \
 		if ((mode) & U_EN) { /* If it is set in 'mode' */\
@@ -163,7 +161,7 @@ DECL_UART_READ(n)
 		}\
 \
 	} else { /* The RS-232 port isn't connected */\
-		UART_SHDN(n); /* Shutdown RS-232 Driver */\
+		_UART_SHDN(n); /* Shutdown RS-232 Driver */\
 		_UMD(n) = 1; /* Power off UART module */\
 	} /* UART_IS_VALID() */\
 }

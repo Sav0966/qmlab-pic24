@@ -113,7 +113,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	}
 
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
- if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
+ if (UART_IS_RXERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
 #endif // SIM doesn't check receiver errors, but set OERR
 }
 
@@ -123,19 +123,24 @@ void UART_INTFUNC(UART_USED, RX)(void)
 	// Clear Interrupt flag
 	UART_CLR_RXFLAG(UART_USED);
 
-	if (UART_IS_ERR(UART_USED)) { // It's not my job
+	if (UART_IS_RXERR(UART_USED)) { // It's not my job
 				UART_SET_ERFLAG(UART_USED); return; }
 
 	// No errors at the top of FIFO
 
-	if (QUE_BUF_FULL(RXB)) {
-		// Receiver queue is full
-		// Can't reset it here (have not right)
+	while (UART_CAN_READ(UART_USED)) {
+	 // Read all bytes from FIFO
+		if (!QUE_BUF_FULL(RXB)) {
+			// and write readed bytes into RX buffer
+			QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+		} else {
+			// Receiver queue is full
 
-		// Calculate errors only
-		++UART_ERR_NUM(UART_USED);
-	} else {
+			// Ignore received character
+			// and leave it into RX FIFO
 
+			break; // Calculate  errors in OERR handler
+		}
 	}
 }
 
@@ -145,13 +150,18 @@ void UART_INTFUNC(UART_USED, Err)(void)
 	// Clear Interrupt flag
 	UART_CLR_ERFLAG(UART_USED);
 
-	while (UART_IS_ERR(UART_USED)) {
+	while (UART_IS_RXERR(UART_USED)) {
 		if (UART_IS_OERR(UART_USED)) {
 			// Rx FIFO Buffer overrun error:
-			__asm__("nop"); // TODO: You can read
-			__asm__("nop"); // and store FIFO before
-			__asm__("nop"); // clear buffer and OERR
-			UART_CLR_OERR(UART_USED);  // Clear flag
+			while (!QUE_BUF_FULL(RXB)) { // Try to store
+				if (UART_CAN_READ(UART_USED)) { // RX FIFO
+					QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+				} else break;
+			}
+
+			// Clear FIFO and OERR
+			UART_CLR_OERR(UART_USED);
+
 			// No errors at this point (FIFO is empty)
 
 			// Calculate errors
@@ -161,7 +171,7 @@ void UART_INTFUNC(UART_USED, Err)(void)
 				// Frame error at the top of FIFO:
 				// Read Data and check Break codition
 				if (0 == UART_READ9(UART_USED)) {
-					// Break character is received
+					// Break character is received:
 					__asm__("nop"); // TODO: AutoBaud
 					__asm__("nop"); // Mode can be started
 					__asm__("nop"); // in this section
