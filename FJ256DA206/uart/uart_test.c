@@ -21,8 +21,9 @@ DECL_UART_UI(UART_USED);
 
 #define SMALL_STRING "Small string\n"
 
-static char rxbuf[64]; // Read buffer
+static int buf[64]; // Read buffer
 static int stage = 0; // Test stage
+static int _ch, _cnt; // Temp vars
 
 #ifdef __MPLAB_SIM // For MPLAB SIM
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
@@ -53,7 +54,7 @@ int uart_init(void)
 #define uart_is_init() UART_IS_INIT(UART_USED)
 
 void uart_test(void)
-{ // Called from Main Loop once per 10 ms
+{ // Called from Main Loop more often than once per 10 ms
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
  if (UART_IS_INIT(UART_USED)) // Check OERR and call IFR
   if (UART_IS_RXERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
@@ -81,7 +82,7 @@ void uart_test(void)
 
 	switch(stage) {
 		case 0:
-			TRACE("Transmission of Break Characters\n");
+			TRACE("Transmission of BREAK sequence\n");
 
 			while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
 			// The user should wait for the transmitter to be Idle (TRMT = 1)
@@ -94,13 +95,28 @@ void uart_test(void)
 			UART_WRITE(UART_USED, 0x55); // Write Synch character
 			// Don't clear UTXBRK bit manualy
 
-			++stage; break; // Next test
+			stage = 1; break; // Next test
 
 		case 1:
+			if (!UART_IS_TXEND(UART_USED)) break; // Wait the sequence ends
 			if (!UART_IS_RXIDLE(UART_USED)) break; // Wait for RX to be Idle
-			TRACE1("=> Received %i characters: ", uart_rx_count(UART_USED));
-			
-			++stage; break; // Next test
+
+			_cnt = uart_rx_count(UART_USED); // Check number of received
+			TRACE1("=> Received %i characters:", _cnt);   // characters
+			while (uart_rx_count(UART_USED)) {
+				if ((_ch = uart_getc(UART_USED)) == EOF) break;
+				TRACE1(" %2.2X", _ch); // Dump receiver buffer
+			} TRACE("\n");
+
+#ifndef __MPLAB_SIM
+			ASSERT(_cnt == 1);
+			ASSERT(_ch = 0x55); // Only one byte 0x55 is received
+			ASSERT(uart_er_count(UART_USED) == 1); // OERR on BREAK
+#endif
+			uart_rx_purge(UART_USED); // Clear RX buffer errors
+
+			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
+			stage = 2; break; // Next test
 
 		case 2: break;
 
@@ -108,18 +124,6 @@ void uart_test(void)
 	}
 
 	return; // Stop here
-
-	if (!uart_is_error(UART_USED)) // Once after reset
-	{
-
-
-		UART_WRITE(UART_USED, 0x3F); // Write separator - '?'
-		while (!UART_IS_TXEND(UART_USED)); // Wait (no OERR yet)
-		while (UART_CAN_WRITE(UART_USED)) // Overflow RX FIFO
-			UART_WRITE(UART_USED, 0x55);
-
-		return; // First time after reset
-	}
 
 	while (uart_er_count(UART_USED) <= 100) {
 		if ((sizeof(SMALL_STRING)-1) !=
@@ -130,11 +134,6 @@ void uart_test(void)
 		}
 		else return; // Overrun buffer later
 	}
-
-	// Wait end of trnsmittion from the TX queue
-	if ((stage == 1) && uart_tx_full(UART_USED)) return;
-
-	ASSERT(0); // ?
 } 
 
 // #include "uart.c"
@@ -218,15 +217,27 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 
 IMPL_UART_WRITE(UART_USED)
 {
-	int n = 0;
-	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
+	int n;
+	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	while (n != len) {
+	// Access from main thread only
+	for (n = 0; n != len; n++) {
 		if (QUE_BUF_FULL(TXB)) break;
-		QUE_BUF_PUSH(TXB, *buf++); ++n;
+		QUE_BUF_PUSH(TXB, *buf++);
 	} // Write n chars in TX queue
 	UART_SET_TXFLAG(UART_USED);
 	return(n);
+}
+
+IMPL_UART_GETC(UART_USED)
+{
+	int c;
+	ASSERT(SRbits.IPL == MAIN_IPL);
+
+	// Access from main thread only
+	if (QUE_BUF_EMPTY(RXB)) c = EOF;
+	else { c = QUE_BUF_POP(RXB); }
+	return(c);
 }
 
 // Transmitter Interrupt Service Routine
