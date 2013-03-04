@@ -3,10 +3,11 @@
 #include <config.h>
 #include <uartui.h>
 #include <clock.h>
+#include <errno.h>
 
 #define UART_USED		2	// Checked UART module
 #define UART_RXBUF_SIZE	16	// Size of Receiver queue
-#define UART_TXBUF_SIZE	32	// Size of Transmitter queue
+#define UART_TXBUF_SIZE	16	// Size of Transmitter queue
 //#include "uartui.c" Insert code directly at the bottom
 
 DECL_UART_UI(UART_USED);
@@ -18,43 +19,51 @@ DECL_UART_UI(UART_USED);
 #define TRACE(sz)
 #endif
 
-static int stage = 0; // Test Flag
+#define SMALL_STRING "Small string\n"
 
-#define SMALL_STRING "\nThere is a small string"
+static char rxbuf[64]; // Read buffer
+static int stage = 0; // Test stage
 
 #ifdef __MPLAB_SIM // For MPLAB SIM
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
 #endif
 
-void uart_test(void)
-{ // Called from Main Loop once per 10 ms
-	int err;
-
-#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
- if (UART_IS_INIT(UART_USED)) // Check OERR and call IFR
-  if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
-#endif // SIM doesn't check receiver errors, but set OERR
-
-	if (sys_clock() & 0x3F) return;
-	// Once per 0.64 seccond test UART
-
-	if (!UART_IS_INIT(UART_USED))
-	{
-		UART_INIT(UART_USED,	// Try to initialize UART
+int uart_init(void)
+{
+	UART_INIT(UART_USED,	// Try to initialize UART
 
 #if (defined(__MPLAB_SIM) && (UART_USED == 2))
 /* =!= It works with UART2 too if set LPBACK here */	U_LPBACK |
 #endif // SIM supports UART1 only (SIM: UART1 IO must be enabled)
 
-			U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
+		U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
 
-			U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
-			1, 1, 1); // All interrupts are enabled
+		U_TXI_END | U_RXI_ANY | // Prevent dummy TX interrupt
+		U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
+		2, 2 // All interrupts are enabled
+	);
 
-		if (!UART_IS_INIT(UART_USED)) return; // ~INVALID = '0'
-
+	if (UART_IS_INIT(UART_USED)) {
 		uart_tx_purge(UART_USED); uart_rx_purge(UART_USED);
-	}
+	} else return(ENOENT); // Error: pin ~INVALID = '0'
+
+	return(0);
+}
+
+#define uart_is_init() UART_IS_INIT(UART_USED)
+
+void uart_test(void)
+{ // Called from Main Loop once per 10 ms
+#ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
+ if (UART_IS_INIT(UART_USED)) // Check OERR and call IFR
+  if (UART_IS_RXERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
+#endif // SIM doesn't check receiver errors, but set OERR
+
+	if (sys_clock() & 0x3F) return;
+	// Once per 0.64 seccond test UART
+
+	if (!uart_is_init())
+		if (uart_init()) return; // ~INVALID = '0'
 
 	// UART_IS_INIT() == TRUE
 
@@ -64,26 +73,45 @@ void uart_test(void)
 
 	// =!= So, TX interrupt may be called (if UART initialization done)
 
-	UART_SET_LPBACK(UART_USED);
+	UART_SET_LPBACK(UART_USED); // Loopback mode (TxD->RxD)
 
 #if (defined(__MPLAB_SIM) && (UART_USED > 2)) // UART3-4
 /* The next code checks compiller errors only */ return;
 #endif // SIM does not support UART3-4
 
+	switch(stage) {
+		case 0:
+			TRACE("Transmission of Break Characters\n");
+
+			while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
+			// The user should wait for the transmitter to be Idle (TRMT = 1)
+			// before setting the UTXBRK. The UTXBRK overrides any other
+			// transmitter activity. If the user clears the UTXBRK bit prior
+			// to sequence completion, unexpected module behavior can result.
+			// Sending a Break character does not generate a transmit interrupt
+			UART_SET_BREAK(UART_USED); // Set UTXBRK bit to send Break char
+			UART_WRITE(UART_USED, 0); // Write dummy character (Send Break)
+			UART_WRITE(UART_USED, 0x55); // Write Synch character
+			// Don't clear UTXBRK bit manualy
+
+			++stage; break; // Next test
+
+		case 1:
+			if (!UART_IS_RXIDLE(UART_USED)) break; // Wait for RX to be Idle
+			TRACE1("=> Received %i characters: ", uart_rx_count(UART_USED));
+			
+			++stage; break; // Next test
+
+		case 2: break;
+
+		default: ASSERT(!"Invalid stage of test");
+	}
+
+	return; // Stop here
+
 	if (!uart_is_error(UART_USED)) // Once after reset
 	{
-		TRACE("Transmission of Break Characters\n");
 
-		while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
-		// The user should wait for the transmitter to be Idle (TRMT = 1)
-		// before setting the UTXBRK. The UTXBRK overrides any other
-		// transmitter activity. If the user clears the UTXBRK bit prior
-		// to sequence completion, unexpected module behavior can result.
-		// Sending a Break character does not generate a transmit interrupt
-		UART_SET_BREAK(UART_USED); // Set UTXBRK bit to send Break char
-		UART_WRITE(UART_USED, -1); // Write dummy character (Send Break)
-		UART_WRITE(UART_USED, 0x55); // Write Synch character
-		// Don't clear UTXBRK bit manualy
 
 		UART_WRITE(UART_USED, 0x3F); // Write separator - '?'
 		while (!UART_IS_TXEND(UART_USED)); // Wait (no OERR yet)
@@ -93,13 +121,11 @@ void uart_test(void)
 		return; // First time after reset
 	}
 
-	err = uart_er_count(UART_USED);
-
-	while (err <= 100) {
+	while (uart_er_count(UART_USED) <= 100) {
 		if ((sizeof(SMALL_STRING)-1) !=
 			uart_write(UART_USED, SMALL_STRING, sizeof(SMALL_STRING)-1))
 		{
-				err = uart_er_count(UART_USED);
+				uart_er_count(UART_USED);
 				stage = 1; // TX queue is full
 		}
 		else return; // Overrun buffer later
@@ -112,7 +138,7 @@ void uart_test(void)
 } 
 
 // #include "uart.c"
-// Insert code directly for debbugin
+// Insert code directly for debugging
 
 #ifdef UART_USED
  #ifdef	RXB
@@ -210,8 +236,12 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	if (QUE_BUF_LEN(TXB) < 2) i = U_TXI_READY;
-	else i = U_TXI_EMPTY; // We'll fill FIFO
+	switch(QUE_BUF_LEN(TXB)) {
+		case 0: i = U_TXI_END; break;
+		case 1: i = U_TXI_READY; break;
+		default: i = U_TXI_EMPTY; // We'll fill FIFO
+	}
+
 	UART_SET_TXI(UART_USED, i);
 
 	while (!QUE_BUF_EMPTY(TXB)) {
@@ -223,7 +253,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	}
 
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
- if (UART_IS_ERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
+ if (UART_IS_RXERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
 #endif // SIM doesn't check receiver errors, but set OERR
 }
 
@@ -233,19 +263,24 @@ void UART_INTFUNC(UART_USED, RX)(void)
 	// Clear Interrupt flag
 	UART_CLR_RXFLAG(UART_USED);
 
-	if (UART_IS_ERR(UART_USED)) { // It's not my job
+	if (UART_IS_RXERR(UART_USED)) { // It's not my job
 				UART_SET_ERFLAG(UART_USED); return; }
 
 	// No errors at the top of FIFO
 
-	if (QUE_BUF_FULL(RXB)) {
-		// Receiver queue is full
-		// Can't reset it here (have not right)
+	while (UART_CAN_READ(UART_USED)) {
+	 // Read all bytes from FIFO
+		if (!QUE_BUF_FULL(RXB)) {
+			// and write readed bytes into RX buffer
+			QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+		} else {
+			// Receiver queue is full
 
-		// Calculate errors only
-		++UART_ERR_NUM(UART_USED);
-	} else {
-		QUE_BUF_PUSH(RXB, 
+			// Ignore received character
+			// and leave it into RX FIFO
+
+			break; // Calculate  errors in OERR handler
+		}
 	}
 }
 
@@ -255,13 +290,18 @@ void UART_INTFUNC(UART_USED, Err)(void)
 	// Clear Interrupt flag
 	UART_CLR_ERFLAG(UART_USED);
 
-	while (UART_IS_ERR(UART_USED)) {
+	while (UART_IS_RXERR(UART_USED)) {
 		if (UART_IS_OERR(UART_USED)) {
 			// Rx FIFO Buffer overrun error:
-			__asm__("nop"); // TODO: You can read
-			__asm__("nop"); // and store FIFO before
-			__asm__("nop"); // clear buffer and OERR
-			UART_CLR_OERR(UART_USED);  // Clear flag
+			while (!QUE_BUF_FULL(RXB)) { // Try to store
+				if (UART_CAN_READ(UART_USED)) { // RX FIFO
+					QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+				} else break;
+			}
+
+			// Clear FIFO and OERR
+			UART_CLR_OERR(UART_USED);
+
 			// No errors at this point (FIFO is empty)
 
 			// Calculate errors
@@ -271,7 +311,7 @@ void UART_INTFUNC(UART_USED, Err)(void)
 				// Frame error at the top of FIFO:
 				// Read Data and check Break codition
 				if (0 == UART_READ9(UART_USED)) {
-					// Break character is received
+					// Break character is received:
 					__asm__("nop"); // TODO: AutoBaud
 					__asm__("nop"); // Mode can be started
 					__asm__("nop"); // in this section
@@ -302,8 +342,14 @@ void UART_INTFUNC(UART_USED, Err)(void)
 
 #undef UART_USED
 #define UART_USED	3
+#undef UART_RXBUF_SIZE
+#undef UART_TXBUF_SIZE
+#define UART_RXBUF_SIZE	8
+#define UART_TXBUF_SIZE	8	// Use new sizes
 #include "uartui.c"
 
 #undef UART_USED
 #define UART_USED	4
+#undef UART_RXBUF_SIZE
+#undef UART_TXBUF_SIZE	// Use default sizes
 #include "uartui.c"

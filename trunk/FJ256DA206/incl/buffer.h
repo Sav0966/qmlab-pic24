@@ -44,7 +44,7 @@
 
 // Locked, any thread can change length of the buffer
 #define _QUE_BUF_DEC_LEN(id) QUE_BUF_LOCKED(--que_##id.len)
-#define _QUE_BUF_INC_LEN(id) QUE_BUF_LOCKED(--que_##id.len)
+#define _QUE_BUF_INC_LEN(id) QUE_BUF_LOCKED(++que_##id.len)
 
 // Interface
 
@@ -69,13 +69,13 @@
 #define _QUE_BUF_BACK(id)\
  /* Last and most recently added element at the back of the queue */\
  (que_##id.back != que_##id##_buf)? (*(que_##id.back-1)): (*(_QUE_BUF_END(id)-1))
-#define QUE_BUF_BACK(id)	_QUE_BUF_BACK(id)
+#define QUE_BUF_BACK(id)	((_QUE_BUF_TYPE(id)_QUE_BUF_BACK(id))
 
-// Reset queue to Empty state (called from dequeue thread)
+// Reset queue to Empty state (must be called from dequeue thread)
 #define QUE_BUF_RESET(id) while (!QUE_BUF_EMPTY(id)) QUE_BUF_POP(id)
 
 // Don't reset 'len' & 'back' directly if you don't sure with your right
-#define __QUE_BUF_INIT(id) que_##id.back = que_##id.front; que_##id.len = 0
-#define _QUE_BUF_INIT(id)	__QUE_BUF_INIT(id)
+#define _QUE_BUF_INIT(id) que_##id.back = que_##id.front; que_##id.len = 0
+#define QUE_BUF_INIT(id)  QUE_BUF_LOCKED(_QUE_BUF_INIT(id))
 
 #endif /*BUFFER_INCL_*/
