@@ -96,15 +96,14 @@ __attribute__((__interrupt__, no_auto_psv)) _T##n##Interrupt
 	TCON(timer) = mode; /* Setup Timer mode */\
 }
 
-#define TIMER_DONE(timer) {\
+#define TIMER_DONE(timer)\
 	TIMER_DISABLE_INT(timer);	/* Disable the interrupt */\
 	TIMER_OFF(timer);					/* Disable timer */\
-	TIMER_CLR_FLAG(timer);	/* Clear Timer interrupt flag */\
-}
+	TIMER_CLR_FLAG(timer)	/* Clear Timer interrupt flag */
 
-#define TIMER_PWOFF(timer) {\
+
+#define TIMER_PWOFF(timer)\
 	TIMER_DONE(timer);	/* Disable timer and interrupt */\
-	_T##timer##MD = 1; 	/* Disable module to energy saving */\
-}
+	_T##timer##MD = 1 	/* Disable module to energy saving */
 
 #endif /*_TIMERS_INCL_*/

@@ -21,13 +21,21 @@ DECL_UART_UI(UART_USED);
 
 #define SMALL_STRING "Small string\n"
 
-static int buf[64]; // Read buffer
+static int _buf[64]; // Read buffer
 static int stage = 0; // Test stage
 static int _ch, _cnt; // Temp vars
+
+#ifndef ARSIZE
+#define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
+#endif
 
 #ifdef __MPLAB_SIM // For MPLAB SIM
  #define U_LPBACK		0x0040 // Loopback Mode Select bit
 #endif
+
+#define uart_is_valid()	UART_IS_VALID(UART_USED)
+#define uart_is_init()	UART_IS_INIT(UART_USED)
+#define uart_done()		UART_PWOFF(UART_USED)
 
 int uart_init(void)
 {
@@ -51,8 +59,6 @@ int uart_init(void)
 	return(0);
 }
 
-#define uart_is_init() UART_IS_INIT(UART_USED)
-
 void uart_test(void)
 { // Called from Main Loop more often than once per 10 ms
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
@@ -63,8 +69,9 @@ void uart_test(void)
 	if (sys_clock() & 0x3F) return;
 	// Once per 0.64 seccond test UART
 
-	if (!uart_is_init())
-		if (uart_init()) return; // ~INVALID = '0'
+	if (!uart_is_init()) uart_init(); // Try init
+	if (!uart_is_valid()) { // Power off UART if the
+		uart_done(); return; } // pin ~INVALID = '0'
 
 	// UART_IS_INIT() == TRUE
 
@@ -108,11 +115,11 @@ void uart_test(void)
 				TRACE1(" %2.2X", _ch); // Dump receiver buffer
 			} TRACE("\n");
 
-#ifndef __MPLAB_SIM
-			ASSERT(_cnt == 1);
+#ifndef __MPLAB_SIM // Hardware test
+			ASSERT(_cnt == 1); // First char '0' whith OERR error
 			ASSERT(_ch = 0x55); // Only one byte 0x55 is received
-			ASSERT(uart_er_count(UART_USED) == 1); // OERR on BREAK
-#endif
+			ASSERT(uart_er_count(UART_USED) == 1); // OERR
+#endif // MPLAB SIM doesn't 
 			uart_rx_purge(UART_USED); // Clear RX buffer errors
 
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
