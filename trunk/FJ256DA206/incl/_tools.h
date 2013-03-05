@@ -36,14 +36,16 @@
 
 #ifndef __MPLAB_SIM // Stop at the failed line and no messages
 #define ASSERT(f)	if (!(f)) while(1) asm __volatile__("nop");
+#define TRACE2(sz, p1, p2)
 #define TRACE1(sz, p1)
 #define TRACE(sz)
-#endif
+#endif //__MPLAB_SIM
 
 #else //__DEBUG
 
-#define VERIFY(f)		((void)(f))
-#define DEBUG_ONLY(f)	((void)0)
+#define VERIFY(f)			((void)(f))
+#define DEBUG_ONLY(f)		((void)0)
+#define TRACE2(sz, p1, p2)
 #define TRACE1(sz, p1)
 #define TRACE(sz)
 #define ASSERT(f)
@@ -53,10 +55,13 @@
 // You must enable UART1 IO in SIM Simulator Settings Dialog
 // Check 'Enable UART1 IO', 'Rewind input', 'Output 'Window'
 #ifndef TRACE
-#define TRACE(sz)		DEBUG_ONLY(fprintf(stderr, "%s", sz))
+#define TRACE(sz)			DEBUG_ONLY(fprintf(stderr, "%s", sz))
 #endif
 #ifndef TRACE1
-#define TRACE1(sz, p1)	DEBUG_ONLY(fprintf(stderr, sz, p1))
+#define TRACE1(sz, p1)		DEBUG_ONLY(fprintf(stderr, sz, p1))
+#endif
+#ifndef TRACE2
+#define TRACE2(sz, p1, p2)	DEBUG_ONLY(fprintf(stderr, sz, p1, p2))
 #endif
 #ifndef ASSERT
 #define	ASSERT(f) DEBUG_ONLY(\

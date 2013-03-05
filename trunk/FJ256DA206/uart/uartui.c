@@ -4,12 +4,16 @@
 #include <p24Fxxxx.h>
 #include <config.h>
 
+#ifndef EOF
+#define EOF -1
+#endif
+
 #ifdef UART_USED
  #ifdef	RXB
   #undef	RXB
   #undef	TXB
  #endif
- // Define Buffers IDs
+ // Define buffer ID
  #if (UART_USED == 1)
   #define RXB		UBUF1_RX
   #define TXB		UBUF1_TX
