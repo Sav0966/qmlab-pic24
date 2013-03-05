@@ -3,27 +3,32 @@
 #include <config.h>
 #include <uartui.h>
 #include <clock.h>
+
+#ifndef EOF
+#define EOF -1
+#endif
 #include <errno.h>
+#ifndef ENODEV
+#define ENODEV	ENOENT
+#endif
 
 #define UART_USED		2	// Checked UART module
 #define UART_RXBUF_SIZE	16	// Size of Receiver queue
 #define UART_TXBUF_SIZE	16	// Size of Transmitter queue
 //#include "uartui.c" Insert code directly at the bottom
 
-DECL_UART_UI(UART_USED);
+DECL_UART_UI(UART_USED); // Declare UART UI
 
 #if (UART_USED == 1)	// UART1 is used for tracing
 #undef ASSERT
 #undef TRACE
+#undef TRACE1
 #define ASSERT(f)
 #define TRACE(sz)
+#define TRACE1(sz, p1)
 #endif
 
 #define SMALL_STRING "Small string\n"
-
-static int _buf[64]; // Read buffer
-static int stage = 0; // Test stage
-static int _ch, _cnt; // Temp vars
 
 #ifndef ARSIZE
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
@@ -36,6 +41,10 @@ static int _ch, _cnt; // Temp vars
 #define uart_is_valid()	UART_IS_VALID(UART_USED)
 #define uart_is_init()	UART_IS_INIT(UART_USED)
 #define uart_done()		UART_PWOFF(UART_USED)
+
+static int _buf[64];
+static int _ch, _cnt; // Temp vars
+static int stage = 0; // Test stage
 
 int uart_init(void)
 {
@@ -54,10 +63,23 @@ int uart_init(void)
 
 	if (UART_IS_INIT(UART_USED)) {
 		uart_tx_purge(UART_USED); uart_rx_purge(UART_USED);
-	} else return(ENOENT); // Error: pin ~INVALID = '0'
+	} else return(ENODEV); // Error: pin ~INVALID = '0'
 
 	return(0);
 }
+
+#ifdef __DEBUG
+void _dump_rx_buf(void)
+{
+	int i = 0;
+	while ((_buf[i] = uart_getc(UART_USED)) != EOF) {
+		TRACE1("%2.2X ", (unsigned char)_buf[i]);
+		if (++i == ARSIZE(_buf)) break;
+	} TRACE("\n");
+}
+#endif
+
+#define DUMP_RXB()	DEBUG_ONLY(_dump_rx_buf())
 
 void uart_test(void)
 { // Called from Main Loop more often than once per 10 ms
@@ -69,7 +91,7 @@ void uart_test(void)
 	if (sys_clock() & 0x3F) return;
 	// Once per 0.64 seccond test UART
 
-	if (!uart_is_init()) uart_init(); // Try init
+	if (!uart_is_init()) uart_init(); // Try to init
 	if (!uart_is_valid()) { // Power off UART if the
 		uart_done(); return; } // pin ~INVALID = '0'
 
@@ -88,8 +110,7 @@ void uart_test(void)
 #endif // SIM does not support UART3-4
 
 	switch(stage) {
-		case 0:
-			TRACE("Transmission of BREAK sequence\n");
+		case 0: TRACE("Transmission of BREAK sequence");
 
 			while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
 			// The user should wait for the transmitter to be Idle (TRMT = 1)
@@ -104,30 +125,50 @@ void uart_test(void)
 
 			stage = 1; break; // Next test
 
-		case 1:
-			if (!UART_IS_TXEND(UART_USED)) break; // Wait the sequence ends
+		case 1: // BREAK sequence receiving
+
+			if (!UART_IS_TXEND(UART_USED)) break; // While the sequence ends
 			if (!UART_IS_RXIDLE(UART_USED)) break; // Wait for RX to be Idle
 
-			_cnt = uart_rx_count(UART_USED); // Check number of received
-			TRACE1("=> Received %i characters:", _cnt);   // characters
-			while (uart_rx_count(UART_USED)) {
-				if ((_ch = uart_getc(UART_USED)) == EOF) break;
-				TRACE1(" %2.2X", _ch); // Dump receiver buffer
-			} TRACE("\n");
+			// Check number of received bytes and save first character
+			_cnt = uart_rx_count(UART_USED); _ch = uart_getc(UART_USED);
+			TRACE2(" => received %i bytes: %.2X ", _cnt, _ch);
+			DUMP_RXB(); // Dump receiver buffer
 
-#ifndef __MPLAB_SIM // Hardware test
-			ASSERT(_cnt == 1); // First char '0' whith OERR error
-			ASSERT(_ch = 0x55); // Only one byte 0x55 is received
-			ASSERT(uart_er_count(UART_USED) == 1); // OERR
-#endif // MPLAB SIM doesn't 
+#ifndef __MPLAB_SIM // Hardware test - first char is '0' whith FERR
+			ASSERT((_cnt==1)&(_ch==0x55)); // Only 0x55 is received
+			ASSERT(uart_er_count(UART_USED) == 1); // Frame error
+#endif// MPLAB SIM doesn't send valid BREAK sequence and set FERR
+
 			uart_rx_purge(UART_USED); // Clear RX buffer errors
 
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
 			stage = 2; break; // Next test
 
-		case 2: break;
+		case 2: TRACE("Overrun transmitter FIFO");
 
-		default: ASSERT(!"Invalid stage of test");
+			for(_ch = 'A'; UART_CAN_WRITE(UART_USED); _ch++)
+								UART_WRITE(UART_USED, _ch);
+			UART_WRITE(UART_USED, 0); // Overrun TX FIFO
+
+			while(!UART_IS_TXEND(UART_USED)); // Wait
+
+			ASSERT(_ch == 'F'); // Five bytes (TSR + FIFO)
+
+			// Check number of received bytes and save first character
+			_cnt = uart_rx_count(UART_USED); _ch = uart_getc(UART_USED);
+			TRACE2(" => received %i bytes: %.2X ", _cnt, _ch);
+			DUMP_RXB(); // Dump receiver buffer
+
+			ASSERT(_cnt == 5); // Five bytes are received
+			while (--_cnt != -1) ASSERT(_buf[_cnt] != 0);
+
+			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
+			stage = 3; break; // Next test
+
+		case 3:
+
+		default: ASSERT(!"Invalid stage value");
 	}
 
 	return; // Stop here
@@ -145,6 +186,10 @@ void uart_test(void)
 
 // #include "uart.c"
 // Insert code directly for debugging
+
+#ifndef EOF
+#define EOF -1
+#endif
 
 #ifdef UART_USED
  #ifdef	RXB
