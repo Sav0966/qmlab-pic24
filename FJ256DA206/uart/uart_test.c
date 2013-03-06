@@ -23,12 +23,12 @@ DECL_UART_UI(UART_USED); // Declare UART UI
 #undef ASSERT
 #undef TRACE
 #undef TRACE1
+#undef TRACE2
 #define ASSERT(f)
 #define TRACE(sz)
 #define TRACE1(sz, p1)
+#define TRACE2(sz, p1, p2)
 #endif
-
-#define SMALL_STRING "Small string\n"
 
 #ifndef ARSIZE
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
@@ -61,6 +61,7 @@ int uart_init(void)
 		2, 2 // All interrupts are enabled
 	);
 
+// !!! Ошибка - нужно чиcтить буфера в UART_INIT !!!
 	if (UART_IS_INIT(UART_USED)) {
 		uart_tx_purge(UART_USED); uart_rx_purge(UART_USED);
 	} else return(ENODEV); // Error: pin ~INVALID = '0'
@@ -77,8 +78,7 @@ void _dump_rx_buf(void)
 		if (++i == ARSIZE(_buf)) break;
 	} TRACE("\n");
 }
-#endif
-
+#endif //__DEBUG
 #define DUMP_RXB()	DEBUG_ONLY(_dump_rx_buf())
 
 void uart_test(void)
@@ -162,25 +162,17 @@ void uart_test(void)
 
 			ASSERT(_cnt == 5); // Five bytes are received
 			while (--_cnt != -1) ASSERT(_buf[_cnt] != 0);
+			ASSERT(_ch != 0); // Don't receive zero byte
 
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
 			stage = 3; break; // Next test
 
-		case 3:
+		case 3: TRACE("Overrun transmitter buffer\n");
+
+			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
+			stage = 4; break; // Next test
 
 		default: ASSERT(!"Invalid stage value");
-	}
-
-	return; // Stop here
-
-	while (uart_er_count(UART_USED) <= 100) {
-		if ((sizeof(SMALL_STRING)-1) !=
-			uart_write(UART_USED, SMALL_STRING, sizeof(SMALL_STRING)-1))
-		{
-				uart_er_count(UART_USED);
-				stage = 1; // TX queue is full
-		}
-		else return; // Overrun buffer later
 	}
 } 
 
@@ -310,7 +302,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	while (!QUE_BUF_EMPTY(TXB)) {
 	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			i = QUE_BUF_POP(TXB);
+			i = QUE_BUF_IPOP(TXB);
 			UART_WRITE(UART_USED, i);
 		} else break; // FIFO is full
 	}
@@ -335,7 +327,9 @@ void UART_INTFUNC(UART_USED, RX)(void)
 	 // Read all bytes from FIFO
 		if (!QUE_BUF_FULL(RXB)) {
 			// and write readed bytes into RX buffer
-			QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+			UART_DISABLE_ERINT(UART_USED); // Lock
+			QUE_BUF_IPUSH(RXB, UART_READ8(UART_USED));
+			UART_ENABLE_ERINT(UART_USED); // Unlock
 		} else {
 			// Receiver queue is full
 
@@ -358,7 +352,9 @@ void UART_INTFUNC(UART_USED, Err)(void)
 			// Rx FIFO Buffer overrun error:
 			while (!QUE_BUF_FULL(RXB)) { // Try to store
 				if (UART_CAN_READ(UART_USED)) { // RX FIFO
+					UART_DISABLE_RXINT(UART_USED); // Lock
 					QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+					UART_ENABLE_RXINT(UART_USED); // Unlock
 				} else break;
 			}
 
