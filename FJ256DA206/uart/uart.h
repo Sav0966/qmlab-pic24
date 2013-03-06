@@ -11,6 +11,7 @@
 #define UART_WRITE(n, ch)	UTXREG(n) = ch
 #define UART_READ8(n)		((char)URXREG(n))
 #define UART_READ9(n)		((int)URXREG(n))
+#define UART_FIFO_SIZE		4
 /*
 * UART Baud Rate Generator Prescaler Register
 */
