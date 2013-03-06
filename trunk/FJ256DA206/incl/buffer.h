@@ -61,10 +61,20 @@
 	QUE_BUF_FRONT(id); /* Removes an element from the front of the queue */\
 	if (!QUE_BUF_EMPTY(id)) {_QUE_BUF_DEC_LEN(id); _QUE_BUF_MOVEFD(id);}
 
+#define _QUE_BUF_IPOP(id)\
+	QUE_BUF_FRONT(id); /* Not blocked - can be called in ISR only */\
+	if (!QUE_BUF_EMPTY(id)) {--que_##id.len; _QUE_BUF_MOVEFD(id);}
+#define QUE_BUF_IPOP(id)	_QUE_BUF_IPOP(id)
+
 #define _QUE_BUF_PUSH(id, val)\
 	if (!QUE_BUF_FULL(id)) /* Adds an element to the back of the queue */\
 	{ *que_##id.back = val; _QUE_BUF_INC_LEN(id); _QUE_BUF_MOVEBK(id); }
 #define QUE_BUF_PUSH(id, val)	_QUE_BUF_PUSH(id, val)
+
+#define _QUE_BUF_IPUSH(id, val)\
+	if (!QUE_BUF_FULL(id)) /* Not blocked - can be called in ISR only */\
+	{ *que_##id.back = val; ++que_##id.len; _QUE_BUF_MOVEBK(id); }
+#define QUE_BUF_IPUSH(id, val)	_QUE_BUF_IPUSH(id, val)
 
 #define _QUE_BUF_BACK(id)\
  /* Last and most recently added element at the back of the queue */\
