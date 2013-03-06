@@ -101,9 +101,7 @@ void uart_test(void)
 	// after two cycles, if UTXISEL<1:0> = 00, since the transmit buffer
 	// is not yet full (can move transmit data to the UxTXREG register).
 
-	// =!= So, TX interrupt may be called (if UART initialization done)
-
-	UART_SET_LPBACK(UART_USED); // Loopback mode (TxD->RxD)
+	// =!= So, TX interrupt will be called if UART initialization done
 
 #if (defined(__MPLAB_SIM) && (UART_USED > 2)) // UART3-4
 /* The next code checks compiller errors only */ return;
@@ -111,6 +109,8 @@ void uart_test(void)
 
 	switch(stage) {
 		case 0: TRACE("Transmission of BREAK sequence");
+
+			UART_SET_LPBACK(UART_USED); // Loopback mode (TxD->RxD)
 
 			while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
 			// The user should wait for the transmitter to be Idle (TRMT = 1)
@@ -147,13 +147,13 @@ void uart_test(void)
 
 		case 2: TRACE("Overrun transmitter FIFO");
 
-			for(_ch = 'A'; UART_CAN_WRITE(UART_USED); _ch++)
+			for(_ch = 1; UART_CAN_WRITE(UART_USED); _ch++)
 								UART_WRITE(UART_USED, _ch);
 			UART_WRITE(UART_USED, 0); // Overrun TX FIFO
 
-			while(!UART_IS_TXEND(UART_USED)); // Wait
+			ASSERT(_ch == 6); // Five bytes (TSR + FIFO)
 
-			ASSERT(_ch == 'F'); // Five bytes (TSR + FIFO)
+			while(!UART_IS_TXEND(UART_USED)); // Wait
 
 			// Check number of received bytes and save first character
 			_cnt = uart_rx_count(UART_USED); _ch = uart_getc(UART_USED);
@@ -167,7 +167,12 @@ void uart_test(void)
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
 			stage = 3; break; // Next test
 
-		case 3: TRACE("Overrun transmitter buffer\n");
+		case 3: TRACE("Try to overrun transmitter buffer\n");
+			for(_ch = 1; ; _ch++) { // Fill TSR, FIFO and buffer
+					if (uart_putc(_ch, UART_USED) == EOF) break; 
+			}
+
+			while(!UART_IS_TXEND(UART_USED)); // Wait
 
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
 			stage = 4; break; // Next test
@@ -243,7 +248,7 @@ IMPL_UBUF_PURGE(UART_USED, RX)
 	ASSERT(UART_IS_ENABLE_RXINT(UART_USED)); // UART must be init
 
 	UART_DISABLE_RXINT(UART_USED); // Lock receiver thread and clear all
-	QUE_BUF_RESET(RXB); while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
+	while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED); QUE_BUF_RESET(RXB);
 	UART_ERR_NUM(UART_USED) = 0; // Reset receiver error counter (no errors)
 	UART_ENABLE_RXINT(UART_USED); // Unlock receiver thread
 }
@@ -262,9 +267,9 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 IMPL_UART_WRITE(UART_USED)
 {
 	int n;
+	// Access from main thread only
 	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	// Access from main thread only
 	for (n = 0; n != len; n++) {
 		if (QUE_BUF_FULL(TXB)) break;
 		QUE_BUF_PUSH(TXB, *buf++);
@@ -276,11 +281,24 @@ IMPL_UART_WRITE(UART_USED)
 IMPL_UART_GETC(UART_USED)
 {
 	int c;
+	// Access from main thread only
 	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	// Access from main thread only
 	if (QUE_BUF_EMPTY(RXB)) c = EOF;
 	else { c = QUE_BUF_POP(RXB); }
+	return(c);
+}
+
+IMPL_UART_PUTC(UART_USED)
+{
+	// Access from main thread only
+	ASSERT(SRbits.IPL == MAIN_IPL);
+
+	if (QUE_BUF_FULL(TXB)) c = EOF;
+	else {
+		QUE_BUF_PUSH(TXB, (char)c);
+		UART_SET_TXFLAG(UART_USED);
+	}
 	return(c);
 }
 
