@@ -106,7 +106,7 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 #define _UART_WAKEUP(n)		U##n##_SHDN = 1
 #define _UART_SHDN(n)		U##n##_SHDN = 0
 
-#ifdef __MPLAB_SIM		// For MPLAB SIM UARTs are valid
+#ifdef __MPLAB_SIM		// UARTs are valid for MPLAB SIM
  #undef  U1_VALID
  #undef  U2_VALID
  #undef  U3_VALID
