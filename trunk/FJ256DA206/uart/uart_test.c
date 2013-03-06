@@ -42,7 +42,7 @@ DECL_UART_UI(UART_USED); // Declare UART UI
 #define uart_is_init()	UART_IS_INIT(UART_USED)
 #define uart_done()		UART_PWOFF(UART_USED)
 
-static int _buf[64];
+static char _buf[64];
 static int _ch, _cnt; // Temp vars
 static int stage = 0; // Test stage
 
@@ -56,7 +56,7 @@ int uart_init(void)
 
 		U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
 
-		U_TXI_END | U_RXI_ANY | // Prevent dummy TX interrupt
+		U_TXI_READY | U_RXI_ANY | // Prevent dummy TX interrupt
 		U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
 		2, 2 // All interrupts are enabled
 	);
@@ -72,9 +72,9 @@ int uart_init(void)
 #ifdef __DEBUG
 void _dump_rx_buf(void)
 {
-	int i = 0;
-	while ((_buf[i] = uart_getc(UART_USED)) != EOF) {
-		TRACE1("%2.2X ", (unsigned char)_buf[i]);
+	int c, i = 0;
+	while ((c = uart_getc(UART_USED)) != EOF) {
+		TRACE1("%2.2X ", (unsigned)(_buf[i] = (char)c));
 		if (++i == ARSIZE(_buf)) break;
 	} TRACE("\n");
 }
@@ -108,10 +108,11 @@ void uart_test(void)
 #endif // SIM does not support UART3-4
 
 	switch(stage) {
-		case 0: TRACE("Transmission of BREAK sequence");
+		case 0: TRACE("Transmit BREAK sequence");
 
 			UART_SET_LPBACK(UART_USED); // Loopback mode (TxD->RxD)
 
+			// BREAK sequence:
 			while (!UART_IS_TXEND(UART_USED)); // Wait for TX to be Idle
 			// The user should wait for the transmitter to be Idle (TRMT = 1)
 			// before setting the UTXBRK. The UTXBRK overrides any other
@@ -132,7 +133,7 @@ void uart_test(void)
 
 			// Check number of received bytes and save first character
 			_cnt = uart_rx_count(UART_USED); _ch = uart_getc(UART_USED);
-			TRACE2(" => received %i bytes: %.2X ", _cnt, _ch);
+			TRACE2(" => receive %i bytes: %.2X ", _cnt, _ch);
 			DUMP_RXB(); // Dump receiver buffer
 
 #ifndef __MPLAB_SIM // Hardware test - first char is '0' whith FERR
@@ -143,41 +144,72 @@ void uart_test(void)
 			uart_rx_purge(UART_USED); // Clear RX buffer errors
 
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
-			stage = 2; break; // Next test
+			++stage; break; // Next test
 
 		case 2: TRACE("Overrun transmitter FIFO");
 
-			for(_ch = 1; UART_CAN_WRITE(UART_USED); _ch++)
+			for (_ch = 1; UART_CAN_WRITE(UART_USED); _ch++)
 								UART_WRITE(UART_USED, _ch);
 			UART_WRITE(UART_USED, 0); // Overrun TX FIFO
 
-			ASSERT(_ch == 6); // Five bytes (TSR + FIFO)
+			ASSERT(_ch == // Five bytes: TSR + FIFO
+						((1 + UART_FIFO_SIZE)+1));
 
-			while(!UART_IS_TXEND(UART_USED)); // Wait
+			while (!UART_IS_TXEND(UART_USED)); // Wait
 
 			// Check number of received bytes and save first character
 			_cnt = uart_rx_count(UART_USED); _ch = uart_getc(UART_USED);
-			TRACE2(" => received %i bytes: %.2X ", _cnt, _ch);
+			TRACE2(" => receive %i bytes: %.2X ", _cnt, _ch);
 			DUMP_RXB(); // Dump receiver buffer
 
-			ASSERT(_cnt == 5); // Five bytes are received
-			while (--_cnt != -1) ASSERT(_buf[_cnt] != 0);
+			// Only five bytes are received
+			ASSERT(_cnt == (1 + UART_FIFO_SIZE));
+			--_cnt; // First byte was readed into _ch
+			while (_cnt != 0) ASSERT(_buf[--_cnt] != 0);
 			ASSERT(_ch != 0); // Don't receive zero byte
 
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
-			stage = 3; break; // Next test
+			++stage; break; // Next test
 
-		case 3: TRACE("Try to overrun transmitter buffer\n");
-			for(_ch = 1; ; _ch++) { // Fill TSR, FIFO and buffer
+		case 3: TRACE("Try to overrun transmitter buffer");
+			
+			for (_ch = 'A'; ; _ch++) { // Fill TSR, FIFO, buffer
 					if (uart_putc(_ch, UART_USED) == EOF) break; 
-			}
+			} // Send string ABCDE...
 
-			while(!UART_IS_TXEND(UART_USED)); // Wait
+			ASSERT(_ch == // TSR + FIFO + TX buffer size
+				(1 + UART_FIFO_SIZE + UART_TXBUF_SIZE) + 'A');
+
+			while (uart_tx_full(UART_USED)); // Wait TXB is ready 
+			uart_putc(0, UART_USED); // Zero terminator of string
+
+			_cnt = 0; // Will be used as index of buffer
+
+			++stage; break; // Next test
+
+		case 4: // Receve transmitted string
+
+			// Read any bytes into buffer and move index
+			_cnt += uart_read(UART_USED, &_buf[_cnt], ARSIZE(_buf));
+			if (_cnt < (1 + UART_FIFO_SIZE + UART_TXBUF_SIZE) + 1)
+				break; // Not all bytes are received, read it later
+
+			ASSERT(_cnt = (1 + UART_FIFO_SIZE + UART_TXBUF_SIZE) + 1);
+			ASSERT(_buf[_cnt-1] == 0); // Full string was received
+			TRACE1(" => receive string: %s\n", _buf);
 
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
-			stage = 4; break; // Next test
+			++stage; break; // Next test
 
-		default: ASSERT(!"Invalid stage value");
+		case 5:	++stage; break; // Skip it
+		case 6: // RX buffer must be empty
+
+			ASSERT(uart_rx_empty(UART_USED));
+
+			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
+			++stage; break; // Next test
+
+		default: ASSERT(! "Invalid stage value");
 	}
 } 
 
@@ -264,20 +296,6 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 	UART_ENABLE_TXINT(UART_USED); // Unlock receiver thread
 }
 
-IMPL_UART_WRITE(UART_USED)
-{
-	int n;
-	// Access from main thread only
-	ASSERT(SRbits.IPL == MAIN_IPL);
-
-	for (n = 0; n != len; n++) {
-		if (QUE_BUF_FULL(TXB)) break;
-		QUE_BUF_PUSH(TXB, *buf++);
-	} // Write n chars in TX queue
-	UART_SET_TXFLAG(UART_USED);
-	return(n);
-}
-
 IMPL_UART_GETC(UART_USED)
 {
 	int c;
@@ -286,7 +304,19 @@ IMPL_UART_GETC(UART_USED)
 
 	if (QUE_BUF_EMPTY(RXB)) c = EOF;
 	else { c = QUE_BUF_POP(RXB); }
+
 	return(c);
+}
+
+IMPL_UART_READ(UART_USED)
+{
+	int c, n;
+	for (n = 0; n != len; n++) {
+		if ((c = uart_getc(UART_USED)) == EOF) break;
+		*buf++ = (unsigned char)c;
+	}
+
+	return(n);
 }
 
 IMPL_UART_PUTC(UART_USED)
@@ -299,7 +329,18 @@ IMPL_UART_PUTC(UART_USED)
 		QUE_BUF_PUSH(TXB, (char)c);
 		UART_SET_TXFLAG(UART_USED);
 	}
+
 	return(c);
+}
+
+IMPL_UART_WRITE(UART_USED)
+{
+	int n;
+	for (n = 0; n != len; n++) {
+		if (uart_putc(*buf++, UART_USED) == EOF) break;
+	}
+
+	return(n);
 }
 
 // Transmitter Interrupt Service Routine
@@ -309,7 +350,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	switch(QUE_BUF_LEN(TXB)) {
+	switch (QUE_BUF_LEN(TXB)) {
 		case 0: i = U_TXI_END; break;
 		case 1: i = U_TXI_READY; break;
 		default: i = U_TXI_EMPTY; // We'll fill FIFO
