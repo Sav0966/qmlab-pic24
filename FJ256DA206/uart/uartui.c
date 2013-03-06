@@ -13,7 +13,7 @@
   #undef	RXB
   #undef	TXB
  #endif
- // Define buffer ID
+ // Define Buffers IDs
  #if (UART_USED == 1)
   #define RXB		UBUF1_RX
   #define TXB		UBUF1_TX
@@ -127,7 +127,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	while (!QUE_BUF_EMPTY(TXB)) {
 	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			i = QUE_BUF_POP(TXB);
+			i = QUE_BUF_IPOP(TXB);
 			UART_WRITE(UART_USED, i);
 		} else break; // FIFO is full
 	}
@@ -152,7 +152,9 @@ void UART_INTFUNC(UART_USED, RX)(void)
 	 // Read all bytes from FIFO
 		if (!QUE_BUF_FULL(RXB)) {
 			// and write readed bytes into RX buffer
-			QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+			UART_DISABLE_ERINT(UART_USED); // Lock
+			QUE_BUF_IPUSH(RXB, UART_READ8(UART_USED));
+			UART_ENABLE_ERINT(UART_USED); // Unlock
 		} else {
 			// Receiver queue is full
 
@@ -175,7 +177,9 @@ void UART_INTFUNC(UART_USED, Err)(void)
 			// Rx FIFO Buffer overrun error:
 			while (!QUE_BUF_FULL(RXB)) { // Try to store
 				if (UART_CAN_READ(UART_USED)) { // RX FIFO
+					UART_DISABLE_RXINT(UART_USED); // Lock
 					QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
+					UART_ENABLE_RXINT(UART_USED); // Unlock
 				} else break;
 			}
 
