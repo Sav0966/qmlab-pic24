@@ -31,7 +31,7 @@
 #endif
 
 #define AssertFiledLine(f)	(fprintf(stderr,			\
-	"Assertion failed in file %s in line %i: %s\n",		\
+	"\nAssertion failed in file %s in line %i: %s\n",		\
 	__FILE__, __LINE__, __mkstr__(f)), 0)
 
 #ifndef __MPLAB_SIM // Stop at the failed line and no messages
