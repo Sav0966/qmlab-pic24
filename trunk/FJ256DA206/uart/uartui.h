@@ -51,7 +51,7 @@ DECL_UBUF_FULL(n, TX); DECL_UBUF_FULL(n, RX); DECL_UBUF_PURGE(n, TX);\
 DECL_UBUF_PURGE(n, RX); DECL_UART_WRITE(n); DECL_UART_READ(n);\
 DECL_UART_GETC(n); DECL_UART_PUTC(n)
 /*
-*	User interface functions (n - ordinal number of UART module)
+*	User interface functions (n - ordinal number of the UART module)
 */
 #define uart_tx_count(n)	_UBUF_COUNT(n, TX)() // TX buffer count
 #define uart_rx_count(n)	_UBUF_COUNT(n, RX)() // RX buffer count
@@ -155,7 +155,7 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 		}\
 \
 	} /* UART_IS_VALID() */\
-}
+} ((void)0)
 
 #define UART_IS_INIT(n) /* Powered & Enabled */\
 ((_UMD(n) == 0) && (UMODEbits(n).UARTEN != 0))

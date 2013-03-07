@@ -88,6 +88,6 @@
 // Don't reset 'len' & 'back' directly if you don't sure with your right
 #define __QUE_BUF_INIT(id) que_##id.back = que_##id.front; que_##id.len = 0
 #define _QUE_BUF_INIT(id) __QUE_BUF_INIT(id) /* Not locked function */
-#define QUE_BUF_INIT(id)  INTERLOCKED(_QUE_BUF_INIT(id)); /* Locked */
+#define QUE_BUF_INIT(id)  INTERLOCKED(_QUE_BUF_INIT(id)) /* Locked */
 
 #endif /*BUFFER_INCL_*/

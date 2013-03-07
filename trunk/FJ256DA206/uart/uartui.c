@@ -50,8 +50,8 @@
 #endif
 
 // Receiver and transmitterqueue queues
-static char QUEBUF(RXB, UART_RXBUF_SIZE);
-static char QUEBUF(TXB, UART_TXBUF_SIZE);
+static unsigned char QUEBUF(RXB, UART_RXBUF_SIZE);
+static unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
 
 #define _UART_ERR_NUM(n)	uart_##n##_RXERR_num
 #define UART_ERR_NUM(n)	_UART_ERR_NUM(n)
@@ -65,25 +65,25 @@ IMPL_UBUF_FULL(UART_USED, TX)  { return QUE_BUF_FULL(TXB); }
 IMPL_UBUF_FULL(UART_USED, RX)  { return QUE_BUF_FULL(RXB); }
 
 IMPL_UBUF_PURGE(UART_USED, RX)
-{ // Reset RX queue and RX FIFO
-	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
-	ASSERT(UART_IS_ENABLE_RXINT(UART_USED)); // UART must be init
+{ // Reset RX queue, FIFO and errors
+	while (UART_CAN_READ(UART_USED))
+		UART_READ9(UART_USED); // Clear FIFO
 
-	UART_DISABLE_RXINT(UART_USED); // Lock receiver thread and clear all
-	while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED); QUE_BUF_RESET(RXB);
-	UART_ERR_NUM(UART_USED) = 0; // Reset receiver error counter (no errors)
-	UART_ENABLE_RXINT(UART_USED); // Unlock receiver thread
+	INTERLOCKED( // Clear buffer and errors
+		_QUE_BUF_INIT(RXB);
+		UART_ERR_NUM(UART_USED) = 0;
+	);
 }
 
 IMPL_UBUF_PURGE(UART_USED, TX)
 { // Reset TX queue and TX FIFO
-	ASSERT(SRbits.IPL == MAIN_IPL); // Access from main thread only
-	ASSERT(UART_IS_ENABLE_TXINT(UART_USED)); // UART must be init
-	ASSERT(UART_IS_ENABLE_TX(UART_USED));   // UART must be init
+	QUE_BUF_INIT(TXB); // Clear buffer (locked)
 
-	UART_DISABLE_TXINT(UART_USED); // Lock transmitter thread and clear all
-	QUE_BUF_RESET(TXB); UART_DISABLE_TX(UART_USED); UART_ENABLE_TX(UART_USED);
-	UART_ENABLE_TXINT(UART_USED); // Unlock receiver thread
+	{ // Disable transmition and then restore TXEN
+		register int _usta_to_save = USTA(UART_USED);
+		UART_DISABLE_TX(UART_USED); // Clear FIFO
+		USTA(UART_USED) = _usta_to_save;
+	}
 }
 
 IMPL_UART_GETC(UART_USED)
@@ -103,7 +103,7 @@ IMPL_UART_READ(UART_USED)
 	int c, n;
 	for (n = 0; n != len; n++) {
 		if ((c = uart_getc(UART_USED)) == EOF) break;
-		*buf++ = (unsigned char)c;
+		*buf++ = (char)c;
 	}
 
 	return(n);
