@@ -94,7 +94,7 @@ __attribute__((__interrupt__, auto_psv)) _T##n##Interrupt
 	if (ipl > 0) TIMER_ENABLE_INT(timer); /* Enable interrupt */\
 \
 	TCON(timer) = mode; /* Setup Timer mode */\
-}
+} ((void)0)
 
 #define TIMER_DONE(timer)\
 	TIMER_DISABLE_INT(timer);	/* Disable the interrupt */\

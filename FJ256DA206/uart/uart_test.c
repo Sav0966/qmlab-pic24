@@ -11,26 +11,15 @@
 #define ENODEV	ENOENT
 #endif
 
-#define UART_USED		1	// Checked UART module
+#define UART_USED		2	// Checked UART module
 #define UART_RXBUF_SIZE	16	// Size of Receiver queue
 #define UART_TXBUF_SIZE	16	// Size of Transmitter queue
 //#include "uartui.c" Insert code directly at the bottom
 
 DECL_UART_UI(UART_USED); // Declare UART UI
 
-#if (UART_USED == 1)	// UART1 is used for tracing
-#undef ASSERT
-#undef TRACE
-#undef TRACE1
-#undef TRACE2
-#define ASSERT(f)
-#define TRACE(sz)
-#define TRACE1(sz, p1)
-#define TRACE2(sz, p1, p2)
-// Not defined in <pincfg.h>
-#define U1_VALID	1 // Is valid
-#define U1_SHDN_SET()	((void)0)
-#define U1_SHDN_CLR()	((void)0)
+#if (UART_USED == 1)
+#error "UART1 is used for tracing"
 #endif
 
 #ifndef ARSIZE
@@ -57,19 +46,14 @@ int uart_init(void)
 /* =!= It works with UART2 too if set LPBACK here */	U_LPBACK |
 #endif // SIM supports UART1 only (SIM: UART1 IO must be enabled)
 
-		U_NOPARITY | U_EN,		// 8-bit, no parity; Enabled
+		U_NOPARITY | U_EN,			// 8-bit, no parity; Enabled
 
-		U_TXI_READY | U_RXI_ANY | // Prevent dummy TX interrupt
-		U_TXEN, FCY2BRG(FCY2, 9600), // TX Enabled; 9600 baud
+		U_TXI_READY | U_RXI_ANY |		// Defaul event settings
+		U_TXEN, FCY2BRG(FCY2, 9600),	// TX Enabled; 9600 baud
 		2, 2 // All interrupts are enabled
 	);
 
-// !!! Ошибка - нужно чиcтить буфера в UART_INIT !!!
-	if (UART_IS_INIT(UART_USED)) {
-		uart_tx_purge(UART_USED); uart_rx_purge(UART_USED);
-	} else return(ENODEV); // Error: pin ~INVALID = '0'
-
-	return(0);
+	return(UART_IS_INIT(UART_USED) ? 0 : ENODEV);
 }
 
 #ifdef __DEBUG
@@ -265,8 +249,8 @@ void uart_test(void)
 #endif
 
 // Receiver and transmitterqueue queues
-static char QUEBUF(RXB, UART_RXBUF_SIZE);
-static char QUEBUF(TXB, UART_TXBUF_SIZE);
+static unsigned char QUEBUF(RXB, UART_RXBUF_SIZE);
+static unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
 
 #define _UART_ERR_NUM(n)	uart_##n##_RXERR_num
 #define UART_ERR_NUM(n)	_UART_ERR_NUM(n)
@@ -292,14 +276,13 @@ IMPL_UBUF_PURGE(UART_USED, RX)
 
 IMPL_UBUF_PURGE(UART_USED, TX)
 { // Reset TX queue and TX FIFO
-	INTERLOCKED(
-		register int _usta_to_save;
-		_QUE_BUF_INIT(TXB); // Clear buffer
-//		_usta_to_save = USTA(UART_USED);
+	QUE_BUF_INIT(TXB); // Clear buffer (locked)
+
+	{ // Disable transmition and then restore TXEN
+		register int _usta_to_save = USTA(UART_USED);
 		UART_DISABLE_TX(UART_USED); // Clear FIFO
-		UART_ENABLE_TX(UART_USED); // Clear FIFO
-//		USTA(UART_USED) = _usta_to_save; // Restore TXEN
-	);
+		USTA(UART_USED) = _usta_to_save;
+	}
 }
 
 IMPL_UART_GETC(UART_USED)
@@ -319,7 +302,7 @@ IMPL_UART_READ(UART_USED)
 	int c, n;
 	for (n = 0; n != len; n++) {
 		if ((c = uart_getc(UART_USED)) == EOF) break;
-		*buf++ = (unsigned char)c;
+		*buf++ = (char)c;
 	}
 
 	return(n);
@@ -462,18 +445,53 @@ void UART_INTFUNC(UART_USED, Err)(void)
 
 #endif // UART_USED
 
-// The same for UART3-4
+// Next section is used for check compiller errors
 
-#undef UART_USED
-#define UART_USED	3
+// The same for UART1
+#undef	UART_USED
+#define	UART_USED			1
+// Use new buffer size
 #undef UART_RXBUF_SIZE
 #undef UART_TXBUF_SIZE
-#define UART_RXBUF_SIZE	8
-#define UART_TXBUF_SIZE	8	// Use new sizes
+#define UART_RXBUF_SIZE		8
+#define UART_TXBUF_SIZE		8
 #include "uartui.c"
 
-#undef UART_USED
-#define UART_USED	4
+// No hardware => no defined pins
+#define U1_VALID	1 // Is valid
+#define U1_SHDN_SET()	((void)0)
+#define U1_SHDN_CLR()	((void)0)
+void uart_1_test_init(void) // Test only - UART1 is used for SIM
+{ UART_INIT(UART_USED, U_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+
+// The same for UART3
+#undef	UART_USED
+#define	UART_USED			3
+// Use minimum size
 #undef UART_RXBUF_SIZE
-#undef UART_TXBUF_SIZE	// Use default sizes
+#undef UART_TXBUF_SIZE
+#define UART_RXBUF_SIZE		2
+#define UART_TXBUF_SIZE		2
 #include "uartui.c"
+
+// No hardware => no defined pins
+#define U3_VALID	1 // Is valid
+#define U3_SHDN_SET()	((void)0)
+#define U3_SHDN_CLR()	((void)0)
+void uart_3_test_init(void) // Use defauld UART configuration
+{ UART_INIT(UART_USED, U_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+
+// The same for UART4
+#undef	UART_USED
+#define	UART_USED			4
+// Use default size
+#undef UART_RXBUF_SIZE
+#undef UART_TXBUF_SIZE
+#include "uartui.c"
+
+// No hardware => no defined pins
+#define U4_VALID	1 // Is valid
+#define U4_SHDN_SET()	((void)0)
+#define U4_SHDN_CLR()	((void)0)
+void uart_4_test_init(void) // Use defauld UART configuration
+{ UART_INIT(UART_USED, U_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
