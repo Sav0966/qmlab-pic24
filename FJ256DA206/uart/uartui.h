@@ -115,8 +115,8 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 * ipl - interrupt priority levels, if <= 0 - no unterrupt
 */
 #define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl) {\
-	UART_DISABLE_RXINT(n); /* Disable UART interrupts */\
-	UART_DISABLE_TXINT(n); UART_DISABLE_ERINT(n);\
+	UART_DISABLE_TXINT(n); /* Disable UART interrupts */\
+	UART_DISABLE_RXINT(n); UART_DISABLE_ERINT(n);\
 \
 	if (_UART_IS_VALID(n)) {/* Valid input levels */\
 		_UMD(n) = 0;	/* Power on UART module */\
@@ -126,6 +126,8 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 		/* bits, clear FIFO buffers and receiver errors */\
 		UMODE(n) = (mode) & ~U_EN; USTA(n) = (sta) & ~U_TXEN;\
 		UBRG(n) = brg; /* Write appropriate baud rate value */\
+\
+		uart_rx_purge(n); uart_tx_purge(n); /* Clear buffers */\
 		/* Clear all interrupt status flags (Rx, Tx and Error */\
 		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
 \
@@ -148,6 +150,8 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 			/* transmissions will  not be enabled. */\
 			/* Enable Transmitter if it's needed */\
 			if ((sta) & U_TXEN) UART_ENABLE_TX(n);\
+\
+			/* Uart TX interrupt may be called */\
 		}\
 \
 	} /* UART_IS_VALID() */\
@@ -157,8 +161,9 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 ((_UMD(n) == 0) && (UMODEbits(n).UARTEN != 0))
 
 #define UART_DONE(n)\
-	UART_DISABLE_RXINT(n); /* Disable interrupts */\
-	UART_DISABLE_TXINT(n); UART_DISABLE_ERINT(n);\
+	UART_DISABLE_TXINT(n); /* Disable interrupts */\
+	UART_DISABLE_RXINT(n); UART_DISABLE_ERINT(n);\
+	UMODEbits(n).UARTEN = 0; /* Disable module */\
 	/* Clear all interrupt status flags (Rx, Tx and Error */\
 	UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n)
 
