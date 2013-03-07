@@ -6,8 +6,11 @@
 /*
 * UART Transmit and Receive Registers
 */
-#define UTXREG(n)	U##n##TXREG
-#define URXREG(n)	U##n##RXREG
+#define _UTXREG(n)	U##n##TXREG
+#define _URXREG(n)	U##n##RXREG
+#define UTXREG(n)	_UTXREG(n)
+#define URXREG(n)	_URXREG(n)
+
 #define UART_WRITE(n, ch)	UTXREG(n) = ch
 #define UART_READ8(n)		((char)URXREG(n))
 #define UART_READ9(n)		((int)URXREG(n))
@@ -15,7 +18,8 @@
 /*
 * UART Baud Rate Generator Prescaler Register
 */
-#define UBRG(n)		U##n##BRG
+#define _UBRG(n)	U##n##BRG
+#define UBRG(n)		_UBRG(n)
 // Computation of the baud rate whith RBGH = 0
 #define FCY2BRG(fcy, rate) ((int)((fcy/(16L*rate))-1))
 // Computation of the baud rate whith RBGH = 1
@@ -24,9 +28,10 @@
 * UART Mode Register and appropriate mode settings
 */
 // UART Mode Register and its bits
-#define UMODE(n)		U##n##MODE
-#define UMODEbits(n)	U##n##MODEbits
-
+#define _UMODE(n)		U##n##MODE
+#define _UMODEbits(n)	U##n##MODEbits
+#define UMODEbits(n)	_UMODEbits(n)
+#define UMODE(n)		_UMODE(n)
 // If UART is disabled: all UART pins are controlled by
 // 		port latches; UART power consumption is minimal
 // If UART is enabled: all UARTx pins are controlled
@@ -85,8 +90,10 @@
 * UART Status and Control Register
 */
 // UART Status and Control Register
-#define USTA(n)			U##n##STA
-#define USTAbits(n)		U##n##STAbits
+#define _USTA(n)		U##n##STA
+#define _USTAbits(n)	U##n##STAbits
+#define USTAbits(n)		_USTAbits(n)
+#define USTA(n)			_USTA(n)
 
 // By default Transmit is disabled, any pending transmission is
 // aborted and the buffer is reset; TX pin is controlled by port

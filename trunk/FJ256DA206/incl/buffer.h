@@ -3,14 +3,14 @@
 
 // Thread synchronization
 #ifndef DISABLE_INTERRUPT
- // 0-6 int level disabling
- #define DISABLE_INTERRUPT()\
+// 0-6 int level disabling
+#define DISABLE_INTERRUPT()\
 	{	register int _disicnt_to_save = DISICNT;\
 		__asm__ volatile ("disi #0x3FFF")
 
- #define ENABLE_INTERRUPT() DISICNT = _disicnt_to_save; }
+#define ENABLE_INTERRUPT() DISICNT = _disicnt_to_save; } ((void)0)
 
- #define INTERLOCKED(f) DISABLE_INTERRUPT(); f; ENABLE_INTERRUPT()
+#define INTERLOCKED(f) DISABLE_INTERRUPT(); f; ENABLE_INTERRUPT()
 #endif // DISABLE_INTERRUPT
 
 // Queue template (one thread can enqueues, another - dequeues)
@@ -86,7 +86,8 @@
 #define QUE_BUF_RESET(id) while (!QUE_BUF_EMPTY(id)) QUE_BUF_POP(id)
 
 // Don't reset 'len' & 'back' directly if you don't sure with your right
-#define _QUE_BUF_INIT(id) que_##id.back = que_##id.front; que_##id.len = 0
-#define QUE_BUF_INIT(id)  INTERLOCKED(_QUE_BUF_INIT(id))
+#define __QUE_BUF_INIT(id) que_##id.back = que_##id.front; que_##id.len = 0
+#define _QUE_BUF_INIT(id) __QUE_BUF_INIT(id) /* Not locked function */
+#define QUE_BUF_INIT(id)  INTERLOCKED(_QUE_BUF_INIT(id)); /* Locked */
 
 #endif /*BUFFER_INCL_*/
