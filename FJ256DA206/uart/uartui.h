@@ -5,7 +5,6 @@
 #define _UARTUI_INCL_
 
 #include <uart.h>
-#include <pinscfg.h>
 /*
 *	Template of UART Interrupt Service Routines
 */
@@ -73,51 +72,33 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 #define uart_putc(c, n)				_UART_PUTC(n)(c)
 #define uart_getc(n)				_UART_GETC(n)()
 /*
-* ~SHDN and ~INVALID lines of RS-232 Driver (if present)
+* ~SHDN and ~INVALID lines of RS-232 Driver
 */
-#ifndef U1_VALID
-#define U1_VALID	1	// Is valid (no pin)
-#endif
-#ifndef U2_VALID
-#define U2_VALID	1
-#endif
-#ifndef U3_VALID
-#define U3_VALID	1
-#endif
-#ifndef U4_VALID
-#define U4_VALID	1
-#endif
-
-#ifndef U1_SHDN
-#define U1_SHDN		U1STAbits.URXDA // For dummy write
-#endif
-#ifndef U2_SHDN
-#define U2_SHDN		U2STAbits.URXDA
-#endif
-#ifndef U3_SHDN
-#define U3_SHDN		U3STAbits.URXDA
-#endif
-#ifndef U4_SHDN
-#define U4_SHDN		U4STAbits.URXDA
-#endif
-
 #define _UART_IS_VALID(n)	(U##n##_VALID != 0)
 #define _UART_IS_SHDN(n)	(U##n##_SHDN == 0)
-#define _UART_WAKEUP(n)		U##n##_SHDN = 1
-#define _UART_SHDN(n)		U##n##_SHDN = 0
+#define _UART_WAKEUP(n)		U##n##_SHDN_SET()
+#define _UART_SHDN(n)		U##n##_SHDN_CLR()
 
 #ifdef __MPLAB_SIM		// UARTs are valid for MPLAB SIM
- #undef  U1_VALID
- #undef  U2_VALID
- #undef  U3_VALID
- #undef  U4_VALID
- #define U1_VALID		1 // UART1 ~INVALID input pin = 1
- #define U2_VALID		1 // UART2 ~INVALID input pin = 1
- #define U3_VALID		1 // UART3 ~INVALID input pin = 1
- #define U4_VALID		1 // UART4 ~INVALID input pin = 1
+#ifdef	U1_VALID
+#undef  U1_VALID
+#define U1_VALID		1
+#endif
+#ifdef	U2_VALID
+#undef  U2_VALID
+#define U2_VALID		1
+#endif
+#ifdef	U3_VALID
+#undef  U3_VALID
+#define U3_VALID		1
+#endif
+#ifdef	U4_VALID
+#undef  U4_VALID
+#define U4_VALID		1
+#endif
 
- #undef  _UART_IS_SHDN
- #define _UART_IS_SHDN(n)	0 // UARTs are turned on
+#undef  _UART_IS_SHDN
+#define _UART_IS_SHDN(n)	0 // UARTs are turned on
 #endif //__MPLAB_SIM
 
 #define UART_IS_VALID(n)	_UART_IS_VALID(n)

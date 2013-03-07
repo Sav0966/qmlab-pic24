@@ -4,10 +4,6 @@
 #include <p24Fxxxx.h>
 #include <config.h>
 
-#ifndef EOF
-#define EOF -1
-#endif
-
 #ifdef UART_USED
  #ifdef	RXB
   #undef	RXB
@@ -15,24 +11,26 @@
  #endif
  // Define Buffers IDs
  #if (UART_USED == 1)
-  #define RXB		UBUF1_RX
-  #define TXB		UBUF1_TX
+  #define RXB		U1RXB
+  #define TXB		U1TXB
  #elif (UART_USED == 2)
-  #define RXB		UBUF2_RX
-  #define TXB		UBUF2_TX
+  #define RXB		U2RXB
+  #define TXB		U2TXB
  #elif (UART_USED == 3)
-  #define RXB		UBUF3_RX
-  #define TXB		UBUF3_TX
+  #define RXB		U3RXB
+  #define TXB		U3TXB
  #elif (UART_USED == 4)
-  #define RXB		UBUF4_RX
-  #define TXB		UBUF4_TX
+  #define RXB		U4RXB
+  #define TXB		U4TXB
  #else	// UART_USED == 1-4
   #undef UART_USED // Error
  #endif
 #else
+// No UART is used - no code will be produced
 #endif
 
 #ifdef UART_USED // Only for used UART
+
 #include <_tools.h>
 #include <buffer.h>
 #include <uartui.h>
@@ -45,6 +43,10 @@
 #ifndef UART_RXBUF_SIZE
 // Default size of Receiver queue
 #define UART_RXBUF_SIZE				32
+#endif
+
+#ifndef EOF
+#define EOF -1
 #endif
 
 // Receiver and transmitterqueue queues
@@ -68,7 +70,7 @@ IMPL_UBUF_PURGE(UART_USED, RX)
 	ASSERT(UART_IS_ENABLE_RXINT(UART_USED)); // UART must be init
 
 	UART_DISABLE_RXINT(UART_USED); // Lock receiver thread and clear all
-	QUE_BUF_RESET(RXB); while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
+	while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED); QUE_BUF_RESET(RXB);
 	UART_ERR_NUM(UART_USED) = 0; // Reset receiver error counter (no errors)
 	UART_ENABLE_RXINT(UART_USED); // Unlock receiver thread
 }
@@ -84,29 +86,51 @@ IMPL_UBUF_PURGE(UART_USED, TX)
 	UART_ENABLE_TXINT(UART_USED); // Unlock receiver thread
 }
 
-IMPL_UART_WRITE(UART_USED)
-{
-	int n;
-	ASSERT(SRbits.IPL == MAIN_IPL);
-
-	// Access from main thread only
-	for (n = 0; n != len; n++) {
-		if (QUE_BUF_FULL(TXB)) break;
-		QUE_BUF_PUSH(TXB, *buf++);
-	} // Write n chars in TX queue
-	UART_SET_TXFLAG(UART_USED);
-	return(n);
-}
-
 IMPL_UART_GETC(UART_USED)
 {
 	int c;
+	// Access from main thread only
 	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	// Access from main thread only
 	if (QUE_BUF_EMPTY(RXB)) c = EOF;
 	else { c = QUE_BUF_POP(RXB); }
+
 	return(c);
+}
+
+IMPL_UART_READ(UART_USED)
+{
+	int c, n;
+	for (n = 0; n != len; n++) {
+		if ((c = uart_getc(UART_USED)) == EOF) break;
+		*buf++ = (unsigned char)c;
+	}
+
+	return(n);
+}
+
+IMPL_UART_PUTC(UART_USED)
+{
+	// Access from main thread only
+	ASSERT(SRbits.IPL == MAIN_IPL);
+
+	if (QUE_BUF_FULL(TXB)) c = EOF;
+	else {
+		QUE_BUF_PUSH(TXB, (char)c);
+		UART_SET_TXFLAG(UART_USED);
+	}
+
+	return(c);
+}
+
+IMPL_UART_WRITE(UART_USED)
+{
+	int n;
+	for (n = 0; n != len; n++) {
+		if (uart_putc(*buf++, UART_USED) == EOF) break;
+	}
+
+	return(n);
 }
 
 // Transmitter Interrupt Service Routine
@@ -116,7 +140,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	switch(QUE_BUF_LEN(TXB)) {
+	switch (QUE_BUF_LEN(TXB)) {
 		case 0: i = U_TXI_END; break;
 		case 1: i = U_TXI_READY; break;
 		default: i = U_TXI_EMPTY; // We'll fill FIFO

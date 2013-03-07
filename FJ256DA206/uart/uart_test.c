@@ -4,15 +4,14 @@
 #include <uartui.h>
 #include <clock.h>
 
-#ifndef EOF
-#define EOF -1
-#endif
+#include <stdio.h>
 #include <errno.h>
+
 #ifndef ENODEV
 #define ENODEV	ENOENT
 #endif
 
-#define UART_USED		2	// Checked UART module
+#define UART_USED		1	// Checked UART module
 #define UART_RXBUF_SIZE	16	// Size of Receiver queue
 #define UART_TXBUF_SIZE	16	// Size of Transmitter queue
 //#include "uartui.c" Insert code directly at the bottom
@@ -28,6 +27,10 @@ DECL_UART_UI(UART_USED); // Declare UART UI
 #define TRACE(sz)
 #define TRACE1(sz, p1)
 #define TRACE2(sz, p1, p2)
+// Not defined in <pincfg.h>
+#define U1_VALID	1 // Is valid
+#define U1_SHDN_SET()	((void)0)
+#define U1_SHDN_CLR()	((void)0)
 #endif
 
 #ifndef ARSIZE
@@ -216,10 +219,6 @@ void uart_test(void)
 // #include "uart.c"
 // Insert code directly for debugging
 
-#ifndef EOF
-#define EOF -1
-#endif
-
 #ifdef UART_USED
  #ifdef	RXB
   #undef	RXB
@@ -227,24 +226,26 @@ void uart_test(void)
  #endif
  // Define Buffers IDs
  #if (UART_USED == 1)
-  #define RXB		UBUF1_RX
-  #define TXB		UBUF1_TX
+  #define RXB		U1RXB
+  #define TXB		U1TXB
  #elif (UART_USED == 2)
-  #define RXB		UBUF2_RX
-  #define TXB		UBUF2_TX
+  #define RXB		U2RXB
+  #define TXB		U2TXB
  #elif (UART_USED == 3)
-  #define RXB		UBUF3_RX
-  #define TXB		UBUF3_TX
+  #define RXB		U3RXB
+  #define TXB		U3TXB
  #elif (UART_USED == 4)
-  #define RXB		UBUF4_RX
-  #define TXB		UBUF4_TX
+  #define RXB		U4RXB
+  #define TXB		U4TXB
  #else	// UART_USED == 1-4
   #undef UART_USED // Error
  #endif
 #else
+// No UART is used - no code will be produced
 #endif
 
 #ifdef UART_USED // Only for used UART
+
 #include <_tools.h>
 #include <buffer.h>
 #include <uartui.h>
@@ -257,6 +258,10 @@ void uart_test(void)
 #ifndef UART_RXBUF_SIZE
 // Default size of Receiver queue
 #define UART_RXBUF_SIZE				32
+#endif
+
+#ifndef EOF
+#define EOF -1
 #endif
 
 // Receiver and transmitterqueue queues
