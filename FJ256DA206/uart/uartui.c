@@ -57,12 +57,12 @@ static unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
 #define UART_ERR_NUM(n)	_UART_ERR_NUM(n)
 static int UART_ERR_NUM(UART_USED) = 0;
 
-IMPL_UBUF_COUNT(UART_USED, TX) { return QUE_BUF_LEN(TXB); }
-IMPL_UBUF_COUNT(UART_USED, RX) { return QUE_BUF_LEN(RXB); }
+IMPL_UBUF_COUNT(UART_USED, TX) { return QUEBUF_LEN(TXB); }
+IMPL_UBUF_COUNT(UART_USED, RX) { return QUEBUF_LEN(RXB); }
 IMPL_UBUF_COUNT(UART_USED, ER) { return UART_ERR_NUM(UART_USED); }
 
-IMPL_UBUF_FULL(UART_USED, TX)  { return QUE_BUF_FULL(TXB); }
-IMPL_UBUF_FULL(UART_USED, RX)  { return QUE_BUF_FULL(RXB); }
+IMPL_UBUF_FULL(UART_USED, TX)  { return QUEBUF_FULL(TXB); }
+IMPL_UBUF_FULL(UART_USED, RX)  { return QUEBUF_FULL(RXB); }
 
 IMPL_UBUF_PURGE(UART_USED, RX)
 { // Reset RX queue, FIFO and errors
@@ -70,19 +70,19 @@ IMPL_UBUF_PURGE(UART_USED, RX)
 		UART_READ9(UART_USED); // Clear FIFO
 
 	INTERLOCKED( // Clear buffer and errors
-		_QUE_BUF_INIT(RXB);
+		_QUEBUF_INIT(RXB);
 		UART_ERR_NUM(UART_USED) = 0;
 	);
 }
 
 IMPL_UBUF_PURGE(UART_USED, TX)
 { // Reset TX queue and TX FIFO
-	QUE_BUF_INIT(TXB); // Clear buffer (locked)
+	QUEBUF_INIT(TXB); // Clear buffer (locked)
 
 	{ // Disable transmition and then restore TXEN
 		register int _usta_to_save = USTA(UART_USED);
-		UART_DISABLE_TX(UART_USED); // Clear FIFO
-		USTA(UART_USED) = _usta_to_save;
+		UART_DISABLE_TX(UART_USED); // Clear FIFO by TXEN = 0
+		if (_usta_to_save & U_TXEN) UART_ENABLE_TX(UART_USED);
 	}
 }
 
@@ -92,8 +92,8 @@ IMPL_UART_GETC(UART_USED)
 	// Access from main thread only
 	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	if (QUE_BUF_EMPTY(RXB)) c = EOF;
-	else { c = QUE_BUF_POP(RXB); }
+	if (QUEBUF_EMPTY(RXB)) c = EOF;
+	else { c = QUEBUF_POP(RXB); }
 
 	return(c);
 }
@@ -114,9 +114,9 @@ IMPL_UART_PUTC(UART_USED)
 	// Access from main thread only
 	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	if (QUE_BUF_FULL(TXB)) c = EOF;
+	if (QUEBUF_FULL(TXB)) c = EOF;
 	else {
-		QUE_BUF_PUSH(TXB, (char)c);
+		QUEBUF_PUSH(TXB, (char)c);
 		UART_SET_TXFLAG(UART_USED);
 	}
 
@@ -140,7 +140,7 @@ void UART_INTFUNC(UART_USED, TX)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	switch (QUE_BUF_LEN(TXB)) {
+	switch (QUEBUF_LEN(TXB)) {
 		case 0: i = U_TXI_END; break;
 		case 1: i = U_TXI_READY; break;
 		default: i = U_TXI_EMPTY; // We'll fill FIFO
@@ -148,10 +148,10 @@ void UART_INTFUNC(UART_USED, TX)(void)
 
 	UART_SET_TXI(UART_USED, i);
 
-	while (!QUE_BUF_EMPTY(TXB)) {
+	while (!QUEBUF_EMPTY(TXB)) {
 	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			i = QUE_BUF_IPOP(TXB);
+			i = QUEBUF_IPOP(TXB);
 			UART_WRITE(UART_USED, i);
 		} else break; // FIFO is full
 	}
@@ -164,46 +164,45 @@ void UART_INTFUNC(UART_USED, TX)(void)
 // Receiver Interrupt Service Routine
 void UART_INTFUNC(UART_USED, RX)(void)
 {
+	UART_DISABLE_ERINT(UART_USED); // Lock ER
+
 	// Clear Interrupt flag
 	UART_CLR_RXFLAG(UART_USED);
 
-	if (UART_IS_RXERR(UART_USED)) { // It's not my job
-				UART_SET_ERFLAG(UART_USED); return; }
+	while (!QUEBUF_FULL(RXB)) {
+	 // Read bytes from FIFO to buffer
+		if (UART_CAN_READ(UART_USED)) {
+			if (UART_IS_RXERR(UART_USED)) {
+				UART_SET_ERFLAG(UART_USED);
+				break; // It's not my job
+			} else { // No errors at the top of FIFO
+				// Write readed bytes into RX buffer
+				QUEBUF_IPUSH(RXB, UART_READ8(UART_USED));
+			}
+		} else break; // FIFO is empty
+	} // while (!QUEBUF_FULL(RXB))
 
-	// No errors at the top of FIFO
+	// If receiver queue is full:
+	//  ignore received character
+	//  and leave it into RX FIFO
 
-	while (UART_CAN_READ(UART_USED)) {
-	 // Read all bytes from FIFO
-		if (!QUE_BUF_FULL(RXB)) {
-			// and write readed bytes into RX buffer
-			UART_DISABLE_ERINT(UART_USED); // Lock
-			QUE_BUF_IPUSH(RXB, UART_READ8(UART_USED));
-			UART_ENABLE_ERINT(UART_USED); // Unlock
-		} else {
-			// Receiver queue is full
-
-			// Ignore received character
-			// and leave it into RX FIFO
-
-			break; // Calculate  errors in OERR handler
-		}
-	}
+	UART_ENABLE_ERINT(UART_USED); // Unlock ER
 }
 
 // Error Interrupt Service Routine
 void UART_INTFUNC(UART_USED, Err)(void)
 {
+	UART_DISABLE_RXINT(UART_USED); // Lock RX
+
 	// Clear Interrupt flag
 	UART_CLR_ERFLAG(UART_USED);
 
 	while (UART_IS_RXERR(UART_USED)) {
 		if (UART_IS_OERR(UART_USED)) {
 			// Rx FIFO Buffer overrun error:
-			while (!QUE_BUF_FULL(RXB)) { // Try to store
+			while (!QUEBUF_FULL(RXB)) { // Try to store
 				if (UART_CAN_READ(UART_USED)) { // RX FIFO
-					UART_DISABLE_RXINT(UART_USED); // Lock
-					QUE_BUF_PUSH(RXB, UART_READ8(UART_USED));
-					UART_ENABLE_RXINT(UART_USED); // Unlock
+					QUEBUF_IPUSH(RXB, UART_READ8(UART_USED));
 				} else break;
 			}
 
@@ -212,8 +211,6 @@ void UART_INTFUNC(UART_USED, Err)(void)
 
 			// No errors at this point (FIFO is empty)
 
-			// Calculate errors
-			++UART_ERR_NUM(UART_USED);
 		} else {
 			if (UART_IS_FERR(UART_USED)) {
 				// Frame error at the top of FIFO:
@@ -224,21 +221,18 @@ void UART_INTFUNC(UART_USED, Err)(void)
 					__asm__("nop"); // Mode can be started
 					__asm__("nop"); // in this section
 	 			}	
-
-				// Calculate errors
-				++UART_ERR_NUM(UART_USED);
-			}
-
-			if (UART_IS_PERR(UART_USED)) {
+			} else /* if (UART_IS_PERR(UART_USED)) */ {
 				// Parity error at the top of FIFO:
 				// Read the byte from the top of FIFO
 				UART_READ9(UART_USED);  // Dummy read
-
-				// Calculate errors
-				++UART_ERR_NUM(UART_USED);
 			}
 		}
+
+		// Calculate errors
+		++UART_ERR_NUM(UART_USED);
 	} //  while (UART_IS_ERR(UART_USED))
+
+	UART_ENABLE_RXINT(UART_USED); // Unlock RX
 
 	if (UART_CAN_READ(UART_USED)) // There is any bytes to read
 		 UART_SET_RXFLAG(UART_USED); // Set interrupt flag only
