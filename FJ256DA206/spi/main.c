@@ -76,6 +76,7 @@ int main(void)
 
 	do { // Main loop
 
+//		_CS0
 		__asm__ volatile ("pwrsav	#1"); // Idle mode
 	} while (1); // Main loop
 
