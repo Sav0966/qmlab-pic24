@@ -453,7 +453,7 @@ void UART_INTFUNC(UART_USED, Err)(void)
 #include "uartui.c"
 
 // No hardware => no defined pins
-#define U1_VALID	1 // Is valid
+#define _U1_VALID	1 // Is valid
 #define U1_SHDN_SET()	((void)0)
 #define U1_SHDN_CLR()	((void)0)
 void uart_1_test_init(void) // Test only - UART1 is used for SIM
@@ -470,7 +470,7 @@ void uart_1_test_init(void) // Test only - UART1 is used for SIM
 #include "uartui.c"
 
 // No hardware => no defined pins
-#define U3_VALID	1 // Is valid
+#define _U3_VALID	1 // Is valid
 #define U3_SHDN_SET()	((void)0)
 #define U3_SHDN_CLR()	((void)0)
 void uart_3_test_init(void) // Use defauld UART configuration
@@ -485,7 +485,7 @@ void uart_3_test_init(void) // Use defauld UART configuration
 #include "uartui.c"
 
 // No hardware => no defined pins
-#define U4_VALID	1 // Is valid
+#define _U4_VALID	1 // Is valid
 #define U4_SHDN_SET()	((void)0)
 #define U4_SHDN_CLR()	((void)0)
 void uart_4_test_init(void) // Use defauld UART configuration

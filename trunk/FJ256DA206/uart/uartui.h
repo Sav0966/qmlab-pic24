@@ -74,27 +74,27 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 /*
 * ~SHDN and ~INVALID lines of RS-232 Driver
 */
-#define _UART_IS_VALID(n)	(U##n##_VALID != 0)
-#define _UART_IS_SHDN(n)	(U##n##_SHDN == 0)
+#define _UART_IS_VALID(n)	(_U##n##_VALID != 0)
+#define _UART_IS_SHDN(n)	(_U##n##_SHDN == 0)
 #define _UART_WAKEUP(n)		U##n##_SHDN_SET()
 #define _UART_SHDN(n)		U##n##_SHDN_CLR()
 
 #ifdef __MPLAB_SIM		// UARTs are valid for MPLAB SIM
-#ifdef	U1_VALID
-#undef  U1_VALID
-#define U1_VALID		1
+#ifdef	_U1_VALID
+#undef  _U1_VALID
+#define _U1_VALID		1
 #endif
-#ifdef	U2_VALID
-#undef  U2_VALID
-#define U2_VALID		1
+#ifdef	_U2_VALID
+#undef  _U2_VALID
+#define _U2_VALID		1
 #endif
-#ifdef	U3_VALID
-#undef  U3_VALID
-#define U3_VALID		1
+#ifdef	_U3_VALID
+#undef  _U3_VALID
+#define _U3_VALID		1
 #endif
-#ifdef	U4_VALID
-#undef  U4_VALID
-#define U4_VALID		1
+#ifdef	_U4_VALID
+#undef  _U4_VALID
+#define _U4_VALID		1
 #endif
 
 #undef  _UART_IS_SHDN
