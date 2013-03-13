@@ -4,28 +4,34 @@
 #ifndef _SPI_INCL_
 #define _SPI_INCL_
 /*
-* SPI Transmit and Receive Registers
+* UART Transmit and Receive Registers
 */
-//#define UTXREG(n)	U##n##TXREG
-//#define URXREG(n)	U##n##RXREG
+//#define _UTXREG(n)	U##n##TXREG
+//#define _URXREG(n)	U##n##RXREG
+//#define UTXREG(n)	_UTXREG(n)
+//#define URXREG(n)	_URXREG(n)
+
 //#define UART_WRITE(n, ch)	UTXREG(n) = ch
-//#define UART_READ(n)		((char)URXREG(n))
+//#define UART_READ8(n)		((char)URXREG(n))
 //#define UART_READ9(n)		((int)URXREG(n))
+//#define UART_FIFO_SIZE		4
 /*
-* SPI Baud Rate Generator Prescaler Register
+* UART Baud Rate Generator Prescaler Register
 */
-//#define UBRG(n)		U##n##BRG
+//#define _UBRG(n)	U##n##BRG
+//#define UBRG(n)		_UBRG(n)
 // Computation of the baud rate whith RBGH = 0
 //#define FCY2BRG(fcy, rate) ((int)((fcy/(16L*rate))-1))
 // Computation of the baud rate whith RBGH = 1
 //#define FCY2BRGH(fcy, rate) ((int)((fcy/(4L*rate))-1))
 /*
-* SPI Mode Register and appropriate mode settings
+* UART Mode Register and appropriate mode settings
 */
-// SPI Mode Register and its bits
-//#define UMODE(n)		U##n##MODE
-//#define UMODEbits(n)	U##n##MODEbits
-
+// UART Mode Register and its bits
+//#define _UMODE(n)		U##n##MODE
+//#define _UMODEbits(n)	U##n##MODEbits
+//#define UMODEbits(n)	_UMODEbits(n)
+//#define UMODE(n)		_UMODE(n)
 // If UART is disabled: all UART pins are controlled by
 // 		port latches; UART power consumption is minimal
 // If UART is enabled: all UARTx pins are controlled
@@ -84,8 +90,10 @@
 * UART Status and Control Register
 */
 // UART Status and Control Register
-//#define USTA(n)			U##n##STA
-//#define USTAbits(n)		U##n##STAbits
+//#define _USTA(n)		U##n##STA
+//#define _USTAbits(n)	U##n##STAbits
+//#define USTAbits(n)		_USTAbits(n)
+//#define USTA(n)			_USTA(n)
 
 // By default Transmit is disabled, any pending transmission is
 // aborted and the buffer is reset; TX pin is controlled by port
@@ -132,7 +140,7 @@
 //#define U_PERR			0x0008
 //#define U_FERR			0x0004
 //#define U_OERR			0x0002
-//#define UART_IS_ERR(n)	((USTA(n) & (U_PERR|U_FERR|U_OERR)) != 0)
+//#define UART_IS_RXERR(n)	((USTA(n) & (U_PERR|U_FERR|U_OERR)) != 0)
 // Receive Buffer Overrun Error Status bit (clear/read-only). Must be
 // cleared by software. Clearing a previously set OERR bit (1 -> 0
 // transition) will reset the receiver buffer and the RSR to the
@@ -146,7 +154,7 @@
 //#define UART_IS_FERR(n)	(USTAbits(n).FERR != 0)
 
 // Receiver Idle bit (read-only)
-//#define UART_IS_RXIDLE(n)	(USTAbits(n).RIDLE !=0)
+//#define UART_IS_RXIDLE(n)	(USTAbits(n).RIDLE != 0)
 
 // Send Sync Break on next transmission – Start bit, followed by twelve
 // '0' bits, followed by Stop bit; cleared by hardware upon completion
@@ -160,113 +168,41 @@
 // IrDA Encoder Transmit Polarity Inversion bit
 //#define U_TXINV			0x4000 // TX is Idle 'IREN'
 /*
-* Interrupt management of UART module
+* Interrupt management of SPI module (spi rx/tx and spi fault)
 */
 // Interrupt Priority levels
-//#define _URXIP(n) _U##n##RXIP
-//#define _UTXIP(n) _U##n##TXIP
-//#define _UERIP(n) _U##n##ERIP
-// Setup and obtain UART IPL values
-//#define UART_SET_RX_IPL(n, ipl)	_URXIP(n) = ipl
-//#define UART_GET_RX_IPL(n)		((int)_URXIP(n))
-//#define UART_SET_TX_IPL(n, ipl)	_UTXIP(n) = ipl
-//#define UART_GET_TX_IPL(n)		((int)_UTXIP(n))
-//#define UART_SET_ER_IPL(n, ipl)	_UERIP(n) = ipl
-//#define UART_GET_ER_IPL(n)		((int)_UERIP(n))
+#define _SPIIP(n) _SPI##n##IP
+#define _SPFIP(n) _SPF##n##IP
+// Setup and obtain SPI IPL values
+#define SPI_SET_IPL(n, ipl)		_SPIIP(n) = ipl
+#define SPI_GET_IPL(n)			((int)_SPIIP(n))
+#define SPI_SET_FIPL(n, ipl)	_SPFIP(n) = ipl
+#define SPI_GET_FIPL(n)			((int)_SPFIP(n))
 
 // Interrupt Enable bits
-//#define _URXIE(n) _U##n##RXIE
-//#define _UTXIE(n) _U##n##TXIE
-//#define _UERIE(n) _U##n##ERIE
-// Enable and disable UART interrupts
-//#define UART_ENABLE_RXINT(n)	_URXIE(n) = 1
-//#define UART_DISABLE_RXINT(n)	_URXIE(n) = 0
-//#define UART_IS_ENABLE_RXINT(n)	(_URXIE(n) == 1)
-//#define UART_ENABLE_TXINT(n)	_UTXIE(n) = 1
-//#define UART_DISABLE_TXINT(n)	_UTXIE(n) = 0
-//#define UART_IS_ENABLE_TXINT(n)	(_UTXIE(n) == 1)
-//#define UART_ENABLE_ERINT(n)	_UERIE(n) = 1
-//#define UART_DISABLE_ERINT(n)	_UERIE(n) = 0
-//#define UART_IS_ENABLE_ERINT(n)	(_UERIE(n) == 1)
+#define _SPIIE(n) _SPI##n##IE
+#define _SPFIE(n) _SPF##n##IE
+// Enable and disable SPI interrupts
+#define SPI_ENABLE_INT(n)		_SPIIE(n) = 1
+#define SPI_DISABLE_INT(n)		_SPIIE(n) = 0
+#define SPI_IS_ENABLE_INT(n)	(_SPIIE(n) == 1)
+#define SPI_ENABLE_FINT(n)		_SPFIE(n) = 1
+#define SPI_DISABLE_FINT(n)		_SPFIE(n) = 0
+#define SPI_IS_ENABLE_FINT(n)	(_SPFIE(n) == 1)
 
 // Interrupt Status bits
-//#define _URXIF(n) _U##n##RXIF
-//#define _UTXIF(n) _U##n##TXIF
-//#define _UERIF(n) _U##n##ERIF
+#define _SPIIF(n) _SPI##n##IF
+#define _SPFIF(n) _SPF##n##IF
 // Clear, Set and Check Interrupt Status
-//#define UART_CLR_RXFLAG(n)	_URXIF(n) = 0
-//#define UART_SET_RXFLAG(n)	_URXIF(n) = 1
-//#define UART_IS_RXFLAG(n)	(_URXIF(n) != 0)
-//#define UART_CLR_TXFLAG(n)	_UTXIF(n) = 0
-//#define UART_SET_TXFLAG(n)	_UTXIF(n) = 1
-//#define UART_IS_TXFLAG(n)	(_UTXIF(n) != 0)
-//#define UART_CLR_ERFLAG(n)	_UERIF(n) = 0
-//#define UART_SET_ERFLAG(n)	_UERIF(n) = 1
-//#define UART_IS_ERFLAG(n)	(_UERIF(n) != 0)
-
-// UART Interrupt Service Routine template
-//#define _UART_INTFUNC(n, isr) /* isr - RX, TX and Err */\
-//__attribute__((__interrupt__, no_auto_psv)) _U##n##isr##Interrupt
-//#define UART_INTFUNC(n, isr) _UART_INTFUNC(n, isr)
+#define SPI_CLR_FLAG(n)		_SPIIF(n) = 0
+#define SPI_SET_FLAG(n)		_SPIIF(n) = 1
+#define SPI_IS_FLAG(n)		(_SPIIF(n) != 0)
+#define SPI_CLR_FAULT(n)	_SPFIF(n) = 0
+#define SPI_SET_FAULT(n)	_SPFIF(n) = 1
+#define SPI_IS_FAULT(n)		(_SPFIF(n) != 0)
 /*
 * Power management of SPI module (PMDx.UnMD bit)
 */
-//#define _UMD(n)		_U##n##MD
-/*
-* UART Initialization
-*
-* n - UART number (1 - 4)
-* mode - UART mode ([U_EN] | [U_PARITYx] | [U_RTSx]|[...])
-* sta - UART status ([U_TXEN] | [U_TXIx]|[U_RXIx]|[...])
-* brg - BRG register value (use FCY2BRG(FCY2, baud_rate))
-* ipl - interrupt priority levels, if <= 0 - no unterrupt
-*/
-//#define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl, er_ipl) {\
-//	UART_DISABLE_RXINT(n); /* Disable UART interrupts */\
-//	UART_DISABLE_TXINT(n); UART_DISABLE_ERINT(n);\
-//\
-//	if (UART_IS_VALID(n)) { /* Valid input levels */\
-//		_UMD(n) = 0;	/* Power on UART module */\
-//		UART_WAKEUP(n); /* Wake-up RS-232 Driver */\
-//\
-//		/* Setup mode (UART disabled). Setup control */\
-//		/* bits, clear FIFO buffers and receiver errors */\
-//		UMODE(n) = (mode) & ~U_EN; USTA(n) = (sta) & ~U_TXEN;\
-//		UBRG(n) = brg; /* Write appropriate baud rate value */\
-//		/* Clear all interrupt status flags (Rx, Tx and Error */\
-//		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
-//\
-//		if (rx_ipl > 0) {\
-//			UART_SET_RX_IPL(n, rx_ipl); /* Receive IPL */\
-//			UART_ENABLE_RXINT(n); /* Enable interrupt */\
-//		}\
-//\
-//		if (tx_ipl > 0) {\
-//			UART_SET_TX_IPL(n, tx_ipl); /* Transmit IPL */\
-//			UART_ENABLE_TXINT(n); /* Enable interrupt */\
-//		}\
-//\
-//		if (er_ipl > 0) {\
-//			UART_SET_ER_IPL(n, er_ipl); /* Error IPL */\
-//			UART_ENABLE_ERINT(n); /* Enable interrupt */\
-//		}\
-//\
-//		if ((mode) & U_EN) { /* If it is set in 'mode' */\
-//			UMODEbits(n).UARTEN = 1; /* Enable module */\
-//			/* The UTXEN bit should not be set until the */\
-//			/* UARTEN bit has been set; otherwise, UART */\
-//			/* transmissions will  not be enabled. */\
-//			/* Enable Transmitter if it's needed */\
-//			if ((sta) & U_TXEN) UART_ENABLE_TX(n);\
-//		}\
-//\
-//	} else { /* The RS-232 port isn't connected */\
-//		UART_SHDN(n); /* Shutdown RS-232 Driver */\
-//		_UMD(n) = 1; /* Power off UART module */\
-//	} /* UART_IS_VALID() */\
-//}
-
-//#define UART_IS_INIT(n) /* Powered & Enabled */\
-//((_UMD(n) == 0) && (UMODEbits(n).UARTEN != 0))
+#define _SPIMD(n)		_SPI##n##MD
 
 #endif /*_SPI_INCL_*/
