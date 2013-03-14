@@ -132,14 +132,14 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
 \
 		if (rx_ipl > 0) {\
-			UART_SET_RX_IPL(n, rx_ipl); /* Receive IPL */\
-			UART_SET_ER_IPL(n, rx_ipl); /* Set the same */\
+			UART_SET_RXIPL(n, rx_ipl); /* Receive IPL */\
+			UART_SET_ERIPL(n, rx_ipl); /* Set the same */\
 			UART_ENABLE_ERINT(n); /* Enable interrupt */\
 			UART_ENABLE_RXINT(n); /* Enable interrupt */\
 		}\
 \
 		if (tx_ipl > 0) {\
-			UART_SET_TX_IPL(n, tx_ipl); /* Transmit IPL */\
+			UART_SET_TXIPL(n, tx_ipl); /* Transmit IPL */\
 			UART_ENABLE_TXINT(n); /* Enable interrupt */\
 		}\
 \

@@ -7,8 +7,7 @@
 #define T_ON		0x8000 /* Timer ON bit */
 
 /* Timer gate time accumulation enable bit */
-#define T_GATE_OFF	0x0000 /* Disabled (def) */
-#define T_GATE_ON	0x0040 /* Enabled */
+#define T_GATE		0x0040 /* 1 = Enabled */
 
 /* Timer input clock prescale select bits */
 #define T_PS_8		0x0010 /* Prescaler 1:8 */
@@ -26,7 +25,7 @@
 #define T_MODE_INT	0x0000 /* Internal clock source Fcy/2 (def) */
 #define T_MODE_EXT	0x0002 /* External clock source (rising age) */
 /* Gated time accumulation mode (internal clock source only) */
-#define T_MODE_INT_GATE		(T_MODE_INT | T_GATE_ON)
+#define T_MODE_INT_GATE		(T_MODE_INT | T_GATE)
 /* Synchronous counter mode (external lock only) */
 #define T1_MODE_EXT_SYNC	(T_MODE_EXT | T1_SYNC)
 

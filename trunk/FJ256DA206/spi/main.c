@@ -13,6 +13,8 @@
 
 #include "main.h"
 
+#define SPI_USED 1
+
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
 
@@ -45,8 +47,6 @@ _OscillatorFail(void)
 	++nOscFail;
 }
 
-#define SPI_USED 1
-
 int main(void)
 {
 	int cfg;
@@ -76,12 +76,8 @@ int main(void)
 	/* Select reference clock = FCY/1 and disable it in */
 	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
-if (!SPI_IS_ENABLE(SPI_USED)) {
-	_SPIMD(SPI_USED) = 0;
-	SPI_ENABLE(SPI_USED);
-	if (SPI_TX_COUNT(SPI_USED) == 0)
-		SPI_DISABLE(SPI_USED);
-}
+	SPI_EMASTER_INIT(SPI_USED,
+		S_CKP | S_1000, SPI_EN | S_TXI_READY, 1);
 
 	do { // Main loop
 
