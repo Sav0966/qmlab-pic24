@@ -4,17 +4,15 @@
 #ifndef _SPI_INCL_
 #define _SPI_INCL_
 /*
-* UART Transmit and Receive Registers
+* SPI Transmit and Receive Buffer
 */
-//#define _UTXREG(n)	U##n##TXREG
-//#define _URXREG(n)	U##n##RXREG
-//#define UTXREG(n)	_UTXREG(n)
-//#define URXREG(n)	_URXREG(n)
+#define _SPIBUF(n)		SPI##n##BUF
+#define SPIBUF(n)(n)	_SPIBUF(n)
 
-//#define UART_WRITE(n, ch)	UTXREG(n) = ch
-//#define UART_READ8(n)		((char)URXREG(n))
-//#define UART_READ9(n)		((int)URXREG(n))
-//#define UART_FIFO_SIZE		4
+#define SPI_WRITE(n, i)		SPIBUF(n) = i
+#define SPI_READ8(n)		((char)SPIBUF(n))
+#define SPI_READ16(n)		((int)SPIBUF(n))
+#define SPI_FIFO_SIZE		8 /* Enhanced Buffer mode */
 /*
 * UART Baud Rate Generator Prescaler Register
 */
@@ -32,11 +30,6 @@
 //#define _UMODEbits(n)	U##n##MODEbits
 //#define UMODEbits(n)	_UMODEbits(n)
 //#define UMODE(n)		_UMODE(n)
-// If UART is disabled: all UART pins are controlled by
-// 		port latches; UART power consumption is minimal
-// If UART is enabled: all UARTx pins are controlled
-// 		by UART as defined by UEN<1:0> (U_RTS_xxx)
-//#define U_EN			0x8000 // UART Enable bit
 
 // Most usable modes of UART module
 //#define U_NOPARITY		0x0000 // (def) 8-bit data, no parity
@@ -77,31 +70,29 @@
 // TX, RX, CTS and RTS pins are enabled and used
 //#define U_RTS_CTS		0x0200
 
-// Power saving and wake-up flags:
-//#define U_SIDL			0x2000 // Stop operation during idle
-// If Wake-up on Start Bit Detect During Sleep Mode is enabled
-// UART will continue to sample the RX pin; interrupt is generated on the
-// falling edge, bit is cleared in hardware on the following rising edge
-//#define U_WAKE			0x0080 // UART Wake-up enable bit
-
 // Receive Polarity Inversion bit (Idle is '1' by default)
 //#define U_RXINV			0x0010 // RX Idle state is '0'
 /*
-* UART Status and Control Register
+* SPI Status and Control Register
 */
-// UART Status and Control Register
-//#define _USTA(n)		U##n##STA
-//#define _USTAbits(n)	U##n##STAbits
-//#define USTAbits(n)		_USTAbits(n)
-//#define USTA(n)			_USTA(n)
+// SPI Status and Control Register
+#define _SPISTAT(n)		SPI##n##STAT
+#define _SPISTATbits(n)	SPI##n##STATbits
+#define SPISTATbits(n)	_SPISTATbits(n)
+#define SPISTAT(n)		_SPISTAT(n)
 
-// By default Transmit is disabled, any pending transmission is
-// aborted and the buffer is reset; TX pin is controlled by port
-// If Transmit is enabled, TX pin controlled by UART
-//#define U_TXEN			0x0400 // Transmit Enable bit
-//#define UART_ENABLE_TX(n)		USTAbits(n).UTXEN = 1
-//#define UART_DISABLE_TX(n)		USTAbits(n).UTXEN = 0
-//#define UART_IS_ENABLE_TX(n)	(USTAbits(n).UTXEN == 1)
+// SPI enable bit (these functions must be assigned to available
+#define SPI_EN			(1 << 15)   // RPn/RPIn pins before use)
+#define SPI_ENABLE(n)		SPISTATbits(n).SPIEN = 1
+#define SPI_DISABLE(n)		SPISTATbits(n).SPIEN = 0
+#define SPI_IS_ENABLE(n)	(SPISTATbits(n).SPIEN == 1)
+
+#define SPI_SIDL		(1 << 13) // Stop operation in Idle mode
+
+// SPIx Buffer Element Count bits (valid in Enhanced Buffer mode)
+// Master mode: Number of SPI transfers pending.
+// Slave mode: Number of SPI transfers unread.
+#define SPI_TX_COUNT(n)	((unsigned char)SPISTATbits(n).SPIBEC)
 
 // Transmission Interrupt Mode Selection bits:
 // (def) Interrupt when a character is transferred to the Transmit
@@ -203,6 +194,7 @@
 /*
 * Power management of SPI module (PMDx.UnMD bit)
 */
-#define _SPIMD(n)		_SPI##n##MD
+#define __SPIMD(n)		_SPI##n##MD
+#define _SPIMD(n)		__SPIMD(n)
 
 #endif /*_SPI_INCL_*/

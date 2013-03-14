@@ -72,6 +72,11 @@
 __attribute__((__interrupt__, auto_psv)) _T##n##Interrupt
 #define TIMER_INTFUNC(timer) _TIMER_INTFUNC(timer)
 /*
+* Power management of Timer module (PMDx.TnMD bit)
+*/
+#define __TMD(n)		_T##n##MD
+#define _TMD(n)			__TMD(n)
+/*
 * 16-bit timer initialization
 *
 * timer - timer number (1 - 5)
@@ -82,7 +87,7 @@ __attribute__((__interrupt__, auto_psv)) _T##n##Interrupt
 #define TIMER_INIT(timer, mode, n, ipl) {\
 	TIMER_DISABLE_INT(timer); /* Disable interrupt */\
 \
-	_T##timer##MD = 0;	/* Power on Timer module */\
+	_TMD(timer) = 0;		/* Power on Timer module */\
 \
 	if (ipl > 0) TIMER_SET_IPL(timer, ipl); /* Setup Timer IPL */\
 \
@@ -104,6 +109,6 @@ __attribute__((__interrupt__, auto_psv)) _T##n##Interrupt
 
 #define TIMER_PWOFF(timer)\
 	TIMER_DONE(timer);	/* Disable timer and interrupt */\
-	_T##timer##MD = 1 	/* Disable module to energy saving */
+	_TMD(timer) = 1 /* Disable module to energy saving */
 
 #endif /*_TIMERS_INCL_*/

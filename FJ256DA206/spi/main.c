@@ -45,6 +45,8 @@ _OscillatorFail(void)
 	++nOscFail;
 }
 
+#define SPI_USED 1
+
 int main(void)
 {
 	int cfg;
@@ -74,10 +76,16 @@ int main(void)
 	/* Select reference clock = FCY/1 and disable it in */
 	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
+if (!SPI_IS_ENABLE(SPI_USED)) {
+	_SPIMD(SPI_USED) = 0;
+	SPI_ENABLE(SPI_USED);
+	if (SPI_TX_COUNT(SPI_USED) == 0)
+		SPI_DISABLE(SPI_USED);
+}
+
 	do { // Main loop
 
 		_CS0 = 0;
-		__asm__ volatile ("nop\nnop\nnop"); // Breakpoint
 		_CS0 = 1;
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode

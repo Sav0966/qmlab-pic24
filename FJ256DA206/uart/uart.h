@@ -214,6 +214,7 @@ USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
 /*
 * Power management of UART module (PMDx.UnMD bit)
 */
-#define _UMD(n)		_U##n##MD
+#define __UMD(n)		_U##n##MD
+#define _UMD(n)			__UMD(n)
 
 #endif /*_UART_INCL_*/
