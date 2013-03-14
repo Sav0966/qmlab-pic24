@@ -46,7 +46,7 @@ int uart_init(void)
 /* =!= It works with UART2 too if set LPBACK here */	U_LPBACK |
 #endif // SIM supports UART1 only (SIM: UART1 IO must be enabled)
 
-		U_NOPARITY | U_EN,			// 8-bit, no parity; Enabled
+		U_NOPARITY | UART_EN,			// 8-bit, no parity; Enabled
 
 		U_TXI_READY | U_RXI_ANY |		// Defaul event settings
 		U_TXEN, FCY2BRG(FCY2, 9600),	// TX Enabled; 9600 baud
@@ -457,7 +457,7 @@ void UART_INTFUNC(UART_USED, Err)(void)
 #define U1_SHDN_SET()	((void)0)
 #define U1_SHDN_CLR()	((void)0)
 void uart_1_test_init(void) // Test only - UART1 is used for SIM
-{ UART_INIT(UART_USED, U_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
 
 // The same for UART3
 #undef	UART_USED
@@ -474,7 +474,7 @@ void uart_1_test_init(void) // Test only - UART1 is used for SIM
 #define U3_SHDN_SET()	((void)0)
 #define U3_SHDN_CLR()	((void)0)
 void uart_3_test_init(void) // Use defauld UART configuration
-{ UART_INIT(UART_USED, U_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
 
 // The same for UART4
 #undef	UART_USED
@@ -489,4 +489,4 @@ void uart_3_test_init(void) // Use defauld UART configuration
 #define U4_SHDN_SET()	((void)0)
 #define U4_SHDN_CLR()	((void)0)
 void uart_4_test_init(void) // Use defauld UART configuration
-{ UART_INIT(UART_USED, U_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }

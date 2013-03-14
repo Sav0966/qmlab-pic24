@@ -124,7 +124,7 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 \
 		/* Setup mode (UART disabled). Setup control */\
 		/* bits, clear FIFO buffers and receiver errors */\
-		UMODE(n) = (mode) & ~U_EN; USTA(n) = (sta) & ~U_TXEN;\
+		UMODE(n) = (mode)&~UART_EN; USTA(n) = (sta)&~U_TXEN;\
 		UBRG(n) = brg; /* Write appropriate baud rate value */\
 \
 		uart_rx_purge(n); uart_tx_purge(n); /* Clear buffers */\
@@ -143,8 +143,8 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 			UART_ENABLE_TXINT(n); /* Enable interrupt */\
 		}\
 \
-		if ((mode) & U_EN) { /* If it is set in 'mode' */\
-			UMODEbits(n).UARTEN = 1; /* Enable module */\
+		if ((mode) & UART_EN) { /* If it is set in 'mode' */\
+			UMODEbits(n).UARTEN = 1;	/* Enable module */\
 			/* The UTXEN bit should not be set until the */\
 			/* UARTEN bit has been set; otherwise, UART */\
 			/* transmissions will  not be enabled. */\
