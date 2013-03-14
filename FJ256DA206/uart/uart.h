@@ -36,7 +36,10 @@
 // 		port latches; UART power consumption is minimal
 // If UART is enabled: all UARTx pins are controlled
 // 		by UART as defined by UEN<1:0> (U_RTS_xxx)
-#define U_EN			0x8000 // UART Enable bit
+#define UART_EN			0x8000 // UART Enable bit
+#define UART_ENABLE(n)		UMODEbits(n).UARTEN = 1
+#define UART_DISABLE(n)		UMODEbits(n).UARTEN = 0
+#define UART_IS_ENABLE(n)	(UMODEbits(n).UARTEN == 1)
 
 // Most usable modes of UART module
 #define U_NOPARITY		0x0000 // (def) 8-bit data, no parity
