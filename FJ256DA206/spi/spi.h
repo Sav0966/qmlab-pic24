@@ -7,159 +7,165 @@
 * SPI Transmit and Receive Buffer
 */
 #define _SPIBUF(n)		SPI##n##BUF
-#define SPIBUF(n)(n)	_SPIBUF(n)
+#define SPIBUF(n)		_SPIBUF(n)
 
 #define SPI_WRITE(n, i)		SPIBUF(n) = i
-#define SPI_READ8(n)		((char)SPIBUF(n))
-#define SPI_READ16(n)		((int)SPIBUF(n))
+#define SPI_READ16(n)		((unsigned int)SPIBUF(n))
+#define SPI_READ8(n)		((unsigned char)SPIBUF(n))
 #define SPI_FIFO_SIZE		8 /* Enhanced Buffer mode */
 /*
-* UART Baud Rate Generator Prescaler Register
+* SPI Control Register 1
 */
-//#define _UBRG(n)	U##n##BRG
-//#define UBRG(n)		_UBRG(n)
-// Computation of the baud rate whith RBGH = 0
-//#define FCY2BRG(fcy, rate) ((int)((fcy/(16L*rate))-1))
-// Computation of the baud rate whith RBGH = 1
-//#define FCY2BRGH(fcy, rate) ((int)((fcy/(4L*rate))-1))
+// SPI Control Register 1
+#define _SPICON1(n)			SPI##n##CON1
+#define _SPICON1bits(n)		SPI##n##CON1bits
+#define SPICON1bits(n)		_SPICON1bits(n)
+#define SPICON1(n)			_SPICON1(n)
+
+#define S_MODE16	(1 << 10) // Word/Byte Communication Select bit
+
+#define S_SMP		(1 << 9) // SPI Data Input Sample Phase bit
+// Master mode: 1 = Input data sampled at the end of data output time
+//              0 = Input data sampled at the middle of data output time
+// Slave mode:  SMP must be cleared when SPIx is used in Slave mode.
+#define SPI_CLR_SMP(n)		SPICON1bits(n).SMP = 0
+
+#define S_CKE		(1 << 8) // SPI Clock Edge Select bit
+// 1 = Serial output data changes on transition from Active to Idle clock state
+// 0 = Serial output data changes on transition from Idle to Active clock state
+// The user should program this bit to '0' for the Framed SPI modes
+
+#define S_CKP		(1 << 6) // Clock Polarity Select bit
+// 1 = Idle state for the clock is a high level; active state is a low level
+// 0 = Idle state for the clock is a low level; active state is a high level
+
+#define S_MSTEN		(1 << 5) // 1 = Master mode, 0 = Slave mode
+
+// SS, SCK and SDO pins using:
+#define S_SSEN	(1 << 7) // Slave Select Enable (Slave mode) bit
+// If S_SSEN = 1, SS must be configured to an available RPn pin
+#define S_DISSDO	(1 << 11) // Disable SDO Pin bit
+#define S_DISSCK	(1 << 12) // Disable SCK Pin bit (SPI Master modes only)
+// If enabled (=0), SDO or/and SCK must be configured to an available RPn pin
+
+#define S_PPRE_64		0 // Primary Prescale bits (Master mode)
+#define S_PPRE_16		1
+#define S_PPRE_4		2
+#define S_PPRE_NONE		3
+
+#define S_SPRE_8		(0 << 2) //Secondary Prescale bits (Master mode)
+#define S_SPRE_7		(1 << 2)
+#define S_SPRE_6		(2 << 2)
+#define S_SPRE_5		(3 << 2)
+#define S_SPRE_4		(4 << 2)
+#define S_SPRE_3		(5 << 2)
+#define S_SPRE_2		(6 << 2)
+#define S_SPRE_NONE		(7 << 2)
+
+// Sample SCK Frequencies for FCY2 = 16 MHz
+#define S_8000		(S_PPRE_NONE | S_SPRE_2)
+#define S_4000		(S_PPRE_4 | S_SPRE_NONE)
+#define S_2000		(S_PPRE_4 | S_SPRE_2)
+#define S_1000		(S_PPRE_16 | S_SPRE_NONE)
+#define S_500		(S_PPRE_16 | S_SPRE_2)
+#define S_250		(S_PPRE_64 | S_SPRE_NONE)
+#define S_125		(S_PPRE_64 | S_SPRE_2)
 /*
-* UART Mode Register and appropriate mode settings
+* SPI Control Register 2
 */
-// UART Mode Register and its bits
-//#define _UMODE(n)		U##n##MODE
-//#define _UMODEbits(n)	U##n##MODEbits
-//#define UMODEbits(n)	_UMODEbits(n)
-//#define UMODE(n)		_UMODE(n)
+// SPI Control Register 2
+#define _SPICON2(n)			SPI##n##CON2
+#define _SPICON2bits(n)		SPI##n##CON2bits
+#define SPICON2bits(n)		_SPICON2bits(n)
+#define SPICON2(n)			_SPICON2(n)
 
-// Most usable modes of UART module
-//#define U_NOPARITY		0x0000 // (def) 8-bit data, no parity
-//#define U_EVEN			0x0002 // 8-bit data, even parity
-//#define U_ODD			0x0004 // 8-bit data, odd parity
-//#define U_9BIT			0x0006 // 9-bit data, no parity
-//#define U_1STOP			0x0000 // (def) One Stop bit
-//#define U_2STOP			0x0001 // Two Stop bits
+// Enhanced Buffer Enable bit (1 = enabled)
+#define SPI_BUF_ENABLE(n)	SPICON2bits(n).SPIBEN = 1
 
-// Loopback Mode Rx<->Tx, (RTS<->CTS, if used)
-// LPBACK = 1 should be set only after enabling
-// the other bits associated with the UART module
-//#define UART_SET_LPBACK(n)	UMODEbits(n).LPBACK = 1
-//#define UART_CLR_LPBACK(n)	UMODEbits(n).LPBACK = 0
-//#define UART_IS_LPBACK(n)	(UMODEbits(n).LPBACK == 1)
-
-// Auto Baud Mode. Enable baud rate measurement on the
-// next character – requires reception of a Sync field
-// (55h); cleared in hardware upon completion
-//#define UART_SET_ABAUD(n)	UMODEbits(n).ABAUD = 1
-//#define UART_CLR_ABAUD(n)	UMODEbits(n).ABAUD = 0
-//#define UART_IS_ABAUD(n)	(UMODEbits(n).ABAUD == 1)
-
-// High-Speed mode (4 BRG clock cycles per bit); x16 - default
-//#define U_BRGH			0x0008 // Not usable for IrDA support
-
-//#define U_IREN			0x1000 // IrDA Encoder and Decoder Enable bit
-
-// RTS/BCLK and CTS pins configurations and control modes:
-//#define U_RTS_SIMPLEX	0x0800 // RTS pin is in Simplex mode
-//#define U_RTS_FLOW		0x0000 // (def) RTS pin is in Flow Control mode
-// (def) TX and RX pins are enabled and used; CTS and RTS/BCLK pins
-//#define U_RTS_NONE		0x0000 // are controlled by port latches
-// TX, RX and RTS pins are enabled and used; CTS pin is
-//#define U_RTS_ONLY		0x0100 // controlled by port latches
-// TX, RX and BCLK pins are enabled and used; CTS pin is controlled by
-//#define U_RTS_BCLK		0x0300 // port latches (for external IrDA chip)
-// TX, RX, CTS and RTS pins are enabled and used
-//#define U_RTS_CTS		0x0200
-
-// Receive Polarity Inversion bit (Idle is '1' by default)
-//#define U_RXINV			0x0010 // RX Idle state is '0'
+#define S_FRMEN			(1 << 15) // Framed SPIx Support bit (1 = enabled)
+// Frame Sync Pulse Direction Control on SSx Pin bit: 1 = SSx input (slave),
+#define S_FSD			(1 << 14) // 0 = Frame sync pulse output (master)
+// Frame Sync Pulse Polarity bit (Frame mode only): SSx is active-high,
+#define S_FPOL			(1 << 13) // 0 = Frame sync pulse is active-low
+// Frame Sync Pulse Edge Select bit: 1 = SSx coincides with the first bit clock
+#define S_FE			(1 << 1) //  0 = SSx precedes the first bit clock
 /*
 * SPI Status and Control Register
 */
 // SPI Status and Control Register
-#define _SPISTAT(n)		SPI##n##STAT
-#define _SPISTATbits(n)	SPI##n##STATbits
-#define SPISTATbits(n)	_SPISTATbits(n)
-#define SPISTAT(n)		_SPISTAT(n)
+#define _SPISTAT(n)			SPI##n##STAT
+#define _SPISTATbits(n)		SPI##n##STATbits
+#define SPISTATbits(n)		_SPISTATbits(n)
+#define SPISTAT(n)			_SPISTAT(n)
 
 // SPI enable bit (these functions must be assigned to available
 #define SPI_EN			(1 << 15)   // RPn/RPIn pins before use)
 #define SPI_ENABLE(n)		SPISTATbits(n).SPIEN = 1
 #define SPI_DISABLE(n)		SPISTATbits(n).SPIEN = 0
-#define SPI_IS_ENABLE(n)	(SPISTATbits(n).SPIEN == 1)
+#define SPI_IS_ENABLE(n)	(SPISTATbits(n).SPIEN != 0)
 
-#define SPI_SIDL		(1 << 13) // Stop operation in Idle mode
+#define S_SIDL			(1 << 13) // Stop operation in Idle mode
+
+// Receive Overflow Flag bit
+#define SPI_IS_OERR(n)		(SPISTATbits(n).SPIROV != 0)
+#define SPI_CLR_OERR(n)		SPISTATbits(n).SPIROV = 0
 
 // SPIx Buffer Element Count bits (valid in Enhanced Buffer mode)
 // Master mode: Number of SPI transfers pending.
 // Slave mode: Number of SPI transfers unread.
 #define SPI_TX_COUNT(n)	((unsigned char)SPISTATbits(n).SPIBEC)
 
-// Transmission Interrupt Mode Selection bits:
-// (def) Interrupt when a character is transferred to the Transmit
-// Shift Register (this implies there is at least one character
-//#define U_TXI_READY		0x0000 // open in the transmit buffer)
-// Interrupt when a character is transferred to the Transmit
-// Shift Register (TSR) and as a result, the transmit buffer
-//#define U_TXI_EMPTY		0x8000 //  becomes empty
-// Interrupt when the last character is shifted out of
-// the Transmit Shift Register; all transmit operations
-//#define U_TXI_END		0x2000 // are completed
+// Shift Register Empty bit (valid in Enhanced Buffer mode)
+#define SPI_SR_EMPTY(n)		(SPISTATbits(n).SRMPT != 0)
 
-//#define UART_SET_TXI(n, txi) /* Set new TXI value */\
-//USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
+// Receive FIFO Empty bit (valid in Enhanced Buffer mode)
+#define SPI_RX_EMPTY(n)		(SPISTATbits(n).SRXMPT != 0)
 
-// Receive Interrupt Mode Selection bits
-// (def) Interrupt is set when any character is received and
-// transferred from the RSR to the receive buffer; receive buffer
-//#define U_RXI_ANY		0x0000 // has one or more characters
-// Interrupt is set on an RSR transfer, making the receive buffer 3/4
-//#define U_RXI_3DATA		0x0080 // full (i.e., has 3 data characters)
-// Interrupt is set on an RSR transfer, making the receive buffer
-//#define U_RXI_FULL		0x00C0 // full (i.e., has 4 data characters)
+// SPIx Buffer Interrupt Mode bits (valid in Enhanced Buffer mode):
+// (def) Interrupt when the last data in the receive buffer is read; as a
+#define S_RXI_EMPTY		0 // result, the buffer is empty (SRXMPT bit set)	
+// Interrupt when data is available in the receive buffer (SRMPT bit is set)
+#define S_RXI_ANY		(1 << 2)
+// Interrupt when the SPIx receive buffer is 3/4 or more full
+#define S_RXI_6DATA		(2 << 2)
+// Interrupt when the SPIx receive buffer is full (SPIRBF bit set)
+#define S_RXI_FULL		(3 << 2)
+// Interrupt when one data is shifted into the SPIxSR; as a result,
+#define S_TXI_READY		(4 << 2) // the TX FIFO has one open spot
+// Interrupt when the last bit is shifted out of SPIxSR; now
+#define S_TXI_END		(5 << 2) // the transmit is complete
+// Interrupt when the last bit is shifted into SPIxSR; as a result,
+#define S_TXI_EMPTY		(6 << 2) // the TX FIFO is empty
+// Interrupt when the SPIx transmit buffer is full (SPITBF bit is set)
+#define S_TXI_FULL		(7 << 2)
 
-// 0 => Transmit buffer is not full, at least one more character can
-//#define UART_CAN_WRITE(n)	(USTAbits(n).UTXBF == 0) // be written
-// 1 => Transmit Shift Register is empty and transmit
-// buffer is empty (the last transmission has completed)
-//#define UART_IS_TXEND(n)	(USTAbits(n).TRMT != 0)
+#define SPI_SET_RTXI(n, rtxi) /* Set new TXI or RXI value */\
+	SPISTAT(n) = (SPISTAT(n) & ~(7 << 2)) | (rtxi & (7 << 2))
 
-// Receive Buffer Data Available bit (read-only). Receive
-// buffer has data, at least one more character can be read
-//#define UART_CAN_READ(n) (USTAbits(n).URXDA != 0)
+// SPIx Transmit Buffer Full Status bit:
+// In Standard Buffer mode: Automatically set in hardware when the CPU writes
+// to the SPIxBUF location, loading SPIxTXB. Automatically cleared in hardware
+// when the SPIx module transfers data from SPIxTXB to SPIxSR.
+// In Enhanced Buffer mode: Automatically set in hardware when the CPU writes
+// to the SPIxBUF location, loading the last available buffer location.
+// Automatically cleared in hardware when a buffer location is available
+// for a CPU write.
+#define SPI_CAN_WRITE(n)	(SPISTATbits(n).SPITBF == 0)
 
-// Receiver errors:
-//#define U_PERR			0x0008
-//#define U_FERR			0x0004
-//#define U_OERR			0x0002
-//#define UART_IS_RXERR(n)	((USTA(n) & (U_PERR|U_FERR|U_OERR)) != 0)
-// Receive Buffer Overrun Error Status bit (clear/read-only). Must be
-// cleared by software. Clearing a previously set OERR bit (1 -> 0
-// transition) will reset the receiver buffer and the RSR to the
-//#define UART_IS_OERR(n)	(USTAbits(n).OERR != 0) //  empty state
-//#define UART_CLR_OERR(n)	USTAbits(n).OERR = 0
-// Parity Error Status bit (read-only). Parity error has been detected for
-// the current character (character at the top of the receive FIFO)
-//#define UART_IS_PERR(n)	(USTAbits(n).PERR != 0)
-// Framing Error Status bit (read-only). Framing error has been detected
-// for the current character (character at the top of the receive FIFO)
-//#define UART_IS_FERR(n)	(USTAbits(n).FERR != 0)
+// SPIx Receive Buffer Full Status bit:
+// In Standard Buffer mode: Automatically set in hardware when SPIx transfers
+// data from SPIxSR to SPIxRXB. Automatically cleared in hardware when the core
+// reads the SPIxBUF location, reading SPIxRXB.
+// In Enhanced Buffer mode: Automatically set in hardware when SPIx transfers
+// data from the SPIxSR to the buffer, filling the last unread buffer location.
+// Automatically cleared in hardware when a buffer location is available for
+// a transfer from SPIxSR.
+#define SPI_RX_FULL(n)		(SPISTATbits(n).SPIRBF != 0)
 
-// Receiver Idle bit (read-only)
-//#define UART_IS_RXIDLE(n)	(USTAbits(n).RIDLE != 0)
-
-// Send Sync Break on next transmission – Start bit, followed by twelve
-// '0' bits, followed by Stop bit; cleared by hardware upon completion
-//#define UART_SET_BREAK(n) USTAbits(n).UTXBRK = 1
-
-// Address Character Detect bit (bit 8 of received data = 1). If 9-bit mode
-//#define U_ADDEN		0x0020 //  is not selected, this does not take effect
-//#define UART_SET_ADDEN(n)	USTAbits(n).ADDEN = 1 // Wait Address byte
-//#define UART_CLR_ADDEN(n)	USTAbits(n).ADDEN = 0 // Wait Data bytes
-
-// IrDA Encoder Transmit Polarity Inversion bit
-//#define U_TXINV			0x4000 // TX is Idle 'IREN'
+// SPI_CAN_READ() is different in Standard mode and Enhanced Buffer mode
+#define SPI_CAN_READ(n, SPIBEN)	(SPIBEN)? !SPI_RX_EMPTY(n): SPI_RX_FULL(n)
 /*
-* Interrupt management of SPI module (spi rx/tx and spi fault)
+* Interrupt management of SPI module (spi_rx/tx and spi_fault)
 */
 // Interrupt Priority levels
 #define _SPIIP(n) _SPI##n##IP
@@ -167,8 +173,8 @@
 // Setup and obtain SPI IPL values
 #define SPI_SET_IPL(n, ipl)		_SPIIP(n) = ipl
 #define SPI_GET_IPL(n)			((int)_SPIIP(n))
-#define SPI_SET_FIPL(n, ipl)	_SPFIP(n) = ipl
-#define SPI_GET_FIPL(n)			((int)_SPFIP(n))
+#define SPI_SET_ERIPL(n, ipl)	_SPFIP(n) = ipl
+#define SPI_GET_ERIPL(n)		((int)_SPFIP(n))
 
 // Interrupt Enable bits
 #define _SPIIE(n) _SPI##n##IE
@@ -177,9 +183,9 @@
 #define SPI_ENABLE_INT(n)		_SPIIE(n) = 1
 #define SPI_DISABLE_INT(n)		_SPIIE(n) = 0
 #define SPI_IS_ENABLE_INT(n)	(_SPIIE(n) == 1)
-#define SPI_ENABLE_FINT(n)		_SPFIE(n) = 1
-#define SPI_DISABLE_FINT(n)		_SPFIE(n) = 0
-#define SPI_IS_ENABLE_FINT(n)	(_SPFIE(n) == 1)
+#define SPI_ENABLE_ERINT(n)		_SPFIE(n) = 1
+#define SPI_DISABLE_ERINT(n)		_SPFIE(n) = 0
+#define SPI_IS_ENABLE_ERINT(n)	(_SPFIE(n) == 1)
 
 // Interrupt Status bits
 #define _SPIIF(n) _SPI##n##IF
@@ -188,13 +194,106 @@
 #define SPI_CLR_FLAG(n)		_SPIIF(n) = 0
 #define SPI_SET_FLAG(n)		_SPIIF(n) = 1
 #define SPI_IS_FLAG(n)		(_SPIIF(n) != 0)
-#define SPI_CLR_FAULT(n)	_SPFIF(n) = 0
-#define SPI_SET_FAULT(n)	_SPFIF(n) = 1
-#define SPI_IS_FAULT(n)		(_SPFIF(n) != 0)
+#define SPI_CLR_ERFLAG(n)	_SPFIF(n) = 0
+#define SPI_SET_ERFLAG(n)	_SPFIF(n) = 1
+#define SPI_IS_ERFLAG(n)	(_SPFIF(n) != 0)
+
+// SPI Interrupt Service Routine template
+#define _SPI_INTFUNC(n)\
+__attribute__((__interrupt__, auto_psv)) _SPI##n##Interrupt
+#define _SPI_ERR_INTFUNC(n)\
+__attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
+#define SPI_ERR_INTFUNC(n) _SPI_ERR_INTFUNC(n)
+#define SPI_INTFUNC(n) _SPI_INTFUNC(n)
 /*
 * Power management of SPI module (PMDx.UnMD bit)
 */
-#define __SPIMD(n)		_SPI##n##MD
-#define _SPIMD(n)		__SPIMD(n)
+#define __SPIMD(n)			_SPI##n##MD
+#define _SPIMD(n)			__SPIMD(n)
+/*
+*	Initialize the SPI module for the Standard Master mode of operation
+*/
+#define SPI_MASTER_INIT(n, con, sta, ipl) {\
+	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
+	_SPIMD(n) = 0; /* Power on SPI module */\
+\
+	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPICON1(n) = (con) | S_MSTEN; SPICON2(n) = 0; /* Master mode */\
+	SPI_CLR_OERR(n); /* Clear overrun error */\
+\
+	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
+\
+	if (ipl > 0) { /* Enable interrupts, if used */\
+		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
+		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
+	}\
+\
+	if ((sta) & SPI_EN) SPI_ENABLE(n);\
+} ((void)0)
+/*
+*	Initialize the SPI module for the Enhanced Master mode of operation
+*/
+#define SPI_EMASTER_INIT(n, con, sta, ipl) {\
+	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
+	_SPIMD(n) = 0; /* Power on SPI module */\
+\
+	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPICON1(n) = (con) | S_MSTEN; SPICON2(n) = 0; /* Master mode */\
+	SPI_CLR_OERR(n); SPI_BUF_ENABLE(n); /* Enable FIFO buffer */\
+\
+	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
+\
+	if (ipl > 0) { /* Enable interrupts, if used */\
+		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
+		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
+	}\
+\
+	if ((sta) & SPI_EN) SPI_ENABLE(n);\
+} ((void)0)
+/*
+*	Initialize the SPI module for the Standard Slave mode of operation
+*/
+#define SPI_SLAVE(n, con, sta, ipl) {\
+	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
+	_SPIMD(n) = 0; /* Power on SPI module */\
+\
+	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPI_WRITE(n, 0);				/* Clear the SPIBUF register */\
+	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & !S_MSTEN;\
+	SPICON2(n) = 0; /* Slave mode, if CKE is set, set SSEN too  */\
+	SPI_CLR_SMP(n); SPI_CLR_OERR(n); /* Clear the SMP and error */\
+\
+	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
+\
+	if (ipl > 0) { /* Enable interrupts, if used */\
+		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
+		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
+	}\
+\
+	if ((sta) & SPI_EN) SPI_ENABLE(n);\
+} ((void)0)
+/*
+*	Initialize the SPI module for the Enhanced Slave mode of operation
+*/
+#define SPI_ESLAVE_INIT(n, con, sta, ipl) {\
+	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
+	_SPIMD(n) = 0; /* Power on SPI module */\
+\
+	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPI_WRITE(n, 0);				/* Clear the SPIBUF register */\
+	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & !S_MSTEN;\
+	SPICON2(n) = 0; /* Slave mode, if CKE is set, set SSEN too  */\
+	SPI_CLR_SMP(n); SPI_CLR_OERR(n); /* Clear the SMP and error */\
+	SPI_BUF_ENABLE(n); /* Enable FIFO buffer */\
+\
+	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
+\
+	if (ipl > 0) { /* Enable interrupts, if used */\
+		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
+		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
+	}\
+\
+	if ((sta) & SPI_EN) SPI_ENABLE(n);\
+} ((void)0)
 
 #endif /*_SPI_INCL_*/

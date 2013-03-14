@@ -12,8 +12,8 @@
 #define URXREG(n)	_URXREG(n)
 
 #define UART_WRITE(n, ch)	UTXREG(n) = ch
-#define UART_READ8(n)		((char)URXREG(n))
-#define UART_READ9(n)		((int)URXREG(n))
+#define UART_READ9(n)		((unsigned int)URXREG(n))
+#define UART_READ8(n)		((unsigned char)URXREG(n))
 #define UART_FIFO_SIZE		4
 /*
 * UART Baud Rate Generator Prescaler Register
@@ -39,7 +39,7 @@
 #define UART_EN			0x8000 // UART Enable bit
 #define UART_ENABLE(n)		UMODEbits(n).UARTEN = 1
 #define UART_DISABLE(n)		UMODEbits(n).UARTEN = 0
-#define UART_IS_ENABLE(n)	(UMODEbits(n).UARTEN == 1)
+#define UART_IS_ENABLE(n)	(UMODEbits(n).UARTEN != 0)
 
 // Most usable modes of UART module
 #define U_NOPARITY		0x0000 // (def) 8-bit data, no parity
@@ -178,12 +178,12 @@ USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
 #define _UTXIP(n) _U##n##TXIP
 #define _UERIP(n) _U##n##ERIP
 // Setup and obtain UART IPL values
-#define UART_SET_RX_IPL(n, ipl)	_URXIP(n) = ipl
-#define UART_GET_RX_IPL(n)		((int)_URXIP(n))
-#define UART_SET_TX_IPL(n, ipl)	_UTXIP(n) = ipl
-#define UART_GET_TX_IPL(n)		((int)_UTXIP(n))
-#define UART_SET_ER_IPL(n, ipl)	_UERIP(n) = ipl
-#define UART_GET_ER_IPL(n)		((int)_UERIP(n))
+#define UART_SET_RXIPL(n, ipl)	_URXIP(n) = ipl
+#define UART_GET_RXIPL(n)		((int)_URXIP(n))
+#define UART_SET_TXIPL(n, ipl)	_UTXIP(n) = ipl
+#define UART_GET_TXIPL(n)		((int)_UTXIP(n))
+#define UART_SET_ERIPL(n, ipl)	_UERIP(n) = ipl
+#define UART_GET_ERIPL(n)		((int)_UERIP(n))
 
 // Interrupt Enable bits
 #define _URXIE(n) _U##n##RXIE
