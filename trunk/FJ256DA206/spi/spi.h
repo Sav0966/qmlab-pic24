@@ -286,7 +286,7 @@ __attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
 	SPI_CLR_SMP(n); SPI_CLR_OERR(n); /* Clear the SMP and error */\
 	SPI_BUF_ENABLE(n); /* Enable FIFO buffer */\
 \
-	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
+	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */\
 \
 	if (ipl > 0) { /* Enable interrupts, if used */\
 		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
@@ -295,5 +295,18 @@ __attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
 \
 	if ((sta) & SPI_EN) SPI_ENABLE(n);\
 } ((void)0)
+
+#define SPI_IS_INIT(n) /* Powered & Enabled */\
+((_SPIMD(n) == 0) && SPI_IS_ENABLE(n))
+
+#define SPI_DONE(n)\
+	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
+	SPI_DISABLE(n); /* Disable module and interrupts */\
+	/* Clear all interrupt status flags (SPI and Err */\
+	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n)
+
+#define SPI_PWOFF(n)\
+	SPI_DONE(n); /* Disable SPI and interrupt */\
+	_SPIMD(n) = 1 /* Power off SPI module */
 
 #endif /*_SPI_INCL_*/
