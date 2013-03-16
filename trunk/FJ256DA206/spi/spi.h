@@ -253,7 +253,7 @@ __attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
 /*
 *	Initialize the SPI module for the Standard Slave mode of operation
 */
-#define SPI_SLAVE(n, con, sta, ipl) {\
+#define SPI_SLAVE_INIT(n, con, sta, ipl) {\
 	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
 	_SPIMD(n) = 0; /* Power on SPI module */\
 \
