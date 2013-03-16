@@ -32,7 +32,8 @@ DECL_UART_UI(UART_USED); // Declare UART UI
 
 #define uart_is_valid()	UART_IS_VALID(UART_USED)
 #define uart_is_init()	UART_IS_INIT(UART_USED)
-#define uart_done()		UART_PWOFF(UART_USED)
+#define uart_pwoff()	UART_PWOFF(UART_USED)
+#define uart_done()		UART_DONE(UART_USED)
 
 static char _buf[64];
 static int _ch, _cnt; // Temp vars
@@ -76,12 +77,16 @@ void uart_test(void)
   if (UART_IS_RXERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
 #endif // SIM doesn't check receiver errors, but set OERR
 
-	if (sys_clock() & 0x3F) return;
-	// Once per 0.64 seccond test UART
+	if ((sys_clock() & 0x3F) == 0) {
+	 // Once per 0.64 seccond test UART
+		// Power off UART if ~INVALID = '0'
+		if (!uart_is_valid()) { uart_pwoff(); }
+		else if (!uart_is_init()) {
+			uart_init(); stage = 0;
+		}
+	}
 
-	if (!uart_is_init()) uart_init(); // Try to init
-	if (!uart_is_valid()) { // Power off UART if the
-		uart_done(); return; } // pin ~INVALID = '0'
+	if (!uart_is_init()) return;
 
 	// UART_IS_INIT() == TRUE
 
@@ -197,7 +202,7 @@ void uart_test(void)
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
 			++stage; break; // Next test
 
-		default: ASSERT(! "Invalid stage value");
+		default: uart_done(); break;
 	}
 } 
 
