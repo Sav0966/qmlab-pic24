@@ -79,6 +79,11 @@ int main(void)
 	SPI_EMASTER_INIT(SPI_USED,
 		S_CKP | S_1000, SPI_EN | S_TXI_READY, 1);
 
+SPI_WRITE(SPI_USED, 0);
+
+//while (SPI_CAN_READ(SPI_USED, 1))
+//			SPI_READ8(SPI_USED);
+
 	do { // Main loop
 
 		_CS0 = 0;

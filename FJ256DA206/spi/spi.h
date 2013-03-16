@@ -217,7 +217,7 @@ __attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
 	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
 	_SPIMD(n) = 0; /* Power on SPI module */\
 \
-	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
 	SPICON1(n) = (con) | S_MSTEN; SPICON2(n) = 0; /* Master mode */\
 	SPI_CLR_OERR(n); /* Clear overrun error */\
 \
@@ -237,7 +237,7 @@ __attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
 	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
 	_SPIMD(n) = 0; /* Power on SPI module */\
 \
-	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
 	SPICON1(n) = (con) | S_MSTEN; SPICON2(n) = 0; /* Master mode */\
 	SPI_CLR_OERR(n); SPI_BUF_ENABLE(n); /* Enable FIFO buffer */\
 \
@@ -257,9 +257,9 @@ __attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
 	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
 	_SPIMD(n) = 0; /* Power on SPI module */\
 \
-	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
 	SPI_WRITE(n, 0);				/* Clear the SPIBUF register */\
-	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & !S_MSTEN;\
+	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & ~S_MSTEN;\
 	SPICON2(n) = 0; /* Slave mode, if CKE is set, set SSEN too  */\
 	SPI_CLR_SMP(n); SPI_CLR_OERR(n); /* Clear the SMP and error */\
 \
@@ -279,9 +279,9 @@ __attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
 	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
 	_SPIMD(n) = 0; /* Power on SPI module */\
 \
-	SPISTAT(n) = (sta) & !SPI_EN; /* Setup RTXI and disable module */\
+	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
 	SPI_WRITE(n, 0);				/* Clear the SPIBUF register */\
-	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & !S_MSTEN;\
+	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & ~S_MSTEN;\
 	SPICON2(n) = 0; /* Slave mode, if CKE is set, set SSEN too  */\
 	SPI_CLR_SMP(n); SPI_CLR_OERR(n); /* Clear the SMP and error */\
 	SPI_BUF_ENABLE(n); /* Enable FIFO buffer */\
