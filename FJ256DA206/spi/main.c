@@ -13,7 +13,7 @@
 
 #include "main.h"
 
-#define SPI_USED 1
+extern void spi_test(void);
 
 /* 20 џэт 1997 15:00:00 */
 #define BIOS_START_TIME	853801200L
@@ -76,18 +76,9 @@ int main(void)
 	/* Select reference clock = FCY/1 and disable it in */
 	refo_init(RO_SSLP | RO_SYS | RODIV_NONE); /* sleep */
 
-	SPI_EMASTER_INIT(SPI_USED,
-		S_CKP | S_1000, SPI_EN | S_TXI_READY, 1);
-
-SPI_WRITE(SPI_USED, 0);
-
-//while (SPI_CAN_READ(SPI_USED, 1))
-//			SPI_READ8(SPI_USED);
-
 	do { // Main loop
 
-		_CS0 = 0;
-		_CS0 = 1;
+		spi_test(); // Test SPI Module
 
 		__asm__ volatile ("pwrsav	#1"); // Idle mode
 	} while (1); // Main loop
