@@ -19,6 +19,38 @@
 * Redefinition of default MCU pins configuration
 */
 #include <pinscfg.h>
+
+#ifndef _SPI_TEST_
+#error "Don't use this config file in your project"
+#else // Additional pins
+
+#ifdef SPI3_USED
+#error "SPI3 must be free for testing"
+#endif
+
+#define SPI_MASTER		1	// SPI module (master mode)
+#define SPI_SLAVE		3	// SPI module (slave mode)
+
+#if (RP11_OUT == RP_SDO1)
+// Map SPI3 SDI to SPI1 SDO pin
+#define RP_SDI3			RP11_IN
+#else
+#error "SDO1 is not mapped to RP11/RD0 pin"
+#endif // (RP11_OUT == RP_SDO1)
+
+#if (RP12_OUT == RP_SCK1OUT)
+// Map SPI3 SCK to SPI1 SCK pin
+#define RP_SCK3IN		RP12_IN
+#else
+#error "SCK1 is not mapped to RP12/RD11 pin"
+#endif // (RP12_OUT == RP_SCK1OUT)
+
+#undef _CS0 // Undefine all Chip Select pins
+#undef _CS1
+#undef _CS2
+#undef _CS3
+
+#endif // _SPI_TEST_
 /*
 * Definitions of Config Words
 */

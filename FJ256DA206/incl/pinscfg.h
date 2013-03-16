@@ -19,6 +19,7 @@
 #define _U2_SHDN	_LATB11 // C definitions of ~SHDN signal
 
 #define RB15_HIGH	// Test pin (and REFO output)
+#define _REFO		_RB15 // C definitions of REFO pin
 
 // PORT D
 // SPI1 Master Mode (SDO - RD0, SDI - RD2, SCK - RD11)
@@ -94,5 +95,17 @@
 #define	U4_SHDN_CLR()	(_U4_SHDN = 0)
 #endif // U4_SHDN
 #endif // RP_U4RX
+/*
+* Define used SPI modules
+*/
+#if defined(RP_SDI1)
+#define SPI1_USED
+#endif
+#if defined(RP_SDI2)
+#define SPI2_USED
+#endif
+#if defined(RP_SDI3)
+#define SPI3_USED
+#endif
 
 #endif /*_PINSCFG_INCL_*/

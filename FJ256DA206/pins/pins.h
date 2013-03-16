@@ -6,6 +6,7 @@
 *	#define Rxn_IN		// Pin Rxn is input
 *	#define Rxn_LOW		// Pin Rxn is output in low state
 *	#define Rxn_HIGH	// Pin Rxn is output in high state
+*	#define Rxn_AN		// Pin Rxn is analog input
 * Rx - ports RA, RB, RC, RD, RE, RF, RG; n - pin number
 *
 * 2) Use macros to define remapable output function
