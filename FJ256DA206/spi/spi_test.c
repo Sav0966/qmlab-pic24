@@ -2,7 +2,7 @@
 #include <_tools.h>
 #include <config.h>
 #include <clock.h>
-#include <spi.h>
+#include <spis.h>
 
 #include "main.h"		// SPI_xxx
 #include <stdio.h>		// EOF

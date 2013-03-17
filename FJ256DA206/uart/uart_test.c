@@ -202,7 +202,9 @@ void uart_test(void)
 			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
 			++stage; break; // Next test
 
-		default: uart_done(); break;
+		default:
+//			uart_done();
+			break;
 	}
 } 
 

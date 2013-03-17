@@ -4,7 +4,7 @@
 #ifndef _UARTUI_INCL_
 #define _UARTUI_INCL_
 
-#include <uart.h>
+#include <uarts.h>
 /*
 *	Template of UART Interrupt Service Routines
 */
