@@ -9,7 +9,7 @@
 #include <refo.h>
 #include <uart.h>
 #include <osc.h>
-#include <spi.h>
+#include <spis.h>
 
 #include "main.h"
 
