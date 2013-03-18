@@ -2,10 +2,8 @@
 #include <_tools.h>
 #include <config.h>
 #include <clock.h>
-#include <spis.h>
-
-#include "main.h"		// SPI_xxx
-#include <stdio.h>		// EOF
+#include <spimui.h>
+#include <spisui.h>
 
 #define SPI_MODE		(S_CKP | S_1000)
 
@@ -15,29 +13,7 @@
 
 static int stage = 0; // Test stage
 
-void SPI_INTFUNC(SPI_MASTER)(void)
-{
-	SPI_CLR_FLAG(SPI_MASTER);
-}
-
-void SPI_ERR_INTFUNC(SPI_MASTER)(void)
-{
-	SPI_CLR_OERR(SPI_MASTER);
-	SPI_CLR_ERFLAG(SPI_MASTER);
-}
-
-void SPI_INTFUNC(SPI_SLAVE)(void)
-{
-	SPI_CLR_FLAG(SPI_SLAVE);
-	while (SPI_CAN_READ(SPI_SLAVE, 1))
-				SPI_READ8(SPI_SLAVE);
-}
-
-void SPI_ERR_INTFUNC(SPI_SLAVE)(void)
-{
-	SPI_CLR_OERR(SPI_SLAVE);
-	SPI_CLR_ERFLAG(SPI_SLAVE);
-}
+//static unsigned char _buf[1024];
 
 void spi_test(void)
 { // Called from Main Loop more often than once per 10 ms
@@ -46,12 +22,12 @@ void spi_test(void)
 	 // Once per 0.64 seccond test SPI
 		if (!SPI_IS_INIT(SPI_MASTER)) {
 			SPI_EMASTER_INIT(SPI_MASTER,
-				SPI_MODE, SPI_EN | S_TXI_READY, 1);
+				SPI_MODE, SPI_EN | S_RXI_ANY, 2);
 
 			// Map SPI2 SDI and SCK to SPI1 SDO, SCK pins
 
 			SPI_ESLAVE_INIT(SPI_SLAVE, /* Disable SDO */
-				SPI_MODE | S_DISSDO, SPI_EN | S_RXI_ANY, 1);
+				SPI_MODE | S_DISSDO, SPI_EN | S_RXI_ANY, 2);
 
 			stage = 0; // Start test
 		}

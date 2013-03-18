@@ -1,5 +1,5 @@
 /*
-*	SPI 1-3 management functions
+*	SPI 1-3  definitions
 */
 #ifndef _SPI_INCL_
 #define _SPI_INCL_
@@ -197,107 +197,26 @@
 #define SPI_CLR_ERFLAG(n)	_SPFIF(n) = 0
 #define SPI_SET_ERFLAG(n)	_SPFIF(n) = 1
 #define SPI_IS_ERFLAG(n)	(_SPFIF(n) != 0)
-
-// SPI Interrupt Service Routine template
-#define _SPI_INTFUNC(n)\
-__attribute__((__interrupt__, auto_psv)) _SPI##n##Interrupt
-#define _SPI_ERR_INTFUNC(n)\
-__attribute__((__interrupt__, auto_psv)) _SPI##n##ErrInterrupt
-#define SPI_ERR_INTFUNC(n) _SPI_ERR_INTFUNC(n)
-#define SPI_INTFUNC(n) _SPI_INTFUNC(n)
 /*
 * Power management of SPI module (PMDx.UnMD bit)
 */
 #define __SPIMD(n)			_SPI##n##MD
 #define _SPIMD(n)			__SPIMD(n)
 /*
-*	Initialize the SPI module for the Standard Master mode of operation
+*	Template of SPI Interrupt Service Routines
 */
-#define SPI_MASTER_INIT(n, con, sta, ipl) {\
-	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
-	_SPIMD(n) = 0; /* Power on SPI module */\
-\
-	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
-	SPICON1(n) = (con) | S_MSTEN; SPICON2(n) = 0; /* Master mode */\
-	SPI_CLR_OERR(n); /* Clear overrun error */\
-\
-	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
-\
-	if (ipl > 0) { /* Enable interrupts, if used */\
-		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
-		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
-	}\
-\
-	if ((sta) & SPI_EN) SPI_ENABLE(n);\
-} ((void)0)
-/*
-*	Initialize the SPI module for the Enhanced Master mode of operation
-*/
-#define SPI_EMASTER_INIT(n, con, sta, ipl) {\
-	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
-	_SPIMD(n) = 0; /* Power on SPI module */\
-\
-	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
-	SPICON1(n) = (con) | S_MSTEN; SPICON2(n) = 0; /* Master mode */\
-	SPI_CLR_OERR(n); SPI_BUF_ENABLE(n); /* Enable FIFO buffer */\
-\
-	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
-\
-	if (ipl > 0) { /* Enable interrupts, if used */\
-		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
-		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
-	}\
-\
-	if ((sta) & SPI_EN) SPI_ENABLE(n);\
-} ((void)0)
-/*
-*	Initialize the SPI module for the Standard Slave mode of operation
-*/
-#define SPI_SLAVE_INIT(n, con, sta, ipl) {\
-	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
-	_SPIMD(n) = 0; /* Power on SPI module */\
-\
-	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
-	SPI_WRITE(n, 0);				/* Clear the SPIBUF register */\
-	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & ~S_MSTEN;\
-	SPICON2(n) = 0; /* Slave mode, if CKE is set, set SSEN too  */\
-	SPI_CLR_SMP(n); SPI_CLR_OERR(n); /* Clear the SMP and error */\
-\
-	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */	\
-\
-	if (ipl > 0) { /* Enable interrupts, if used */\
-		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
-		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
-	}\
-\
-	if ((sta) & SPI_EN) SPI_ENABLE(n);\
-} ((void)0)
-/*
-*	Initialize the SPI module for the Enhanced Slave mode of operation
-*/
-#define SPI_ESLAVE_INIT(n, con, sta, ipl) {\
-	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
-	_SPIMD(n) = 0; /* Power on SPI module */\
-\
-	SPISTAT(n) = (sta) & ~SPI_EN; /* Setup RTXI and disable module */\
-	SPI_WRITE(n, 0);				/* Clear the SPIBUF register */\
-	SPICON1(n) = (((con)&S_CKE)? ((con)|S_SSEN): con) & ~S_MSTEN;\
-	SPICON2(n) = 0; /* Slave mode, if CKE is set, set SSEN too  */\
-	SPI_CLR_SMP(n); SPI_CLR_OERR(n); /* Clear the SMP and error */\
-	SPI_BUF_ENABLE(n); /* Enable FIFO buffer */\
-\
-	SPI_CLR_FLAG(n); SPI_CLR_ERFLAG(n); /* Clear interrupt flags */\
-\
-	if (ipl > 0) { /* Enable interrupts, if used */\
-		SPI_SET_IPL(n, ipl); SPI_SET_ERIPL(n, ipl);\
-		SPI_ENABLE_INT(n); SPI_ENABLE_ERINT(n);\
-	}\
-\
-	if ((sta) & SPI_EN) SPI_ENABLE(n);\
-} ((void)0)
+#define _SPI_INTFUNC(n,attr)\
+__attribute__((__interrupt__, attr)) _SPI##n##Interrupt
+#define SPI_INTFUNC(n, attr) _SPI_INTFUNC(n, attr)
 
+#define _SPI_ERR_INTFUNC(n, attr)\
+__attribute__((__interrupt__, attr)) _SPI##n##ErrInterrupt
+#define SPI_ERR_INTFUNC(n, attr) _SPI_ERR_INTFUNC(n, attr)
+/*
+*	Common initialization functions
+*/
 #define SPI_IS_INIT(n) /* Powered & Enabled */\
-((_SPIMD(n) == 0) && SPI_IS_ENABLE(n))
+	((_SPIMD(n) == 0) && SPI_IS_ENABLE(n))
 
 #define SPI_DONE(n)\
 	SPI_DISABLE_INT(n); SPI_DISABLE_ERINT(n);\
