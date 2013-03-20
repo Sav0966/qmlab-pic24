@@ -22,7 +22,7 @@ void spi_test(void)
 	 // Once per 0.64 seccond test SPI
 		if (!SPI_IS_INIT(SPI_MASTER)) {
 			SPI_EMASTER_INIT(SPI_MASTER,
-				SPI_MODE, SPI_EN | S_RXI_ANY, 2);
+				SPI_MODE, SPI_EN | S_TXI_READY, 2);
 
 			// Map SPI2 SDI and SCK to SPI1 SDO, SCK pins
 
