@@ -55,7 +55,8 @@ static unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
 
 #define _UART_ERR_NUM(n)	uart_##n##_RXERR_num
 #define UART_ERR_NUM(n)	_UART_ERR_NUM(n)
-static int UART_ERR_NUM(UART_USED) = 0;
+
+static volatile int UART_ERR_NUM(UART_USED) = 0;
 
 IMPL_UBUF_COUNT(UART_USED, TX) { return QUEBUF_LEN(TXB); }
 IMPL_UBUF_COUNT(UART_USED, RX) { return QUEBUF_LEN(RXB); }

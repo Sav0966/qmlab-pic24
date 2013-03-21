@@ -22,33 +22,39 @@
 
 #ifndef _SPI_TEST_
 #error "Don't use this config file in your project"
-#else // Additional pins
+#else // Additional SPI2,3 pins
 
-#ifdef SPI3_USED
-#error "SPI3 must be free for testing"
+#if (defined(SPI3_USED) || defined (SPI2_USED))
+#error "SPI2 and SPI3 must be free for testing"
 #endif
 
-#define SPI_MASTER		1	// SPI module (master mode)
-#define SPI_SLAVE		3	// SPI module (slave mode)
+#define SPI_MASTER		2	// SPI module (master mode)
+//#define SPI_SLAVE		3	// SPI module (slave mode)
 
-#if (RP11_OUT == RP_SDO1)
-// Map SPI3 SDI to SPI1 SDO pin
-#define RP_SDI3			RP11_IN
-#else
-#error "SDO1 is not mapped to RP11/RD0 pin"
-#endif // (RP11_OUT == RP_SDO1)
+#if (PIN_USED(D, 10) || defined(RP3_OUT))
+#error "RP3/RD10 pin must be free for testing"
+#else // Map SPI2 SDO and SPI3 SDI to RP3/RD10 pin
+#define RD10_LOW
+#define RP3_OUT		RP_SDO2
+//#define RP_SDI3		RP3_IN
+#endif
 
-#if (RP12_OUT == RP_SCK1OUT)
-// Map SPI3 SCK to SPI1 SCK pin
-#define RP_SCK3IN		RP12_IN
-#else
-#error "SCK1 is not mapped to RP12/RD11 pin"
-#endif // (RP12_OUT == RP_SCK1OUT)
+//#if (PIN_USED(D, 9) || defined(RP4_OUT))
+//#error "RP4/RD9 pin must be free for testing"
+//#else // Map SPI2 SDI and SPI3 SDO to RP4/RD9 pin
+//#define RD9_LOW
+//#define RP4_OUT		RP_SDO3
+//#define RP_SDI2		RP4_IN
+//#endif
+#define RP_SDI2		RP3_IN
 
-#undef _CS0 // Undefine all Chip Select pins
-#undef _CS1
-#undef _CS2
-#undef _CS3
+#if (PIN_USED(D, 8) || defined(RP2_OUT))
+#error "RP2/RD8 pin must be free for testing"
+#else // Map SPI2 SCK and SPI3 SCK to RP2/RD8 pin
+#define RD8_HIGH
+#define RP2_OUT		RP_SCK2OUT
+//#define RP_SCK3IN	RP2_IN
+#endif
 
 #endif // _SPI_TEST_
 /*

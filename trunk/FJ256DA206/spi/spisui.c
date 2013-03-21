@@ -11,8 +11,7 @@
 void SPI_INTFUNC(SPI_SLAVE, no_auto_psv)(void)
 {
 	SPI_CLR_FLAG(SPI_SLAVE);
-	while (SPI_CAN_READ(SPI_SLAVE, 1))
-				SPI_READ8(SPI_SLAVE);
+	SPI_WRITE(SPI_SLAVE, SPI_READ8(SPI_SLAVE));
 }
 
 void SPI_ERR_INTFUNC(SPI_SLAVE, no_auto_psv)(void)
