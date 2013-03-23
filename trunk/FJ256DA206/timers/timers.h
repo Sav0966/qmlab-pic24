@@ -67,9 +67,9 @@
 #define TIMER_IS_FLAG(timer) (_TIF(timer) != 0)
 
 // Timer Interrupt Service Routine template
-#define _TIMER_INTFUNC(timer) /* timer - 1-5 */\
-__attribute__((__interrupt__, auto_psv)) _T##n##Interrupt
-#define TIMER_INTFUNC(timer) _TIMER_INTFUNC(timer)
+#define _TIMER_INTFUNC(timer, attr) /* timer - 1-5 */\
+__attribute__((__interrupt__, attr)) _T##timer##Interrupt
+#define TIMER_INTFUNC(timer, attr) _TIMER_INTFUNC(timer, attr)
 /*
 * Power management of Timer module (PMDx.TnMD bit)
 */

@@ -24,8 +24,7 @@ static volatile int _sys_clock; // System clock
 
 int sys_clock(void) { return(_sys_clock); }
 
-void __attribute__((__interrupt__, /* shadow, */ no_auto_psv))
-_T1Interrupt(void)
+void TIMER_INTFUNC(1, no_auto_psv)(void)
 {
 	TIMER_SET_PR(1, PR1_START); // Restore period register
 
