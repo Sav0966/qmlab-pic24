@@ -50,8 +50,8 @@
 #endif
 
 // Receiver and transmitterqueue queues
-static unsigned char QUEBUF(RXB, UART_RXBUF_SIZE);
-static unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
+static volatile unsigned char QUEBUF(RXB, UART_RXBUF_SIZE);
+static volatile unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
 
 #define _UART_ERR_NUM(n)	uart_##n##_RXERR_num
 #define UART_ERR_NUM(n)	_UART_ERR_NUM(n)
