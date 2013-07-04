@@ -205,7 +205,7 @@
 /*
 *	Template of SPI Interrupt Service Routines
 */
-#define _SPI_INTFUNC(n,attr)\
+#define _SPI_INTFUNC(n, attr)\
 __attribute__((__interrupt__, attr)) _SPI##n##Interrupt
 #define SPI_INTFUNC(n, attr) _SPI_INTFUNC(n, attr)
 
