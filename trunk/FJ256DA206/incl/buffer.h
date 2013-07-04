@@ -19,8 +19,8 @@
 #define _QUEBUF(id, size)\
  que_##id##_buf[size] __attribute__((noload));\
  static struct {\
-	typeof(que_##id##_buf[0])* volatile back; /* pointer to tail */\
-	typeof(que_##id##_buf[0])* volatile front; /* pointer to head */\
+	volatile typeof(que_##id##_buf[0])* back; /* pointer to tail */\
+	volatile typeof(que_##id##_buf[0])* front; /* pointer to head */\
 	volatile int len; } que_##id = {que_##id##_buf, que_##id##_buf, 0}
 
 #define QUEBUF(id, size)	_QUEBUF(id, size)
