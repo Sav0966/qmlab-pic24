@@ -12,10 +12,10 @@
 #endif
 
 static int stage = 0; // Test stage
-static int cnt, i;
+static int i, min, max, cnt;
 extern volatile int len;
 
-unsigned char _buf[1024];
+unsigned char _buf[4096];
 
 int spi_send(unsigned char* buf, int n);
 
@@ -38,21 +38,24 @@ void spi_test(void)
 	if (!SPI_IS_INIT(SPI_MASTER) /*||
 		!SPI_IS_INIT(SPI_SLAVE)*/) return;
 
-if (SPI_TX_COUNT(SPI_MASTER) > 4)
-	__asm__ volatile ("nop\nnop"); // breakpoint
-
-
 	switch(stage) {
 		case 0:
-			{ i = 0; for (; i < 512; i++) _buf[i] = i; }
-			cnt = 0; spi_send(_buf, 512);
+			{ i = 0; for (; i < 1024; i++) _buf[i] = i; }
+			cnt = 0; min = 8; max = 0;
 
+			spi_send(_buf, 1024);
+
+			while (len > 0) {
+				i = SPI_TX_COUNT(SPI_MASTER);
+				if (i < min) min = i;
+				if (i > max) max = i;
+				cnt += 21; // ~21 clk
+			}
+
+			__asm__ volatile ("nop\nnop\nnop"); // breakpoint
 			++stage; break; // Next test
 
 		case 1:
-			{ i = SPI_TX_COUNT(SPI_MASTER);
-					if (i > cnt) cnt = i; } // Save it
-			for (i = 0; len > 0; i++); i *=7;
 			__asm__ volatile ("nop\nnop"); // breakpoint
 			++stage; break; // Next test
 
