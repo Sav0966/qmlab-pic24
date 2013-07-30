@@ -53,7 +53,7 @@
 static volatile unsigned char QUEBUF(RXB, UART_RXBUF_SIZE);
 static volatile unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
 
-#define _UART_ERR_NUM(n)	uart_##n##_RXERR_num
+#define _UART_ERR_NUM(n)	uart_##n##_rxerr
 #define UART_ERR_NUM(n)	_UART_ERR_NUM(n)
 
 static volatile int UART_ERR_NUM(UART_USED) = 0;
