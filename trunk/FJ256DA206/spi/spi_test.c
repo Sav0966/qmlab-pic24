@@ -5,7 +5,7 @@
 #include <spimui.h>
 #include <spisui.h>
 
-#define SPI_MODE		(S_CKP | S_500)
+#define SPI_MODE		(S_CKP | S_4000)
 
 #ifndef ARSIZE
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
@@ -26,7 +26,7 @@ void spi_test(void)
 	 // Once per 0.64 seccond test SPI
 		if (!SPI_IS_INIT(SPI_MASTER)) {
 			SPI_EMASTER_INIT(SPI_MASTER,
-				SPI_MODE, SPI_EN | S_RXI_6DATA, 2);
+				SPI_MODE, SPI_EN | S_RXI_ANY, 2);
 
 //			SPI_ESLAVE_INIT(SPI_SLAVE, /* Disable SDO */
 //				SPI_MODE, SPI_EN | S_RXI_ANY, 3);
@@ -41,22 +41,22 @@ void spi_test(void)
 	switch(stage) {
 		case 0:
 			for (i = 0; i < 1024+8; i++) _buf[i] = i;
-			cnt = 0; min = SPI_FIFO_SIZE; max = 0;
+			cnt = 0; min = 0x7FFF; max = 0;
 
 			spi_send(_buf, 1024+8);
 
 			while (len > 8) {
-				i = SPI_TX_COUNT(SPI_MASTER);
+				i = SPISTAT(SPI_MASTER) & 0x702;
 				if (i < min) min = i;
 				if (i > max) max = i;
-				cnt += 21; // ~21 clk
+				cnt += 23; // ~23 clk
 			}
 
 			++stage; break; // Next test
 
 		case 1:
-//			for (i = 0; i < 1024+8; i++)	
-//			{ ASSERT(_buf[i] == (unsigned char)i); }
+			for (i = 0; i < 1024+8; i++)	
+			{ ASSERT(_buf[i] == (unsigned char)i); }
 
 			// View and analyse min, max and cnt
 			__asm__ volatile ("nop\nnop"); // breakpoint
