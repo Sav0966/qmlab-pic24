@@ -31,21 +31,40 @@ __asm__ volatile ("nop\nnop"); // breakpoint
 }
 
 void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
-{ // Called on RXI_6DATA event (6 data is ready)
-	SPI_CLR_FLAG(SPI_MASTER);
-	if (len > 8) {
-		while (SPI_CAN_WRITE(SPI_MASTER) &&
-				SPI_CAN_READ(SPI_MASTER, 1)) {
-//			if (len) { 	SPI_WRITE(SPI_MASTER, *pTX++); --len; }
-//			if (SPI_CAN_READ(SPI_MASTER, 1))
-//				*pRX++ = SPI_READ8(SPI_MASTER);
-			len = 0;
-		}
-	} else { len = 0; }
+{ // Called on TXI_READY event (ready to write)
 
-//	SPI_CLR_FLAG(SPI_MASTER);  // Clear flag and
-//	*pRX++ = SPI_READ8(SPI_MASTER); // read byte
+	SPI_CLR_FLAG(SPI_MASTER);  // Clear flag
+	__asm__ volatile(
+		"	mov		#_SPI2BUF, W1	\n"
 
+		"	mov		_pRX, W0		\n"
+//		"	btss	_SPI2STAT, #5	\n"
+		"	mov.b	[W1], [W0++]	\n"
+		"	mov		W0, _pRX		\n"
+
+		"	mov		_pTX, W0		\n"
+
+//		"_write:					\n"
+		"	cp0		_len			\n"
+		"	bra		z, _exit		\n"
+		"	mov.b	[W0++], [W1]	\n"
+		"	dec		_len			\n"
+//		"	bra		_write			\n"
+
+		"_exit:						\n"
+		"	mov		W0, _pTX		"
+
+//		"	mov		_pTX, W0		\n"
+//		"_loop:						\n"
+//		"	cp0		_len			\n"
+//		"	bra		z, _exit		\n"
+//		"	mov.b	[W1], [W0++]	\n"
+//		"	mov.b	[W0], [W1]		\n"
+//		"	dec		_len			\n"
+//		"	btss	_SPI2STAT, #5	\n"
+//		"	bra		_loop			\n"
+		: : : "w0", "w1");
+		
 } // 27,9% free time @ 4MHz SPI
 
 #ifdef _not_compil_
@@ -82,17 +101,19 @@ int spi_send(unsigned char* buf, int n)
 	if (len > 0) n = -1; // Can't transmit
 	else {
 		SPI_DISABLE_INT(SPI_MASTER);
+//		SPI_SET_RTXI(SPI_MASTER, S_TXI_READY);
+
 		pTX = pRX = buf; len = (n-8);
 		if (n > 0) 
-			SPI_SET_FLAG(SPI_MASTER);
+//			SPI_SET_FLAG(SPI_MASTER);
 			SPI_WRITE(SPI_MASTER, *pTX++);
 
 SPI_WRITE(SPI_MASTER, *pTX++);
-//SPI_WRITE(SPI_MASTER, *pTX++);
-//SPI_WRITE(SPI_MASTER, *pTX++);
-//SPI_WRITE(SPI_MASTER, *pTX++);
-//SPI_WRITE(SPI_MASTER, *pTX++);
-//SPI_WRITE(SPI_MASTER, *pTX++);
+SPI_WRITE(SPI_MASTER, *pTX++);
+SPI_WRITE(SPI_MASTER, *pTX++);
+SPI_WRITE(SPI_MASTER, *pTX++);
+SPI_WRITE(SPI_MASTER, *pTX++);
+SPI_WRITE(SPI_MASTER, *pTX++);
 //SPI_WRITE(SPI_MASTER, *pTX++);
 //SPI_WRITE(SPI_MASTER, *pTX++);
 		SPI_ENABLE_INT(SPI_MASTER);
