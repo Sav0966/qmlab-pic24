@@ -109,5 +109,20 @@ __attribute__((__interrupt__, attr)) _T##timer##Interrupt
 #define TIMER_PWOFF(timer)\
 	TIMER_DONE(timer);	/* Disable timer and interrupt */\
 	_TMD(timer) = 1 /* Disable module to energy saving */
+/*
+*	Time profile macros
+*/
+#ifdef __DEBUG
+#define PROFILE_START(TIMER)\
+{	unsigned int __profile = (unsigned)TIMER_READ(TIMER)
+
+#define PROFILE_END(TIMER, time)\
+	time = (unsigned)TIMER_READ(TIMER);\
+	if (time < __profile) time += (unsigned)TIMER_GET_PR(TIMER);\
+	time -= __profile; } ((void)0)
+#else //__DEBUG
+#define PROFILE_START(TIMER)
+#define PROFILE_END(TIMER, time)
+#endif //__DEBUG
 
 #endif /*_TIMERS_INCL_*/

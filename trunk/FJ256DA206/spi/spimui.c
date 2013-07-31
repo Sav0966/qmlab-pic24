@@ -13,8 +13,12 @@
 #define SPI_DUMMY	0
 #endif // Dummy byte
 
-volatile unsigned const char *pTX;
-volatile unsigned char *pRX;
+#ifndef SPI_SET_CS
+#define SPI_SET_CS()
+#define SPI_CLR_CS()
+#endif
+
+volatile unsigned char *pSPIbuf;
 volatile int len = 0;
 volatile int err = 0;
 
@@ -22,52 +26,64 @@ void SPI_ERR_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 {
 	SPI_CLR_ERFLAG(SPI_MASTER);
 	SPI_CLR_OERR(SPI_MASTER);
-
-#ifdef __DEBUG
-__asm__ volatile ("nop\nnop"); // breakpoint
-#endif
-
 	++err; // Needs to decrease speed
 }
 
 void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
-{ // Called on TXI_READY event (ready to write)
-
+{
 	SPI_CLR_FLAG(SPI_MASTER);  // Clear flag
 	__asm__ volatile(
-		"	mov		#_SPI2BUF, W1	\n"
+	"	mov		#_SPI2BUF, W1	\n"
+	"	mov		_pSPIbuf, W0	"::: "w0", "w1");
 
-		"	mov		_pRX, W0		\n"
-//		"	btss	_SPI2STAT, #5	\n"
-		"	mov.b	[W1], [W0++]	\n"
-		"	mov		W0, _pRX		\n"
+	__asm__ volatile("_loop:	\n"
+	"	cp0		_len			\n"
+	"	bra		z, _zero_len	\n"
+	"	bra		le, _negative	"); // Select len
 
-		"	mov		_pTX, W0		\n"
+	__asm__ volatile("_positive:\n"
+	// Called on
+	"	mov		W0, _pSPIbuf	"::: "w0", "w1");
+	__asm__ volatile("pop.d W0 \n retfie"); // return
 
-//		"_write:					\n"
-		"	cp0		_len			\n"
-		"	bra		z, _exit		\n"
-		"	mov.b	[W0++], [W1]	\n"
-		"	dec		_len			\n"
-//		"	bra		_write			\n"
+	__asm__ volatile("_negative:\n"
+	// Called on TXI_END event (transmit is complete)
+//	"	mov.b	[W1], [W15]		\n" Overrun RX buffer
+	"	mov.b	[W0++], [W1]	\n"
+	"	inc		_len			\n"
+	"	btss	_SPI2STAT, #1	\n"
+	"	bra		_loop			\n"
+	"	mov		W0, _pSPIbuf	"::: "w0", "w1");
+	__asm__ volatile("pop.d W0 \n retfie"); // return
 
-		"_exit:						\n"
-		"	mov		W0, _pTX		"
+	__asm__ volatile(
+	"_zero_len:				");
+//	SPI_DISABLE_INT(SPI_MASTER);
+//	SPI_CLR_ERFLAG(SPI_MASTER);
+//	SPI_CLR_OERR(SPI_MASTER);
 
-//		"	mov		_pTX, W0		\n"
-//		"_loop:						\n"
-//		"	cp0		_len			\n"
-//		"	bra		z, _exit		\n"
-//		"	mov.b	[W1], [W0++]	\n"
-//		"	mov.b	[W0], [W1]		\n"
-//		"	dec		_len			\n"
-//		"	btss	_SPI2STAT, #5	\n"
-//		"	bra		_loop			\n"
-		: : : "w0", "w1");
-		
-} // 27,9% free time @ 4MHz SPI
+//	SPI_SET_CS(); // Unselect device
+}
 
-#ifdef _not_compil_
+int spi_send(unsigned char* buf, int n)
+{
+	if (len > 0) n = -1; // Can't transmit
+	else /* if (n > 0) */ {
+		SPI_DISABLE_INT(SPI_MASTER);
+		SPI_DISABLE_ERINT(SPI_MASTER);
+		SPI_SET_RTXI(SPI_MASTER, S_TXI_EMPTY);
+
+		pSPIbuf = buf; len = -n;
+
+		SPI_SET_CS(); // Select device
+		SPI_SET_FLAG(SPI_MASTER);
+		SPI_ENABLE_INT(SPI_MASTER);
+	}
+
+	return n;
+}
+
+#ifdef __not_compil__
 void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 { // Called on RXI_ANY event (ready to read)
 	if (len) // If can read, then can write
@@ -94,32 +110,6 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	SPI_CLR_FLAG(SPI_MASTER);  // Clear flag and
 	*pRX++ = SPI_READ8(SPI_MASTER); // read byte
 } // 40,7% free time @ 4MHz SPI
-#endif
-
-int spi_send(unsigned char* buf, int n)
-{
-	if (len > 0) n = -1; // Can't transmit
-	else {
-		SPI_DISABLE_INT(SPI_MASTER);
-//		SPI_SET_RTXI(SPI_MASTER, S_TXI_READY);
-
-		pTX = pRX = buf; len = (n-8);
-		if (n > 0) 
-//			SPI_SET_FLAG(SPI_MASTER);
-			SPI_WRITE(SPI_MASTER, *pTX++);
-
-SPI_WRITE(SPI_MASTER, *pTX++);
-SPI_WRITE(SPI_MASTER, *pTX++);
-SPI_WRITE(SPI_MASTER, *pTX++);
-SPI_WRITE(SPI_MASTER, *pTX++);
-SPI_WRITE(SPI_MASTER, *pTX++);
-SPI_WRITE(SPI_MASTER, *pTX++);
-//SPI_WRITE(SPI_MASTER, *pTX++);
-//SPI_WRITE(SPI_MASTER, *pTX++);
-		SPI_ENABLE_INT(SPI_MASTER);
-	}
-
-	return n;
-}
+#endif //__not_compil__
 
 #endif // SPI_MASTER
