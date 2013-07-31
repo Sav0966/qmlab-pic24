@@ -1,23 +1,35 @@
 #include <p24Fxxxx.h>
 #include <_tools.h>
 #include <config.h>
+#include <timers.h>
 #include <clock.h>
 #include <spimui.h>
 #include <spisui.h>
 
-#define SPI_MODE		(S_CKP | S_4000)
+extern volatile int len;
+int spi_send(unsigned char* buf, int n);
+
+#define _SPI_MODE(speed)	(S_MSTEN | S_CKP | S_##speed)
+#define SPI_MODE			_SPI_MODE(1000)
 
 #ifndef ARSIZE
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
 #endif
 
+static unsigned char buf[1024];
+
 static int stage = 0; // Test stage
-static int i, min, max, cnt;
-extern volatile int len;
+static int speed = 1; // Speed in MHz
 
-unsigned char _buf[4096];
+static const int _mode[9] = { 0,
+ _SPI_MODE(1000), _SPI_MODE(2000), 0,
+ _SPI_MODE(4000), 0, 0, 0, _SPI_MODE(8000) };
 
-int spi_send(unsigned char* buf, int n);
+static int i, min, max, percent;
+static long ltime, lfree, lbusy;
+
+#define SPI_MIN_CLK(speed)\
+ (16 * ((8 * ARSIZE(buf)) / speed))
 
 void spi_test(void)
 { // Called from Main Loop more often than once per 10 ms
@@ -33,37 +45,65 @@ void spi_test(void)
 
 			stage = 0; // Start test
 		}
+
+		SPI_DISABLE(SPI_MASTER); // Set speed
+		SPICON1(SPI_MASTER) = _mode[speed];
+		SPI_ENABLE(SPI_MASTER);
 	}
 
 	if (!SPI_IS_INIT(SPI_MASTER) /*||
 		!SPI_IS_INIT(SPI_SLAVE)*/) return;
 
 	switch(stage) {
-		case 0:
-			for (i = 0; i < 1024+8; i++) _buf[i] = i;
-			cnt = 0; min = 0x7FFF; max = 0;
+		case 0: // Prepare buffer
+			for (i = 0; i < ARSIZE(buf); i++) buf[i] = i;
+			++stage; break; // Next test
 
-			spi_send(_buf, 1024+8);
+		case 1: PROFILE_START(1); // Profile
 
-			while (len > 8) {
+			spi_send(buf, ARSIZE(buf));
+
+			while (len != 0); PROFILE_END(1, ltime);
+			ltime *= 8; // Timer1 @ 2MHz
+
+			++stage; break; // Next test
+
+		case 2: lfree = 0; // Free time
+
+			spi_send(buf, ARSIZE(buf));
+
+			while (len) lfree++;
+			lfree *= 10; // 10 clk
+
+			++stage; break; // Next test
+
+		case 3: // FIFO size
+
+			min = 0xFF; max = 0;
+			spi_send(buf, ARSIZE(buf));
+
+			while (len) {
 				i = SPISTAT(SPI_MASTER) & 0x702;
 				if (i < min) min = i;
 				if (i > max) max = i;
-				cnt += 23; // ~23 clk
 			}
 
 			++stage; break; // Next test
 
-		case 1:
-			for (i = 0; i < 1024+8; i++)	
-			{ ASSERT(_buf[i] == (unsigned char)i); }
+		case 4: // View and analyse
+			for (i = 0; i < ARSIZE(buf); i++)	
+			{ ASSERT(buf[i] == (unsigned char)i); }
 
-			// View and analyse min, max and cnt
-			__asm__ volatile ("nop\nnop"); // breakpoint
+			lbusy = ltime - lfree;
+			percent = (int)((100*lfree)/ltime);
+			i = (int)(ltime - SPI_MIN_CLK(speed));
+
+			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
 
-		default:
-//			SPI_PWOFF(SPI_MASTER); SPI_PWOFF(SPI_SLAVE);
+		default: // Increase SPI speed
+			speed *= 2; if (speed > 8) speed = 1;
+			SPI_PWOFF(SPI_MASTER); // SPI_PWOFF(SPI_SLAVE);
 			break;
 	} // switch(stage)
 } 
