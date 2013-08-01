@@ -7,11 +7,24 @@
 #ifdef SPI_MASTER  // Only for used SPI
 
 #include <spimui.h>
-#include <_tools.h>
+//#include <_tools.h>
 
-#ifndef SPI_DUMMY
-#define SPI_DUMMY	0
-#endif // Dummy byte
+#if (SPI_MASTER == 1) // SPI registers
+__asm__("	.equiv	_SPIBUF, _SPI1BUF	\n"
+		"	.equiv	_SPISTAT, _SPI1STAT	");
+#elif (SPI_MASTER == 2)
+__asm__("	.equiv	_SPIBUF, _SPI2BUF	\n"
+		"	.equiv	_SPISTAT, _SPI2STAT	");
+#elif (SPI_MASTER == 3)
+__asm__("	.equiv	_SPIBUF, _SPI3BUF	\n"
+		"	.equiv	_SPISTAT, _SPI3STAT	");
+#endif
+
+// SPI Status register bits (PIC24F family)
+__asm__("	.equiv	SPITBF, 1	\n" // TX FIFO is full
+		"	.equiv	SRXMPT, 5	\n" // RX FIFO is empty
+		"	.equiv	SISEL0, 2	\n" // Interrupt mode
+		"	.equiv	SISEL1, 3	"); // bits SISEL0(1)
 
 #ifndef SPI_SELECT
 #define SPI_SELECT()
@@ -29,28 +42,13 @@ void SPI_ERR_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	++err; // Needs to decrease speed
 }
 
-#if (SPI_MASTER == 1) // SPI registers
-__asm__("	.equiv	_SPIBUF, _SPI1BUF	\n"
-		"	.equiv	_SPISTAT, _SPI1STAT	");
-#elif (SPI_MASTER == 2)
-__asm__("	.equiv	_SPIBUF, _SPI2BUF	\n"
-		"	.equiv	_SPISTAT, _SPI2STAT	");
-#elif (SPI_MASTER == 3)
-__asm__("	.equiv	_SPIBUF, _SPI3BUF	\n"
-		"	.equiv	_SPISTAT, _SPI3STAT	");
-#endif
-
-// SPI Status register bits
-__asm__("	.equiv	SPITBF, 1	\n" // TX FIFO is full
-		"	.equiv	SRXMPT, 5	"); // RX FIFO is empty
-
 void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 {
 	SPI_CLR_FLAG(SPI_MASTER); // Clear IF
 
 	__asm__ volatile( // TXI_END or RXI_ANY
-	"	bclr	_SPISTAT, #3			\n"
-	"	bset	_SPISTAT, #2			");
+	"	bclr	_SPISTAT, #SISEL1		\n"
+	"	bset	_SPISTAT, #SISEL0		");
 
 	__asm__ volatile(	// Prepare W0, W1
 	"	mov		#_SPIBUF, W1				\n"
@@ -63,14 +61,22 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	"	bra		z, _zero_len					\n"
 	"	bra		le, _negative	"); // Select len
 
-	//_positive:
-	__asm__ volatile("_positive:		");
-	__asm__ volatile(
-	"	mov		W0, _pSPIbuf		"::: "w0", "w1");
+	//_positive:		Called on RXI_ANY or RXI_6DATA
+	__asm__ volatile("_positive:	; W0 = pSPIbuf ");
+	__asm__ volatile( // Don't overrun RX FIFO
+	"	btss	_SPISTAT, #SRXMPT	\n" // if (CAN_RD)
+	"	mov.b	[W1], [W0++]		\n" //  READ(*p++)
+	"	mov.b	W1, [W1]			\n" // Dummy write
+	"	dec		_len				\n" // --len
+	"	btss	_SPISTAT, #SPITBF	\n" // if (CAN_WR)
+	"	bra		_loop				\n" //  goto _loop
+//	"	bclr	_SPISTAT, #SISEL0	\n" // FIFO is full
+//	"	bset	_SPISTAT, #SISEL1	\n" //  - RXI_6DATA
+	"	mov		W0, _pSPIbuf ; Restore "::: "w0", "w1");
 	__asm__ volatile("pop.d W0 \n retfie"); // return
 	//_positive______________________________________
 
-	//_negative: Called on TXI_END or TXI_READY
+	//_negative:		Called on TXI_END or TXI_READY
 	__asm__ volatile("_negative:	; W0 = pSPIbuf ");
 	__asm__ volatile( // Overrun RX FIFO for a speed
 	//"	mov.b	[W1], [W15]			\n" // Don't read
@@ -78,16 +84,16 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	"	inc		_len				\n" // ++len
 	"	btss	_SPISTAT, #SPITBF	\n" // if (CAN_WR)
 	"	bra		_loop				\n" //  goto _loop
-	"	bclr	_SPISTAT, #2	\n" // FIFO is full -
-	"	bset	_SPISTAT, #3	\n" //  set TXI_READY
-	"	mov		W0, _pSPIbuf		"::: "w0", "w1");
+	"	bclr	_SPISTAT, #SISEL0	\n" // FIFO is full
+	"	bset	_SPISTAT, #SISEL1	\n" //  - TXI_READY
+	"	mov		W0, _pSPIbuf ; Restore "::: "w0", "w1");
 	__asm__ volatile("pop.d W0 \n retfie"); // return
 	// 0,25% overrun and 64% free time @ 4MHz SPI ___
 	// 2,35% overrun and 34% free time @ 8MHz SPI ___
 	//_negative_____________________ 8 clk in loop __
 
 	//_zero_len:
-	__asm__ volatile("_zero_len:	");
+	__asm__ volatile("_zero_len:");
 	if (SPI_SR_EMPTY(SPI_MASTER)) {
 		SPI_DISABLE_INT(SPI_MASTER);
 		SPI_CLR_ERFLAG(SPI_MASTER);
@@ -95,15 +101,38 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 		SPI_UNSELECT(); }
 }
 
-int spi_send(unsigned char* buf, int n)
+int spi_msend(unsigned char* buf, int n)
+{
+	if (len != 0) return(-1); // Busy
+	while (!SPI_SR_EMPTY(SPI_MASTER));
+
+	SPI_DISABLE_INT(SPI_MASTER);
+	SPI_DISABLE_ERINT(SPI_MASTER);
+
+	pSPIbuf = buf; len = -n; // Negative
+
+	SPI_DISABLE(SPI_MASTER); // Reset
+	SPI_ENABLE(SPI_MASTER); // SPI FIFO
+	SPI_SET_RTXI(SPI_MASTER, S_TXI_END);
+
+	SPI_SET_FLAG(SPI_MASTER);
+	SPI_SELECT(); // Select device
+	SPI_ENABLE_INT(SPI_MASTER);
+
+	return n;
+}
+
+int spi_mload(unsigned char* buf, int n)
 {
 	if (len > 0) n = -1; // Can't transmit
 	else /* if (n > 0) */ {
-		SPI_DISABLE_INT(SPI_MASTER);
-		SPI_DISABLE_ERINT(SPI_MASTER);
-		SPI_SET_RTXI(SPI_MASTER, S_TXI_END);
+//		SPI_DISABLE(SPI_MASTER); // Reset
+//		SPI_ENABLE(SPI_MASTER); // SPI FIFO
 
-		pSPIbuf = buf; len = -n;
+		SPI_DISABLE_INT(SPI_MASTER);
+		SPI_SET_RTXI(SPI_MASTER, S_RXI_ANY);
+
+		pSPIbuf = buf; len = n;
 
 		SPI_SELECT(); // Select device
 		SPI_SET_FLAG(SPI_MASTER);
@@ -131,6 +160,10 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	SPI_CLR_FLAG(SPI_MASTER);  // Clear flag and
 	*pRX++ = SPI_READ8(SPI_MASTER); // read byte
 } // 32,6% free time @ 4MHz SPI
+
+#ifndef SPI_DUMMY
+#define SPI_DUMMY	0
+#endif // Dummy byte
 
 void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 { // Called on RXI_ANY event (ready to read)
