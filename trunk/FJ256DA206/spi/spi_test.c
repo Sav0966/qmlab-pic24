@@ -63,8 +63,12 @@ void spi_test(void)
 
 			spi_send(buf, ARSIZE(buf));
 
-			while (len != 0); PROFILE_END(1, ltime);
+			while (len);
+			while (!SPI_SR_EMPTY(SPI_MASTER));
+			PROFILE_END(1, ltime);
 			ltime *= 8; // Timer1 @ 2MHz
+
+			ASSERT(!SPI_IS_ENABLE_INT(SPI_MASTER));
 
 			++stage; break; // Next test
 
@@ -72,8 +76,12 @@ void spi_test(void)
 
 			spi_send(buf, ARSIZE(buf));
 
-			while (len) lfree++;
-			lfree *= 10; // 10 clk
+			while (len)
+			{ lfree++;__asm__ volatile ("nop\nnop"); }
+			while (!SPI_SR_EMPTY(SPI_MASTER)) lfree++;
+			lfree *= 12; // 12 clk
+
+			ASSERT(!SPI_IS_ENABLE_INT(SPI_MASTER));
 
 			++stage; break; // Next test
 
@@ -85,8 +93,10 @@ void spi_test(void)
 			while (len) {
 				i = SPISTAT(SPI_MASTER) & 0x702;
 				if (i < min) min = i;
-				if (i > max) max = i;
-			}
+				if (i > max) max = i; }
+			while (!SPI_SR_EMPTY(SPI_MASTER));
+
+			ASSERT(!SPI_IS_ENABLE_INT(SPI_MASTER));
 
 			++stage; break; // Next test
 
