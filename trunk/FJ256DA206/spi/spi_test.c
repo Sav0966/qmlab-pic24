@@ -7,7 +7,8 @@
 #include <spisui.h>
 
 extern volatile int len;
-int spi_send(unsigned char* buf, int n);
+int spi_msend(unsigned char* buf, int n);
+int spi_mload(unsigned char* buf, int n);
 
 #define _SPI_MODE(speed)	(S_MSTEN | S_CKP | S_##speed)
 #define SPI_MODE			_SPI_MODE(1000)
@@ -61,7 +62,7 @@ void spi_test(void)
 
 		case 1: PROFILE_START(1); // Profile
 
-			spi_send(buf, ARSIZE(buf));
+			spi_msend(buf, ARSIZE(buf));
 
 			while (len);
 			while (!SPI_SR_EMPTY(SPI_MASTER));
@@ -74,7 +75,7 @@ void spi_test(void)
 
 		case 2: lfree = 0; // Free time
 
-			spi_send(buf, ARSIZE(buf));
+			spi_msend(buf, ARSIZE(buf));
 
 			while (len)
 			{ lfree++;__asm__ volatile ("nop\nnop"); }
@@ -88,7 +89,7 @@ void spi_test(void)
 		case 3: // FIFO size
 
 			min = 0xFF; max = 0;
-			spi_send(buf, ARSIZE(buf));
+			spi_msend(buf, ARSIZE(buf));
 
 			while (len) {
 				i = SPISTAT(SPI_MASTER) & 0x702;
@@ -103,6 +104,30 @@ void spi_test(void)
 		case 4: // View and analyse
 			for (i = 0; i < ARSIZE(buf); i++)	
 			{ ASSERT(buf[i] == (unsigned char)i); }
+
+			lbusy = ltime - lfree;
+			percent = (int)((100*lfree)/ltime);
+			i = (int)(ltime - SPI_MIN_CLK(speed));
+
+			__asm__ volatile ("nop\nnop");
+			++stage; break; // Next test
+
+		case 5: PROFILE_START(1); // Profile
+
+			spi_mload(buf, ARSIZE(buf));
+
+			while (len);
+			while (!SPI_SR_EMPTY(SPI_MASTER));
+			PROFILE_END(1, ltime);
+			ltime *= 8; // Timer1 @ 2MHz
+
+			ASSERT(!SPI_IS_ENABLE_INT(SPI_MASTER));
+
+			++stage; break; // Next test
+
+		case 6: // View and analyse
+//			for (i = 0; i < ARSIZE(buf); i++)	
+//			{ ASSERT(buf[i] == 0x68); } // == SPIBUF
 
 			lbusy = ltime - lfree;
 			percent = (int)((100*lfree)/ltime);
