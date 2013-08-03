@@ -21,8 +21,10 @@ __asm__("	.equiv	_SPIBUF, _SPI3BUF	\n"
 
 // SPI Status register bits (PIC24F family)
 __asm__("	.equiv	SPITBF, 1	\n" // TX FIFO is full
-		"	.equiv	SRXMPT, 5	\n" // RX FIFO is empty
-		"	.equiv	SISEL2, 4	"); // Interrupt mode bit
+		"	.equiv	SISEL0, 2	\n" // Interrupt mode bit
+		"	.equiv	SISEL1, 3	\n" // Interrupt mode bit
+		"	.equiv	SISEL2, 4	\n" // Interrupt mode bit
+		"	.equiv	SRXMPT, 5	"); // RX FIFO is empty
 
 #ifndef SPI_SELECT
 #define __SPI_CS(n)	SPI##n##_CS
@@ -38,7 +40,7 @@ volatile int _SPI_CS(SPI_MASTER)
 
 static volatile int len __attribute__((near)) /* = 0 */;
 static volatile int err __attribute__((near)) /* = 0 */;
-static volatile unsigned char *pTXbuf;
+volatile unsigned char *pTXbuf, *pRXbuf;
 
 void SPI_ERR_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 {
@@ -47,32 +49,60 @@ void SPI_ERR_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	++err; // Needs to decrease speed
 }
 
+//	__asm__ volatile( // TXI_END or RXI_ANY
+//	"	bclr	_SPISTAT, #SISEL1		\n"
+//	"	bset	_SPISTAT, #SISEL0		\n");
+
+//	"	btss	_SPISTAT, #SRXMPT	\n" // if (CAN_RD)
+//	"	bra		_rloop				\n" // goto _rloop
+
+//	"	bclr	_SPISTAT, #SISEL0	\n" // FIFO is full
+//	"	bset	_SPISTAT, #SISEL1	\n" //  - RXI_6DATA
+
 void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 {
 	SPI_CLR_FLAG(SPI_MASTER); // Clear IF
 
 	__asm__ volatile(
-//	"	bset	_SPISTAT, #SISEL2	; = TXI_END	\n"
-	"	mov 	_pTXbuf, W0		; W0 = pTXbuf	\n"
+//	"	bset	_SPISTAT, #SISEL2	\n" // = TXI_END
+	"	btsc	_SPISTAT, #SRXMPT	\n" // if (!CAN_RD)
+	"	bra		_write				\n" // goto _write
+	);
 
-	"			cp0		_len	; if (len == 0)	\n"
-	"_loop:		bra	z, _read	;   goto _read	\n"
-	::: "w0"); // _____________ Read-write loop __
-
-	__asm__ volatile(// SPI_WRITE(SPI_MASTER, [W0])
-	"	ze		[W0++], W1						\n"
-	"	mov		W1, _SPIBUF						\n"
-	"	dec		_len			; --len			\n"
-	::: "w0", "w1");
-
-	__asm__ volatile("_read: "); // _read:
-	__asm__ volatile( // [W0++] = SPI_READ8(SPI_MASTER)
+	__asm__ volatile(
+	"	mov 	_pRXbuf, W0			\n" // W0 = pRXbuf
+	 //_________________________________ Read loop __
+	"	_rloop:	\n"  // [W0++] = SPI_READ8(SPI_MASTER)
 	"	mov		_SPIBUF, W1							\n"
-	"	mov.b	W1, [W0-9]							\n"
-	"	btss	_SPISTAT, #SRXMPT	; if (CAN_RD)	\n"
-	"	bra		_loop				;  goto _loop	\n"
-	"	mov		W0, _pTXbuf	 ; Restore pTXbuf	\n"
-	::: "w0", "w1"); //______________ 9 clk in loop __
+	"	mov.b	W1, [W0++]							\n"
+	"	btss	_SPISTAT, #SRXMPT	\n" // if (CAN_RD)
+	"	bra		_rloop				\n" // goto _rloop
+	"	mov		W0, _pRXbuf		 \n" // Restore pRXbuf
+	::: "w0", "w1"); //______________ 5 clk in loop __
+
+	__asm__ volatile("_write:		\n" //______write:
+	"	mov 	_pTXbuf, W0			\n" // W0 = pTXbuf
+	"	cp0		_len				\n" // if (len==0)
+	"	bra	z, _zero				\n" //  goto _zero
+	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Write loop __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" // --len
+	"	bra	z, _zero				\n" //  goto _zero
+
+	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
+	"	bra		_zero				\n" //  goto _zero
+
+	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Write loop __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" // --len
+
+	::: "w0", "w1"); // _____________ 7 clk in loop __
+
+	__asm__ volatile("_zero:\n"				//_zero:
+	"	mov		W0, _pTXbuf		 \n" // Restore pTXbuf
+	::: "w0");
 
 	if (SPI_SR_EMPTY(SPI_MASTER))
 		SPI_UNSELECT(SPI_MASTER);
@@ -80,8 +110,6 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 
 int spi_msend(unsigned char* buf, int n)
 {
-	int i;
-
 	if (len != 0) return(-1); // Busy
 	while (!SPI_SR_EMPTY(SPI_MASTER));
 
@@ -90,17 +118,13 @@ int spi_msend(unsigned char* buf, int n)
 	SPI_DISABLE(SPI_MASTER); // Reset
 	SPI_ENABLE(SPI_MASTER); // SPI FIFO
 	SPI_SET_RTXI(SPI_MASTER, S_TXI_END);
+	SPI_SET_FLAG(SPI_MASTER);
 
-	i = SPI_FIFO_SIZE;
+	pTXbuf = buf; pRXbuf = buf; len = n;
 	SPI_SELECT(SPI_MASTER);	// Select device
-	while (n) { //		and try to fill FIFO
-		SPI_WRITE(SPI_MASTER, *buf++); --n;
-		if (--i == 0) break;
-	} pTXbuf = buf;	len = n;
+	SPI_ENABLE_INT(SPI_MASTER); // and run
 
-	SPI_ENABLE_INT(SPI_MASTER);
-
-	return (n - i) + SPI_FIFO_SIZE;
+	return(n);
 }
 
 #endif // SPI_MASTER
