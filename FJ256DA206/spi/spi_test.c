@@ -30,7 +30,7 @@ static const int _mode[9] = { 0,
  _SPI_MODE(4000), 0, 0, 0, _SPI_MODE(8000) };
 
 static unsigned char buf[1024];
-static unsigned char _test_only[8];
+static unsigned char _extra[8];
 
 static int i, min, max, percent;
 static long ltime, lfree, lbusy;
@@ -63,6 +63,7 @@ void spi_test(void)
 
 	switch(stage) {
 		case 0: // Prepare buffer
+
 			for (i = 0; i < ARSIZE(buf); i++) buf[i] = i;
 			++stage; break; // Next test
 
@@ -81,7 +82,7 @@ void spi_test(void)
 			spi_msend(buf, ARSIZE(buf));
 
 			while (!SPI_READY(SPI_MASTER)) lfree++;
-			lfree *= 10; // 10 clk
+			lfree *= 10; // 10 clk in loop
 
 			++stage; break; // Next test
 
@@ -99,12 +100,16 @@ void spi_test(void)
 			++stage; break; // Next test
 
 		case 4: // View and analyse
-			lbusy = ltime - lfree;
-			percent = (int)((100*lfree)/ltime);
-			i = (int)(ltime - SPI_MIN_CLK(speed));
 
 			for (i = 0; i < ARSIZE(buf); i++)	
 			{ ASSERT(buf[i] == (unsigned char)i); }
+			// Check of overruning buffer boundaries
+			for (i = 0; i < ARSIZE(_extra); i++)	
+			{ ASSERT(_extra[i] == 0); }
+
+			lbusy = ltime - lfree;
+			percent = (int)((100*lfree)/ltime);
+			i = (int)(ltime - SPI_MIN_CLK(speed));
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
