@@ -81,24 +81,87 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	::: "w0", "w1"); //______________ 5 clk in loop __
 
 	__asm__ volatile("_write:		\n" //______write:
-	"	mov 	_pTXbuf, W0			\n" // W0 = pTXbuf
+	"	mov 	_pTXbuf, W0			"); // W0 = pTXbuf
+
+	__asm__ volatile( // Try to fill transmitter FIFO
 	"	cp0		_len				\n" // if (len==0)
 	"	bra	z, _zero				\n" //  goto _zero
-	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Write loop __
+	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Fires byte __
 	"	ze		[W0++], W1							\n"
 	"	mov		W1, _SPIBUF							\n"
-	"	dec		_len				\n" // --len
+	"	dec		_len				\n" // if (!--len)
 	"	bra	z, _zero				\n" //  goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
 
+	__asm__ volatile( // Try to fill transmitter FIFO
 	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
 	"	bra		_zero				\n" //  goto _zero
-
-	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Write loop __
+	//SPI_WRITE(SPI_MASTER, [W0++]) ___ Second byte __
 	"	ze		[W0++], W1							\n"
 	"	mov		W1, _SPIBUF							\n"
-	"	dec		_len				\n" // --len
+	"	dec		_len				\n" //  if (!--len)
+	"	bra	z, _zero				\n" //   goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
 
-	::: "w0", "w1"); // _____________ 7 clk in loop __
+	__asm__ volatile( // Try to fill transmitter FIFO
+	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
+	"	bra		_zero				\n" //  goto _zero
+	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Third byte __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" //  if (!--len)
+	"	bra	z, _zero				\n" //   goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
+
+	__asm__ volatile( // Try to fill transmitter FIFO
+	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
+	"	bra		_zero				\n" //  goto _zero
+	//SPI_WRITE(SPI_MASTER, [W0++]) ___ Fourth byte __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" // if (!--len)
+	"	bra	z, _zero				\n" //  goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
+
+	__asm__ volatile( // Try to fill transmitter FIFO
+	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
+	"	bra		_zero				\n" //  goto _zero
+	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Fifth byte __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" //  if (!--len)
+	"	bra	z, _zero				\n" //   goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
+
+	__asm__ volatile( // Try to fill transmitter FIFO
+	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
+	"	bra		_zero				\n" //  goto _zero
+	//SPI_WRITE(SPI_MASTER, [W0++]) ____ Sixth byte __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" //  if (!--len)
+	"	bra	z, _zero				\n" //   goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
+
+	__asm__ volatile( // Try to fill transmitter FIFO
+	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
+	"	bra		_zero				\n" //  goto _zero
+	//SPI_WRITE(SPI_MASTER, [W0++]) __ Seventh byte __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" //  if (!--len)
+	"	bra	z, _zero				\n" //   goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
+
+	__asm__ volatile( // Try to fill transmitter FIFO
+	"	btsc	_SPISTAT, #SPITBF	\n" // if (!CAN_WR)
+	"	bra		_zero				\n" //  goto _zero
+	//SPI_WRITE(SPI_MASTER, [W0++]) ___ Eighth byte __
+	"	ze		[W0++], W1							\n"
+	"	mov		W1, _SPIBUF							\n"
+	"	dec		_len				\n" //  if (!--len)
+	"	bra	z, _zero				\n" //   goto _zero
+	::: "w0", "w1"); // _____________________ 6 clk __
 
 	__asm__ volatile("_zero:\n"				//_zero:
 	"	mov		W0, _pTXbuf		 \n" // Restore pTXbuf
