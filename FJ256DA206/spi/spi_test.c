@@ -6,14 +6,9 @@
 #include <spimui.h>
 #include <spisui.h>
 
-#ifndef SPI_SELECT
-#define __SPI_CS(n)	SPI##n##_CS
-#define _SPI_CS(n)	__SPI_CS(n)
-extern volatile int _SPI_CS(SPI_MASTER) __attribute__((near));
-#define SPI_READY(n)	(_SPI_CS(n))
-#endif
+DECL_SPIM_UI(SPI_MASTER);
 
-int spi_msend(unsigned char* buf, int n);
+#define PACKET_SIZE	4096	// Packet size
 
 #define _SPI_MODE(speed)	(S_MSTEN | S_CKP | S_##speed)
 #define SPI_MODE			_SPI_MODE(1000)
@@ -29,11 +24,11 @@ static const int _mode[9] = { 0,
  _SPI_MODE(1000), _SPI_MODE(2000), 0,
  _SPI_MODE(4000), 0, 0, 0, _SPI_MODE(8000) };
 
-static unsigned char buf[1024];
-static unsigned char _extra[8];
+static char buf[PACKET_SIZE];
+static char _extra_buf[8]; // Check pointers
 
 static int i, min, max, percent;
-static long ltime, lfree, lbusy;
+static unsigned long ltime, lfree, lbusy;
 
 #define SPI_MIN_CLK(speed)\
  (16 * ((8 * ARSIZE(buf)) / speed))
@@ -43,9 +38,8 @@ void spi_test(void)
 
 	if ((sys_clock() & 0x3F) == 0) {
 	 // Once per 0.64 seccond test SPI
-		if (!SPI_IS_INIT(SPI_MASTER)) {
-			SPI_EMASTER_INIT(SPI_MASTER,
-				SPI_MODE, SPI_EN | S_TXI_END, 2);
+		if (!spim_isinit(SPI_MASTER)) {
+			spim_init(SPI_MASTER, SPI_MODE, 2);
 
 //			SPI_ESLAVE_INIT(SPI_SLAVE, /* Disable SDO */
 //				SPI_MODE, SPI_EN | S_RXI_ANY, 3);
@@ -58,7 +52,7 @@ void spi_test(void)
 		SPI_ENABLE(SPI_MASTER);
 	}
 
-	if (!SPI_IS_INIT(SPI_MASTER) /*||
+	if (!spim_isinit(SPI_MASTER) /*||
 		!SPI_IS_INIT(SPI_SLAVE)*/) return;
 
 	switch(stage) {
@@ -67,22 +61,26 @@ void spi_test(void)
 			for (i = 0; i < ARSIZE(buf); i++) buf[i] = i;
 			++stage; break; // Next test
 
-		case 1: PROFILE_START(1); // Profile
+		case 1: // Profile
+			i = sys_clock(); PROFILE_START(1);
 
-			spi_msend(buf, ARSIZE(buf));
+			spim_send(SPI_MASTER, buf, ARSIZE(buf));
 
 			while (!SPI_READY(SPI_MASTER));
 			PROFILE_END(1, ltime);
+			i = sys_clock() - i;
+
 			ltime *= 8; // Timer1 @ 2MHz
+			ltime += i * (16 * 10000L);
 
 			++stage; break; // Next test
 
 		case 2: lfree = 0; // Free time
 
-			spi_msend(buf, ARSIZE(buf));
+			spim_send(SPI_MASTER, buf, ARSIZE(buf));
 
 			while (!SPI_READY(SPI_MASTER)) lfree++;
-			lfree *= 10; // 10 clk in loop
+			lfree *= 12; // 12 clk in loop
 
 			++stage; break; // Next test
 
@@ -90,7 +88,7 @@ void spi_test(void)
 
 			min = 0x0FFF; max = 0;
 			VERIFY(ARSIZE(buf) ==
-				spi_msend(buf, ARSIZE(buf)));
+				spim_send(SPI_MASTER, buf, ARSIZE(buf)));
 
 			while (!SPI_READY(SPI_MASTER)) {
 				i = SPISTAT(SPI_MASTER) & 0x0702;
@@ -101,22 +99,32 @@ void spi_test(void)
 
 		case 4: // View and analyse
 
-			for (i = 0; i < ARSIZE(buf); i++)	
-			{ ASSERT(buf[i] == (unsigned char)i); }
 			// Check of overruning buffer boundaries
-			for (i = 0; i < ARSIZE(_extra); i++)	
-			{ ASSERT(_extra[i] == 0); }
+			for (i = 0; i < ARSIZE(_extra_buf); i++)	
+			{ ASSERT(_extra_buf[i] == 0); }
+
+			for (i = 0; i < ARSIZE(buf); i++)	
+			{ ASSERT(buf[i] == (char)i); } // Check buf
 
 			lbusy = ltime - lfree;
 			percent = (int)((100*lfree)/ltime);
 			i = (int)(ltime - SPI_MIN_CLK(speed));
+
+			// 0,0% over and 88% free time @ 1MHz SPI (4K)
+			// 0,0% over and 78% free time @ 4MHz SPI (4K)
+			// 1,1% over and 53% free time @ 4MHz SPI (4K)
+			// 6,5% over and 33% free time @ 8MHz SPI (4K)
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
 
 		default: // Increase SPI speed
 			speed *= 2; if (speed > 8) speed = 1;
-			SPI_PWOFF(SPI_MASTER); // SPI_PWOFF(SPI_SLAVE);
+			spim_pwoff(SPI_MASTER); // SPI_PWOFF(SPI_SLAVE);
 			break;
 	} // switch(stage)
 }
+
+#undef	SPI_MASTER
+#define	SPI_MASTER	1
+//#include "spimui.c"
