@@ -6,6 +6,53 @@
 
 #include <spis.h>
 /*
+*	SPI master mode interface (n - SPI module number)
+*/
+#define _spim_init(n, mode, ipl) /* mode = SPICON1 */\
+	SPI_EMASTER_INIT(n, mode, SPI_EN | S_TXI_END, ipl)
+
+#define __SPIM_SEND(n)		spim_##n##_send
+#define _SPIM_SEND(n)		__SPIM_SEND(n)
+#define IMPL_SPIM_SEND(n)	int _SPIM_SEND(n)(char* buf, int len)
+#define DECL_SPIM_SEND(n)	extern IMPL_SPIM_SEND(n)
+
+#define DECL_SPIM_UI(n)		DECL_SPIM_SEND(n)
+
+#define spim_isinit(n)				SPI_IS_INIT(n)
+#define spim_init(n, mode, ipl)		_spim_init(n, mode, ipl)
+#define spim_pwoff(n)				SPI_PWOFF(n)
+#define spim_done(n)				SPI_DONE(n)
+
+#define spim_send(n, buf, len)		_SPIM_SEND(n)(buf, len)
+/*
+*	Definition of Select Device pin (if used)
+*
+* Use macros:
+* #define _SPIx_CS  // Use this definition to aviod selection
+* #define _SPIx_CS _LATpn // Define port p pin n as CS output
+*/
+#define __SPI_CS(n)		_SPI##n##_CS
+#define _SPI_CS(n)		__SPI_CS(n)
+#define __SPI1_READY	(_SPI_CS(1) != 0)
+#define __SPI2_READY	(_SPI_CS(2) != 0)
+#define __SPI3_READY	(_SPI_CS(3) != 0)
+
+#ifndef	_SPI1_CS
+#undef	__SPI1READY
+#define	__SPI1READY		SPI_SR_EMPTY(1)
+#endif
+#ifndef	_SPI2_CS
+#undef	__SPI2_READY
+#define	__SPI2_READY	SPI_SR_EMPTY(2)
+#endif
+#ifndef	_SPI3_CS
+#undef	__SPI3_READY
+#define	__SPI3_READY	SPI_SR_EMPTY(3)
+#endif
+
+#define _SPI_READY(n)	__SPI##n##_READY
+#define SPI_READY(n)		_SPI_READY(n)
+/*
 *	Initialize the SPI module for the Standard Master mode of operation
 */
 #define SPI_MASTER_INIT(n, con, sta, ipl) {\

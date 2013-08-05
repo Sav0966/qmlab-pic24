@@ -36,6 +36,7 @@
 #else // Map SPI2 SDO and SPI3 SDI to RP3/RD10 pin
 #define RD10_LOW
 #define RP3_OUT		RP_SDO2
+#define RP_SDI2		RP3_IN	// Loopback mode of SPI2
 //#define RP_SDI3		RP3_IN
 #endif
 
@@ -46,7 +47,6 @@
 //#define RP4_OUT		RP_SDO3
 //#define RP_SDI2		RP4_IN
 //#endif
-#define RP_SDI2		RP3_IN
 
 #if (PIN_USED(D, 8) || defined(RP2_OUT))
 #error "RP2/RD8 pin must be free for testing"
