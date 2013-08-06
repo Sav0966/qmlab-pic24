@@ -12,7 +12,7 @@
 __asm__("	.equiv	SPITBF, 1	\n" // TX FIFO is full
 		"	.equiv	SISEL0, 2	\n" // Interrupt mode bit 0
 		"	.equiv	SISEL1, 3	\n" // Interrupt mode bit 1
-//		"	.equiv	SISEL2, 4	\n" // Interrupt mode bit 2
+		"	.equiv	SISEL2, 4	\n" // Interrupt mode bit 2
 		"	.equiv	SRXMPT, 5	\n" // RX FIFO is empty
 		"	.equiv	SFIFO,	8	"); // Size of FIFO
 
@@ -20,24 +20,21 @@ __asm__("	.equiv	SPITBF, 1	\n" // TX FIFO is full
 __asm__("	.equiv	_SPIBUF, _SPI1BUF	\n"
 		"	.equiv	_SPISTAT, _SPI1STAT	");
 #ifndef	_SPI1_CS // No ~CS pin attached
-#define SPI_SET_CS(n)	((void)0)
-#define SPI_CLR_CS(n)	((void)0)
+volatile int _SPI1_CS __attribute__ ((near)) = 1;
 #endif // No ~CS pin attached
 
 #elif (SPI_MASTER == 2)
 __asm__("	.equiv	_SPIBUF, _SPI2BUF	\n"
 		"	.equiv	_SPISTAT, _SPI2STAT	");
 #ifndef	_SPI2_CS // No ~CS pin attached
-#define SPI_SET_CS(n)	((void)0)
-#define SPI_CLR_CS(n)	((void)0)
+volatile int _SPI2_CS __attribute__ ((near)) = 1;
 #endif // No ~CS pin attached
 
 #elif (SPI_MASTER == 3)
 __asm__("	.equiv	_SPIBUF, _SPI3BUF	\n"
 		"	.equiv	_SPISTAT, _SPI3STAT	");
 #ifndef	_SPI3_CS // No ~CS pin attached
-#define SPI_SET_CS(n)	((void)0)
-#define SPI_CLR_CS(n)	((void)0)
+volatile int _SPI3_CS __attribute__ ((near)) = 1;
 #endif // No ~CS pin attached
 #endif // SPI registers & CS
 
@@ -61,20 +58,21 @@ void SPI_ERR_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	lbuf = 0; SPI_UNSELECT(SPI_MASTER);
 	++err; // Needs to decrease speed
 }
-
 /*
 *	SPI ISR (Enhanced Master mode)
-*	0,0% over and 88% free time @ 1MHz SPI (4K)
-*	0,0% over and 78% free time @ 2MHz SPI (4K)
-*	1,1% over and 53% free time @ 4MHz SPI (4K)
-*	6,5% over and 33% free time @ 8MHz SPI (4K)
+*
+*	Zero over and 88% free time @ 1MHz SPI (4K)
+*	Zero over and 78% free time @ 2MHz SPI (4K)
+*	Zero over and 58% free time @ 4MHz SPI (4K)
+*	Zero over and 27% free time @ 8MHz SPI (4K)
 */
 void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 {
 	__asm__ volatile(
 	"	bclr	_SPISTAT, #SISEL1		\n"
 	"	bset	_SPISTAT, #SISEL0		\n"
-	); // Set TXI_END (or RXI_ANY) mode
+	"	bset	_SPISTAT, #SISEL2		\n"
+	); // Set TXI_END interrupt mode
 
 	__asm__ volatile(
 	"	mov 	_lbuf, W1				\n" // W1 = lbuf
@@ -89,14 +87,14 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	"	bra		z, _zero_		"::: "w1"); // goto _zero_
 
 		//_nzero_: -----WRITE LOOP ---------- (len != 0) --
-		__asm__ volatile("_nzero_:		\n" // do {
+		__asm__ volatile("_wloop_:		\n" // do {
 		"	sub		W3, W2, W0			\n" //  if ((pTX-pRX)
 		"	sub		W0, #SFIFO, W0		\n" //  >= FIFO_SIZE)
-		"	bra		ge, _full_			\n" //   goto _full_
-		"	ze		[W3++], W0			\n" //
+		"	bra		ge, _fill_			\n" //   goto _fill_
+		"	mov.b	[W3++], W0			\n" //
 		"	mov		W0, _SPIBUF			\n" //  WRITE(*pTX++)
 		"	dec		W1, W1				\n" //  --len
-		"	bra		nz, _nzero_			\n" // } while (len)
+		"	bra		nz, _wloop_			\n" // } while (len)
 		::: "w0", "w1", "w2", "w3"); //__ 8 clk in loop ___
 
 	//_zero_: --------- READ LOOP ---------- (len == 0) ---
@@ -113,38 +111,39 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 
 	__asm__ volatile("bra _ret_"); // return()
 
-		//_full_: ----- READ - WRITE LOOP -- (len != 0) ---
-		__asm__ volatile("_full_:		\n" // do {
+		//_fill_: ----- READ - WRITE LOOP -- (len != 0) ---
+		// If can read, then can write. Try to fill TX FIFO
+		__asm__ volatile("_fill_:		\n" // do {
 		"	btsc	_SPISTAT, #SRXMPT	\n" //  if (!CAN_RD)
 		"	bra		_chck_				\n" //   goto _chck_
 		"	mov		_SPIBUF, W0			\n" //
 		"	mov.b	W0, [W2++]			\n" //  *pRX++=READ()
-		"	ze		[W3++], W0			\n" //
+		"	mov.b	[W3++], W0			\n" //
 		"	mov		W0, _SPIBUF			\n" //  WRITE(*pTX++)
 		"	dec		W1, W1				\n" //  --len
-		"	bra		nz, _full_			\n" // } while (len)
-		"	bra		_zero_				\n" // goto _zero_
+		"	bra		nz, _fill_			\n" // } while (len)
+		"	bra		_zero_	; or _ret_	\n" // goto _zero_
 		::: "w0", "w1", "w2", "w3"); //__ 9 clk in loop ___
 
 		__asm__ volatile("_chck_:		\n" //_chck_: -----
-		"	disi	#4					\n" // DISABLE_INT()
-		"	btsc	_SPISTAT, #SPITBF	\n" // if (TX FIFO
-		"	bra		$+6					\n" //     is full)
-		"	bclr	_SPISTAT, #SISEL0	\n" // { SISEL =
-		"	bset	_SPISTAT, #SISEL1	\n" //   TXI_EMPTY }
-		); // Try to set TXI_EMPTY (or RXI_6DATA) mode
+		"	disi	#((_ret_- $)/2-1)	\n" // INTERLOCKED(
+		"	btsc	_SPISTAT, #SPITBF	\n" //  if (TX FIFO
+		"	bra		_ret_				\n" //      is full)
+		"	bclr	_SPISTAT, #SISEL2	\n" //  { SISEL =
+		"	bclr	_SPISTAT, #SISEL0	\n" //    RXI_6DATA
+		"	bset	_SPISTAT, #SISEL1	\n" //    Clear IF }
+		); 	SPI_CLR_FLAG(SPI_MASTER);	    // )/* Locked */
 
 	__asm__ volatile("_ret_:\n"		// _ret_: -------------
-	"	mov 	W1, _lbuf		\n" // Restore lbuf
-	"	mov 	W2, _pRXbuf		\n" // Restore pRXbuf
 	"	mov 	W3, _pTXbuf		\n" // Restore pTXbuf
+	"	mov 	W2, _pRXbuf		\n" // Restore pRXbuf
+	"	mov 	W1, _lbuf		\n" // Restore lbuf
 	::: "w1", "w2", "w3" );
 }
 
-IMPL_SPIM_SEND(SPI_MASTER)
+IMPL_SPIM_SHIFT(SPI_MASTER)
 {
-	if (lbuf != 0) return(-1); // Busy
-	while (!SPI_SR_EMPTY(SPI_MASTER));
+	if (!SPI_READY(SPI_MASTER)) return(-1); // Busy
 
 	if (len) {
 		SPI_DISABLE_INT(SPI_MASTER);

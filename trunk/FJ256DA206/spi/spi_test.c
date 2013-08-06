@@ -64,7 +64,7 @@ void spi_test(void)
 		case 1: // Profile
 			i = sys_clock(); PROFILE_START(1);
 
-			spim_send(SPI_MASTER, buf, ARSIZE(buf));
+			spim_shift(SPI_MASTER, buf, ARSIZE(buf));
 
 			while (!SPI_READY(SPI_MASTER));
 			PROFILE_END(1, ltime);
@@ -77,10 +77,10 @@ void spi_test(void)
 
 		case 2: lfree = 0; // Free time
 
-			spim_send(SPI_MASTER, buf, ARSIZE(buf));
+			spim_shift(SPI_MASTER, buf, ARSIZE(buf));
 
 			while (!SPI_READY(SPI_MASTER)) lfree++;
-			lfree *= 12; // 12 clk in loop
+			lfree *= 10; // 10 clk in loop
 
 			++stage; break; // Next test
 
@@ -88,7 +88,7 @@ void spi_test(void)
 
 			min = 0x0FFF; max = 0;
 			VERIFY(ARSIZE(buf) ==
-				spim_send(SPI_MASTER, buf, ARSIZE(buf)));
+				spim_shift(SPI_MASTER, buf, ARSIZE(buf)));
 
 			while (!SPI_READY(SPI_MASTER)) {
 				i = SPISTAT(SPI_MASTER) & 0x0702;
@@ -99,6 +99,9 @@ void spi_test(void)
 
 		case 4: // View and analyse
 
+			lbusy = ltime - lfree;
+			percent = (int)((100*lfree)/ltime);
+
 			// Check of overruning buffer boundaries
 			for (i = 0; i < ARSIZE(_extra_buf); i++)	
 			{ ASSERT(_extra_buf[i] == 0); }
@@ -106,14 +109,12 @@ void spi_test(void)
 			for (i = 0; i < ARSIZE(buf); i++)	
 			{ ASSERT(buf[i] == (char)i); } // Check buf
 
-			lbusy = ltime - lfree;
-			percent = (int)((100*lfree)/ltime);
 			i = (int)(ltime - SPI_MIN_CLK(speed));
 
-			// 0,0% over and 88% free time @ 1MHz SPI (4K)
-			// 0,0% over and 78% free time @ 4MHz SPI (4K)
-			// 1,1% over and 53% free time @ 4MHz SPI (4K)
-			// 6,5% over and 33% free time @ 8MHz SPI (4K)
+			// Zero over and 88% free time @ 1MHz SPI (4K)
+			// Zero over and 78% free time @ 2MHz SPI (4K)
+			// Zero over and 58% free time @ 4MHz SPI (4K)
+			// Zero over and 27% free time @ 8MHz SPI (4K)
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
