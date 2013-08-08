@@ -6,46 +6,6 @@
 
 #include <spis.h>
 /*
-*	Definition of Select Device pin (if used)
-*
-* Use macros:
-* #define _SPIx_CS  // Use this definition to aviod selection
-* #define _SPIx_CS _LATpn // Define port p pin n as CS output
-*/
-#define __SPI_CS(n)		_SPI##n##_CS
-#define _SPI_CS(n)		__SPI_CS(n)
-
-#ifndef	_SPI1_CS
-extern volatile int _SPI1_CS __attribute__ ((near));
-#endif
-#ifndef	_SPI2_CS
-extern volatile int _SPI2_CS __attribute__ ((near));
-#endif
-#ifndef	_SPI3_CS
-extern volatile int _SPI1_CS __attribute__ ((near));
-#endif
-
-#define SPI_READY(n)	(_SPI_CS(n) != 0)
-/*
-*	SPI master mode interface (n - SPI module number)
-*/
-#define _spim_init(n, mode, ipl) /* mode = SPICON1 */\
-	SPI_EMASTER_INIT(n, mode, SPI_EN | S_TXI_END, ipl)
-
-#define __SPIM_SHIFT(n)		spim_##n##_shift
-#define _SPIM_SHIFT(n)		__SPIM_SHIFT(n)
-#define IMPL_SPIM_SHIFT(n)	int _SPIM_SHIFT(n)(char* buf, int len)
-#define DECL_SPIM_SHIFT(n)	extern IMPL_SPIM_SHIFT(n)
-
-#define DECL_SPIM_UI(n)		DECL_SPIM_SHIFT(n)
-
-#define spim_isinit(n)				SPI_IS_INIT(n)
-#define spim_init(n, mode, ipl)		_spim_init(n, mode, ipl)
-#define spim_pwoff(n)				SPI_PWOFF(n)
-#define spim_done(n)				SPI_DONE(n)
-
-#define spim_shift(n, buf, len)		_SPIM_SHIFT(n)(buf, len)
-/*
 *	Initialize the SPI module for the Standard Master mode of operation
 */
 #define SPI_MASTER_INIT(n, con, sta, ipl) {\
@@ -85,5 +45,42 @@ extern volatile int _SPI1_CS __attribute__ ((near));
 \
 	if ((sta) & SPI_EN) SPI_ENABLE(n);\
 } ((void)0)
+/*
+*	SPI master mode interface (n - SPI module number)
+*/
+#define __SPIM_(n, name)	spim_##n##_##name
+#define _SPIM_(n, name)		__SPIM_(n, name)
+
+#define _SPIM_SHIFT(n)		_SPIM_(n, shift)
+#define IMPL_SPIM_SHIFT(n)	int _SPIM_SHIFT(n)(char* buf, int len)
+#define DECL_SPIM_SHIFT(n)	extern IMPL_SPIM_SHIFT(n)
+
+#define _spim_init(n, mode, ipl) /* mode = SPICON1 */\
+	SPI_EMASTER_INIT(n, mode, SPI_EN | S_TXI_END, ipl)
+
+#define DECL_SPIM_UI(n)\
+extern volatile int _SPIM_(n, err);\
+extern volatile char* _SPIM_(n, pRX);\
+extern volatile char* _SPIM_(n, pTX);\
+extern volatile int _SPIM_(n, len) __attribute((near));\
+DECL_SPIM_SHIFT(n)
+
+#define _SPIM_READY(n)	(_SPIM_(n, pRX) == _SPIM_(n, pTX))
+#define _SPIM_ISERR(n)	(_SPIM_(n, err) != 0)
+
+#define _SPIM_INIT(n, mode, ipl)\
+	SPI_DISABLE_INT(n); SPI_DISABLE(n);\
+	_SPIM_(n, pTX) = _SPIM_(n, pTX);\
+	_SPIM_(n, len) = 0; _SPIM_(n, err) = 0;\
+	SPI_EMASTER_INIT(n, mode, SPI_EN | S_TXI_END, ipl)
+
+#define spim_done(n)				SPI_DONE(n)
+#define spim_pwoff(n)				SPI_PWOFF(n)
+#define spim_isinit(n)				SPI_IS_INIT(n)
+#define spim_init(n, mode, ipl)		_SPIM_INIT(n, mode, ipl)
+
+#define spim_ready(n)				_SPIM_READY(n)
+#define spim_iserr(n)				_SPIM_ISERR(n)
+#define spim_shift(n, buf, len)		_SPIM_SHIFT(n)(buf, len)
 
 #endif /*_SPIMUI_INCL_*/

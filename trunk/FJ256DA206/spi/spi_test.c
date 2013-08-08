@@ -66,7 +66,7 @@ void spi_test(void)
 
 			spim_shift(SPI_MASTER, buf, ARSIZE(buf));
 
-			while (!SPI_READY(SPI_MASTER));
+			while (!spim_ready(SPI_MASTER));
 			PROFILE_END(1, ltime);
 			i = sys_clock() - i;
 
@@ -79,8 +79,8 @@ void spi_test(void)
 
 			spim_shift(SPI_MASTER, buf, ARSIZE(buf));
 
-			while (!SPI_READY(SPI_MASTER)) lfree++;
-			lfree *= 10; // 10 clk in loop
+			while (!spim_ready(SPI_MASTER)) lfree++;
+			lfree *= 11; // 11 clk in loop
 
 			++stage; break; // Next test
 
@@ -90,7 +90,7 @@ void spi_test(void)
 			VERIFY(ARSIZE(buf) ==
 				spim_shift(SPI_MASTER, buf, ARSIZE(buf)));
 
-			while (!SPI_READY(SPI_MASTER)) {
+			while (!spim_ready(SPI_MASTER)) {
 				i = SPISTAT(SPI_MASTER) & 0x0702;
 				if (i < min) min = i;
 				if (i > max) max = i; }
@@ -109,12 +109,13 @@ void spi_test(void)
 			for (i = 0; i < ARSIZE(buf); i++)	
 			{ ASSERT(buf[i] == (char)i); } // Check buf
 
+			ASSERT(!spim_iserr(SPI_MASTER));
+
 			i = (int)(ltime - SPI_MIN_CLK(speed));
 
-			// Zero over and 88% free time @ 1MHz SPI (4K)
-			// Zero over and 78% free time @ 2MHz SPI (4K)
-			// Zero over and 58% free time @ 4MHz SPI (4K)
-			// Zero over and 27% free time @ 8MHz SPI (4K)
+			// No overtime
+			// Free CPU time spim_shift/_load(4K packet):
+			// 88% 1MHz, 77% @ 2MHz, 59% @ 4MHz, 28% @ 8MHz
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
@@ -128,4 +129,4 @@ void spi_test(void)
 
 #undef	SPI_MASTER
 #define	SPI_MASTER	1
-//#include "spimui.c"
+#include "spimui.c"
