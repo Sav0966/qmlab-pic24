@@ -8,7 +8,7 @@
 
 DECL_SPIM_UI(SPI_MASTER);
 
-#define PACKET_SIZE	4096	// Packet size
+#define PACKET_SIZE	1024	// Packet size
 
 #define _SPI_MODE(speed)	(S_MSTEN | S_CKP | S_##speed)
 #define SPI_MODE			_SPI_MODE(1000)
@@ -54,7 +54,6 @@ void spi_test(void)
 
 	switch(stage) {
 		case 0: // Prepare buffer
-
 			for (i = 0; i < ARSIZE(buf); i++) buf[i] = i;
 			++stage; break; // Next test
 
@@ -135,22 +134,30 @@ void spi_test(void)
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
 
-		case 6: // Test any length of packet
+		case 6: // Clear buffer
+			for (i = 0; i < ARSIZE(buf); i++) buf[i] = 0;
+			++stage; break; // Next test
 
-			if (speed == 8) {
-				for (i = 0; i < ARSIZE(buf); i++) buf[i] = i;
-				for (packet_siz = 1; packet_siz < PACKET_SIZE;
-					++packet_siz) {
+		case 7: // Test for any length of packet
 
-					VERIFY(packet_siz == 
-						spim_shift(SPI_MASTER, buf, packet_siz));
-					for (i = 0; i < packet_siz; i++)	
-					{ ASSERT(buf[i] == (char)i); } // Check buf
+			for (packet_siz = 1; packet_siz < PACKET_SIZE;
+				++packet_siz) {
 
-				}
+				for (i = 0; i < packet_siz; i++) buf[i] = i;
+
+				VERIFY(packet_siz == 
+					spim_shift(SPI_MASTER, buf, packet_siz));
+				while (!spim_ready(SPI_MASTER));
+
+				ASSERT(!spim_iserr(SPI_MASTER));
+
+				for (i = 0; i < packet_siz; i++)	
+				{ ASSERT(buf[i] == (char)i); }
+				for (; i < ARSIZE(buf); i++)
+				{ ASSERT(buf[i] == 0); } // Check buf
+			}
 
 				__asm__ volatile ("nop\nnop");
-			}
 
 			++stage; break; // Next test
 
