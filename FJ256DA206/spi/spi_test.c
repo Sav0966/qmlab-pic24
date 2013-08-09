@@ -17,21 +17,22 @@ DECL_SPIM_UI(SPI_MASTER);
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
 #endif
 
-static int stage = 0; // Test stage
-static int speed = 1; // Speed in MHz
-
 static const int _mode[9] = { 0,
  _SPI_MODE(1000), _SPI_MODE(2000), 0,
  _SPI_MODE(4000), 0, 0, 0, _SPI_MODE(8000) };
 
+static int stage = 0; // Test stage
+static int speed = 1; // Speed in MHz
+
+int  packet_siz = PACKET_SIZE;
 static char buf[PACKET_SIZE];
 static char _extra_buf[8]; // Check pointers
 
-static int i, min, max, percent;
+static int i, min, max, percent, over;
 static unsigned long ltime, lfree, lbusy;
 
-#define SPI_MIN_CLK(speed)\
- (16 * ((8 * ARSIZE(buf)) / speed))
+#define SPI_MIN_CLK(siz, speed)\
+	(16 * ((8L * siz) / speed))
 
 void spi_test(void)
 { // Called from Main Loop more often than once per 10 ms
@@ -46,10 +47,6 @@ void spi_test(void)
 
 			stage = 0; // Start test
 		}
-
-		SPI_DISABLE(SPI_MASTER); // Set speed
-		SPICON1(SPI_MASTER) = _mode[speed];
-		SPI_ENABLE(SPI_MASTER);
 	}
 
 	if (!spim_isinit(SPI_MASTER) /*||
@@ -64,7 +61,7 @@ void spi_test(void)
 		case 1: // Profile
 			i = sys_clock(); PROFILE_START(1);
 
-			spim_shift(SPI_MASTER, buf, ARSIZE(buf));
+			spim_shift(SPI_MASTER, buf, packet_siz);
 
 			while (!spim_ready(SPI_MASTER));
 			PROFILE_END(1, ltime);
@@ -77,7 +74,7 @@ void spi_test(void)
 
 		case 2: lfree = 0; // Free time
 
-			spim_shift(SPI_MASTER, buf, ARSIZE(buf));
+			spim_shift(SPI_MASTER, buf, packet_siz);
 
 			while (!spim_ready(SPI_MASTER)) lfree++;
 			lfree *= 11; // 11 clk in loop
@@ -87,8 +84,8 @@ void spi_test(void)
 		case 3: // FIFO size
 
 			min = 0x0FFF; max = 0;
-			VERIFY(ARSIZE(buf) ==
-				spim_shift(SPI_MASTER, buf, ARSIZE(buf)));
+			VERIFY(packet_siz ==
+				spim_shift(SPI_MASTER, buf, packet_siz));
 
 			while (!spim_ready(SPI_MASTER)) {
 				i = SPISTAT(SPI_MASTER) & 0x0702;
@@ -96,22 +93,21 @@ void spi_test(void)
 				if (i > max) max = i; }
 
 			++stage; break; // Next test
-
 		case 4: // View and analyse
 
 			lbusy = ltime - lfree;
 			percent = (int)((100*lfree)/ltime);
 
 			// Check of overruning buffer boundaries
-			for (i = 0; i < ARSIZE(_extra_buf); i++)	
+			for (i = 0; i < ARSIZE(_extra_buf); i++)
 			{ ASSERT(_extra_buf[i] == 0); }
 
-			for (i = 0; i < ARSIZE(buf); i++)	
+			for (i = 0; i < packet_siz; i++)	
 			{ ASSERT(buf[i] == (char)i); } // Check buf
 
 			ASSERT(!spim_iserr(SPI_MASTER));
 
-			i = (int)(ltime - SPI_MIN_CLK(speed));
+			over = (int)(ltime - SPI_MIN_CLK(packet_siz, speed));
 
 			// No overtime
 			// Free CPU time spim_shift/_load(4K packet):
@@ -120,9 +116,51 @@ void spi_test(void)
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
 
+		case 5: // Test spim_load()
+			spim_load(SPI_MASTER, buf, packet_siz);
+
+			while (!spim_ready(SPI_MASTER));
+			for (i = 0; i < packet_siz; i++)	
+			{ ASSERT(buf[i] == 0); } // Check buf
+
+			_S2DO = 1;
+			spim_load(SPI_MASTER, buf, ARSIZE(buf));
+
+			while (!spim_ready(SPI_MASTER));
+			for (i = 0; i < packet_siz; i++)	
+			{ ASSERT(buf[i] == -1); } // Check buf
+
+			_S2DO = 0;
+
+			__asm__ volatile ("nop\nnop");
+			++stage; break; // Next test
+
+		case 6: // Test any length of packet
+
+			if (speed == 8) {
+				for (i = 0; i < ARSIZE(buf); i++) buf[i] = i;
+				for (packet_siz = 1; packet_siz < PACKET_SIZE;
+					++packet_siz) {
+
+					VERIFY(packet_siz == 
+						spim_shift(SPI_MASTER, buf, packet_siz));
+					for (i = 0; i < packet_siz; i++)	
+					{ ASSERT(buf[i] == (char)i); } // Check buf
+
+				}
+
+				__asm__ volatile ("nop\nnop");
+			}
+
+			++stage; break; // Next test
+
 		default: // Increase SPI speed
+			stage = 0;
 			speed *= 2; if (speed > 8) speed = 1;
-			spim_pwoff(SPI_MASTER); // SPI_PWOFF(SPI_SLAVE);
+			SPI_DISABLE(SPI_MASTER); // Set speed
+			SPICON1(SPI_MASTER) = _mode[speed];
+			SPI_ENABLE(SPI_MASTER);
+//			spim_pwoff(SPI_MASTER); SPI_PWOFF(SPI_SLAVE);
 			break;
 	} // switch(stage)
 }
