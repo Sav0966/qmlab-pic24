@@ -55,15 +55,20 @@
 #define IMPL_SPIM_SHIFT(n)	int _SPIM_SHIFT(n)(char* buf, int len)
 #define DECL_SPIM_SHIFT(n)	extern IMPL_SPIM_SHIFT(n)
 
-#define _spim_init(n, mode, ipl) /* mode = SPICON1 */\
-	SPI_EMASTER_INIT(n, mode, SPI_EN | S_TXI_END, ipl)
+#define _SPIM_LOAD(n)		_SPIM_(n, load)
+#define IMPL_SPIM_LOAD(n)	int _SPIM_LOAD(n)(char* buf, int len)
+#define DECL_SPIM_LOAD(n)	extern IMPL_SPIM_LOAD(n)
+
+#define _SPIM_SEND(n)		_SPIM_(n, send)
+#define IMPL_SPIM_SEND(n)	int _SPIM_SEND(n)(char* buf, int len)
+#define DECL_SPIM_SEND(n)	extern IMPL_SPIM_SEND(n)
 
 #define DECL_SPIM_UI(n)\
 extern volatile int _SPIM_(n, err);\
 extern volatile char* _SPIM_(n, pRX);\
 extern volatile char* _SPIM_(n, pTX);\
 extern volatile int _SPIM_(n, len) __attribute((near));\
-DECL_SPIM_SHIFT(n)
+DECL_SPIM_SHIFT(n); DECL_SPIM_LOAD(n); DECL_SPIM_SEND(n)
 
 #define _SPIM_READY(n)	(_SPIM_(n, pRX) == _SPIM_(n, pTX))
 #define _SPIM_ISERR(n)	(_SPIM_(n, err) != 0)
@@ -82,5 +87,6 @@ DECL_SPIM_SHIFT(n)
 #define spim_ready(n)				_SPIM_READY(n)
 #define spim_iserr(n)				_SPIM_ISERR(n)
 #define spim_shift(n, buf, len)		_SPIM_SHIFT(n)(buf, len)
+#define spim_load(n, buf, len)		_SPIM_LOAD(n)(buf, len)
 
 #endif /*_SPIMUI_INCL_*/

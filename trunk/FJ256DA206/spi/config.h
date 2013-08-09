@@ -37,6 +37,7 @@
 #define RD10_LOW
 #define RP3_OUT		RP_SDO2
 #define RP_SDI2		RP3_IN	// Loopback mode of SPI2
+#define _S2DO		_LATD10	// SPI2 DO pin (for test)
 //#define RP_SDI3		RP3_IN
 #endif
 
