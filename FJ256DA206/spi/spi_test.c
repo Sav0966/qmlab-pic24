@@ -40,7 +40,7 @@ void spi_test(void)
 	if ((sys_clock() & 0x3F) == 0) {
 	 // Once per 0.64 seccond test SPI
 		if (!spim_isinit(SPI_MASTER)) {
-			spim_init(SPI_MASTER, SPI_MODE, 2);
+			spim_init(SPI_MASTER, SPI_MODE, SYSCLK_IPL+1);
 
 //			SPI_ESLAVE_INIT(SPI_SLAVE, /* Disable SDO */
 //				SPI_MODE, SPI_EN | S_RXI_ANY, 3);
@@ -110,7 +110,7 @@ void spi_test(void)
 
 			// No overtime
 			// Free CPU time spim_shift/_load(4K packet):
-			// 88% 1MHz, 77% @ 2MHz, 59% @ 4MHz, 28% @ 8MHz
+			// 87% 1MHz, 77% @ 2MHz, 58% @ 4MHz, 28% @ 8MHz
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
@@ -139,6 +139,12 @@ void spi_test(void)
 			++stage; break; // Next test
 
 		case 7: // Test for any length of packet
+			{
+				int ipl_T1 = TIMER_GET_IPL(1);
+				int ipl_SPI = SPI_GET_IPL(SPI_MASTER);
+				SPI_SET_IPL(SPI_MASTER, ipl_T1);
+				TIMER_SET_IPL(1, ipl_SPI); 
+			} // Timer1 IPL > SPI IPL
 
 			for (packet_siz = 1; packet_siz < PACKET_SIZE;
 				++packet_siz) {
@@ -157,7 +163,14 @@ void spi_test(void)
 				{ ASSERT(buf[i] == 0); } // Check buf
 			}
 
-				__asm__ volatile ("nop\nnop");
+			{
+				int ipl_T1 = TIMER_GET_IPL(1);
+				int ipl_SPI = SPI_GET_IPL(SPI_MASTER);
+				SPI_SET_IPL(SPI_MASTER, ipl_T1);
+				TIMER_SET_IPL(1, ipl_SPI); 
+			} // Restore IPLs
+
+			__asm__ volatile ("nop\nnop");
 
 			++stage; break; // Next test
 

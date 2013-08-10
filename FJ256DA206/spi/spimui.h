@@ -48,32 +48,30 @@
 /*
 *	SPI master mode interface (n - SPI module number)
 */
+#define ___SPIM_(n, name)	_spim_##n##_##name
 #define __SPIM_(n, name)	spim_##n##_##name
-#define _SPIM_(n, name)		__SPIM_(n, name)
+#define _SPIM_(n, name)		___SPIM_(n, name)
+#define SPIM_(n, name)		__SPIM_(n, name)
 
 #define _SPIM_SHIFT(n)		_SPIM_(n, shift)
-#define IMPL_SPIM_SHIFT(n)	int _SPIM_SHIFT(n)(char* buf, int len)
+#define IMPL_SPIM_SHIFT(n)	int _SPIM_SHIFT(n)(char* buf, int rlen, int tlen)
 #define DECL_SPIM_SHIFT(n)	extern IMPL_SPIM_SHIFT(n)
 
-#define _SPIM_LOAD(n)		_SPIM_(n, load)
-#define IMPL_SPIM_LOAD(n)	int _SPIM_LOAD(n)(char* buf, int len)
-#define DECL_SPIM_LOAD(n)	extern IMPL_SPIM_LOAD(n)
-
-#define _SPIM_SEND(n)		_SPIM_(n, send)
-#define IMPL_SPIM_SEND(n)	int _SPIM_SEND(n)(char* buf, int len)
+#define SPIM_SEND(n)		SPIM_(n, send)
+#define IMPL_SPIM_SEND(n)	int SPIM_SEND(n)(char* buf, int len)
 #define DECL_SPIM_SEND(n)	extern IMPL_SPIM_SEND(n)
 
 #define DECL_SPIM_UI(n)\
-extern volatile int _SPIM_(n, err);\
-extern volatile char* _SPIM_(n, pRX);\
-extern volatile char* _SPIM_(n, pTX);\
-extern volatile int _SPIM_(n, len) __attribute((near));\
-DECL_SPIM_SHIFT(n); DECL_SPIM_LOAD(n); DECL_SPIM_SEND(n)
+	extern volatile int _SPIM_(n, err);\
+	extern volatile char* _SPIM_(n, pRX) __attribute__((near));;\
+	extern volatile char* _SPIM_(n, pTX) __attribute__((near));;\
+	extern volatile int _SPIM_(n, len) __attribute__((near));\
+	DECL_SPIM_SHIFT(n); DECL_SPIM_SEND(n)
 
-#define _SPIM_READY(n)	(_SPIM_(n, pRX) == _SPIM_(n, pTX))
-#define _SPIM_ISERR(n)	(_SPIM_(n, err) != 0)
+#define SPIM_READY(n)	(_SPIM_(n, pRX) == _SPIM_(n, pTX))
+#define SPIM_GETERR(n)	(_SPIM_(n, err))
 
-#define _SPIM_INIT(n, mode, ipl)\
+#define SPIM_INIT(n, mode, ipl)\
 	SPI_DISABLE_INT(n); SPI_DISABLE(n);\
 	_SPIM_(n, pTX) = _SPIM_(n, pTX);\
 	_SPIM_(n, len) = 0; _SPIM_(n, err) = 0;\
@@ -82,11 +80,11 @@ DECL_SPIM_SHIFT(n); DECL_SPIM_LOAD(n); DECL_SPIM_SEND(n)
 #define spim_done(n)				SPI_DONE(n)
 #define spim_pwoff(n)				SPI_PWOFF(n)
 #define spim_isinit(n)				SPI_IS_INIT(n)
-#define spim_init(n, mode, ipl)		_SPIM_INIT(n, mode, ipl)
+#define spim_init(n, mode, ipl)		SPIM_INIT(n, mode, ipl)
 
-#define spim_ready(n)				_SPIM_READY(n)
-#define spim_iserr(n)				_SPIM_ISERR(n)
-#define spim_shift(n, buf, len)		_SPIM_SHIFT(n)(buf, len)
-#define spim_load(n, buf, len)		_SPIM_LOAD(n)(buf, len)
+#define spim_ready(n)				SPIM_READY(n)
+#define spim_iserr(n)				SPIM_GETERR(n)
+#define spim_shift(n, buf, len)		_SPIM_SHIFT(n)(buf, len, len)
+#define spim_load(n, buf, rlen)		_SPIM_SHIFT(n)(buf, rlen, 0)
 
 #endif /*_SPIMUI_INCL_*/
