@@ -8,7 +8,7 @@
 
 DECL_SPIM_UI(SPI_MASTER);
 
-#define PACKET_SIZE	1024	// Packet size
+#define PACKET_SIZE	4096	// Packet size
 
 #define _SPI_MODE(speed)	(S_MSTEN | S_CKP | S_##speed)
 #define SPI_MODE			_SPI_MODE(1000)
@@ -53,7 +53,7 @@ void spi_test(void)
 		!SPI_IS_INIT(SPI_SLAVE)*/) return;
 
 	switch(stage) {
-		case 0: // Prepare buffer
+		case 0: // Prepare buffer: spim_shift() & spim_load()
 			for (i = 0; i < ARSIZE(buf); i++) buf[i] = i;
 			++stage; break; // Next test
 
@@ -92,7 +92,8 @@ void spi_test(void)
 				if (i > max) max = i; }
 
 			++stage; break; // Next test
-		case 4: // View and analyse
+
+		case 4: // View and analyse (spim_shift)
 
 			lbusy = ltime - lfree;
 			percent = (int)((100*lfree)/ltime);
@@ -134,11 +135,67 @@ void spi_test(void)
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
 
-		case 6: // Clear buffer
+		case 6: // Clear buffer: test spim_send()
 			for (i = 0; i < ARSIZE(buf); i++) buf[i] = 0;
 			++stage; break; // Next test
 
-		case 7: // Test for any length of packet
+		case 7: // Profile
+			i = sys_clock(); PROFILE_START(1);
+
+			spim_send(SPI_MASTER, buf, packet_siz);
+
+			while (!spim_ready(SPI_MASTER));
+			PROFILE_END(1, ltime);
+			i = sys_clock() - i;
+
+			ltime *= 8; // Timer1 @ 2MHz
+			ltime += i * (16 * 10000L);
+
+			++stage; break; // Next test
+
+		case 8: lfree = 0; // Free time
+
+			_S2DO = 1; // Try to send 0xFF
+			SPI_DISABLE(SPI_MASTER); // Use IO
+			SPICON1bits(SPI_MASTER).DISSDO = 1;
+			SPI_ENABLE(SPI_MASTER);
+
+			spim_send(SPI_MASTER, buf, packet_siz);
+
+			while (!spim_ready(SPI_MASTER)) lfree++;
+			lfree *= 11; // 11 clk in loop
+
+			_S2DO = 0; // Restore state
+			SPI_DISABLE(SPI_MASTER); // Use SDO
+			SPICON1bits(SPI_MASTER).DISSDO = 0;
+			SPI_ENABLE(SPI_MASTER);
+
+			++stage; break; // Next test
+
+		case 9: // View and analyse
+
+			lbusy = ltime - lfree;
+			percent = (int)((100*lfree)/ltime);
+
+			// Check of overruning buffer boundaries
+			for (i = 0; i < ARSIZE(_extra_buf); i++)
+			{ ASSERT(_extra_buf[i] == 0); }
+
+			for (i = 0; i < packet_siz; i++)	
+			{ ASSERT(buf[i] == 0); } // Check buf
+
+			ASSERT(!spim_iserr(SPI_MASTER));
+
+			over = (int)(ltime - SPI_MIN_CLK(packet_siz, speed));
+
+			// No overtime
+			// Free CPU time spim_shift/_load(4K packet):
+			// 87% 1MHz, 77% @ 2MHz, 58% @ 4MHz, 28% @ 8MHz
+
+			__asm__ volatile ("nop\nnop");
+			++stage; break; // Next test
+
+		case 10: // Test for any length of packet
 			{
 				int ipl_T1 = TIMER_GET_IPL(1);
 				int ipl_SPI = SPI_GET_IPL(SPI_MASTER);

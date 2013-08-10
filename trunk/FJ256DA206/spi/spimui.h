@@ -86,5 +86,6 @@
 #define spim_iserr(n)				SPIM_GETERR(n)
 #define spim_shift(n, buf, len)		_SPIM_SHIFT(n)(buf, len, len)
 #define spim_load(n, buf, rlen)		_SPIM_SHIFT(n)(buf, rlen, 0)
+#define spim_send(n, buf, tlen)		_SPIM_SHIFT(n)(buf, 0, tlen)
 
 #endif /*_SPIMUI_INCL_*/
