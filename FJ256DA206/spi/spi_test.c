@@ -111,7 +111,7 @@ void spi_test(void)
 
 			// No overtime
 			// Free CPU time spim_shift/_load(4K packet):
-			// 87% 1MHz, 77% @ 2MHz, 58% @ 4MHz, 28% @ 8MHz
+			// 87% 1MHz, 76% @ 2MHz, 57% @ 4MHz, 26% @ 8MHz
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
@@ -190,7 +190,7 @@ void spi_test(void)
 
 			// No overtime
 			// Free CPU time spim_shift/_load(4K packet):
-			// 87% 1MHz, 77% @ 2MHz, 58% @ 4MHz, 28% @ 8MHz
+			// 87% 1MHz, 76% @ 2MHz, 58% @ 4MHz, 29% @ 8MHz
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
