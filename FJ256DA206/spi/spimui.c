@@ -49,12 +49,6 @@ void SPI_ERR_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 { // Needs to decrease speed
 	SPI_CLR_ERFLAG(SPI_MASTER);
 	SPI_CLR_OERR(SPI_MASTER);
-
-//	SPI_DISABLE(SPI_MASTER); // Reset
-//	SPI_ENABLE(SPI_MASTER); // SPI FIFO and buffer
-//	_SPIM_(SPI_MASTER, pRX) = _SPIM_(SPI_MASTER, pTX);
-//	_SPIM_(SPI_MASTER, len) = 0;
-	
 	++_SPIM_(SPI_MASTER, err);
 }
 /*
@@ -75,14 +69,17 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	__asm__ volatile(
 	"	cp0		_len				\n" // if (len==0)
 	"	bra		z, _zero_			\n" // goto _zero_
-//	"	bra		lt, _dummy_\n" // if (len < 0) _dummy_
 	);
 
 		__asm__ volatile( //------- WRITE LOOP ----------|
 		"_nzero_:						\n" // len != 0  |
-		"	mov		_pRX,W0				\n" // *pRX++=READ
+		"	mov		_pRX,W0				\n" // W1 = READ()
 		"	mov 	_BUF, W1			\n" // Must read to
-		"	mov.b 	W1, [W0++]			\n" //  prevent ROV
+											// prevent ROV
+		"	bra		lt, _dummy_\n" // if (len < 0) _dummy_
+
+											// len > 0
+		"	mov.b 	W1, [W0++]			\n" // *pRX++ = W1
 		"	mov		W0, _pRX			\n" // Restore pRX
 
 		"	mov		_pTX, W1			\n" // Store pTX
@@ -97,11 +94,9 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 		"	bra		z, _read_		\n" //      goto _read_
 		"	dec		_cnt			\n" // }
 		"	bra		gt, $-10		\n" //__ 7n + 4 clk _|
+		::: "w0", "w1");			// _cnt always >= 0
 
-//		"	inc		_cnt			\n" // _cnt always > 0
-		::: "w0", "w1");
-
-		__asm__ volatile(//-------- READ - WRITE LOOP ---|
+		__asm__ volatile( //------- READ - WRITE LOOP ---|
 		// If can read - write, len != 0, pRX = pTX-SFIFO
 		"	bra		$+14			\n" // while (CAN_RD)
 		"	mov		_BUF, W0		\n" // {
@@ -114,7 +109,7 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 		"	bra		$-14			\n" //__ 9n + 4 clk _|
 		::: "w0", "w1");
 
-		__asm__ volatile(// Try to set RXI_6DATA mode
+		__asm__ volatile( // Try to set RXI_6DATA mode
 		"_chck_:						\n" //_chck_:
 		"	disi	#(_ch_- $)/2-1		\n" // INTERLOCKED
 		"	btsc	_STAT, #SPITBF		\n" // ( if (TX FIFO
@@ -130,34 +125,66 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 			"	sub		W1, #SFIFO, W0		\n" // W0 = pRX
 			"	mov		W1, _pTX			\n" // Restore
 			"	mov		W0, _pRX			\n" // pTX, pRX
-			"	pop.d	W0	\n	retfie		\n" // return()
+			"	bra		_ret_				\n" // return()
 			::: "w0", "w1"); //========== RETURN ========|
 
-		//================== DUMMY READ =================|
-		//::: "w0", "w1"); //===== DUMMY READ ===========|
+		__asm__ volatile( //====== DUMMY READ ===========|
+		"_dummy_:						\n" // len < 0   |
+		"	mov.b 	[W0++], [W15]		\n" // DUMMY_READ()
+		"	mov		W0, _pRX			\n" // Restore pRX
+
+		"	mov		_pTX, W1			\n" // Store pTX
+		"	sub		W1, W0, W0			\n" // cnt =
+		"	sub		W0, #(SFIFO+1), W0	\n" //  (pTX - pRX)
+		"	mov		W0, _cnt			\n" //  - (SFIFO+1)
+
+		"	bra		$+10			\n" // while
+		"	ze		[w1++], W0		\n" // (++cnt < 0) {
+		"	mov		W0, _BUF		\n" //   WRITE(*pTX++)
+		"	inc		_len			\n" //   if (++len == 0)
+		"	bra		z, _read_		\n" //     goto _read_
+		"	inc		_cnt			\n" // }
+		"	bra		lt, $-10		\n" //__ 7n + 4 clk _|
+		"	dec		_cnt			\n" // _cnt always < 0
+		::: "w0", "w1");
+
+		__asm__ volatile( //------- READ - WRITE LOOP ---|
+		// If can read - write, len != 0, pRX = pTX-SFIFO
+		"	bra		$+12			\n" // while (CAN_RD)
+		"	mov		_BUF, W0		\n" // {
+		//"	mov.b	W0, [W1-SFIFO]	\n" //   DUMMY_READ()
+		"	mov.b	[W1++], W0		\n" //   WRITE(*pTX++)
+		"	mov		W0, _BUF		\n" //
+		"	inc		_len			\n" //   if (++len == 0)
+		"	bra		z, _break_		\n" //     goto _break_
+		"	btss	_STAT, #SRXMPT	\n" // }
+		"	bra		$-12			\n" //__ 8n + 4 clk _|
+		"	bra		_chck_			\n" // goto _chck_
+		::: "w0", "w1"); //======= DUMMY READ ===========
 
 	__asm__ volatile( //-------- READ LOOP ----------|
-	"_read_:					\n" // (len == 0) ---|
+	"_read_:					\n" // (len == 0)
 	"	mov		W1, _pTX		\n" // Restore pTX
 	"_zero_:					\n" //
 	"	mov		_pRX, W1		\n" // Store pRX
-	"	btsc	_STAT, #SRXMPT	\n" // while (CAN_RD)
-	"	bra		_end_			\n" // {
-	"	mov		_BUF, W0		\n" //    *pRX++ = 
-	"	mov.b	W0, [W1++]		\n" //      READ()
-	"	btss	_STAT, #SRXMPT	\n" // } goto _end_
-	"	bra		$-6				\n" //__ 5n + 4 clk _|
+
+	"	bra		$+12			\n" // while (CAN_RD)
+	"	mov		_BUF, W0		\n" // {
+	"	cp0		_cnt			\n" //   if (cnt < 0)
+	"	bra		lt, $+4			\n" //     DUMMY_RD()
+	"	mov.b	W0, [W1]		\n" //   else *pRX++
+	"	inc		W1, W1			\n" //      = READ()
+	"	btss	_STAT, #SRXMPT	\n" // }
+	"	bra		$-12			\n" //__ 8n + 4 clk _|
+
+	"_end_:						\n" //
+	"	mov		W1, _pRX		\n" // Restore pRX
+	"	mov		_pTX, W0		\n" //
+	"	sub		W0, W1, [W15]	\n" // if (pRX !=
+	"	bra		nz, _ret_		\n" // pTX) return
 	::: "w0", "w1");
 
-		__asm__ volatile(
-		"_end_:						\n" //
-		"	mov		W1, _pRX		\n" // Restore pRX
-		"	mov		_pTX, W0		\n" //
-		"	sub		W0, W1, [W15]	\n" // if (pRX !=
-		"	bra		nz, _ret_		\n" // pTX) return
-		::: "w0", "w1");
-
-		__asm__ volatile("_packet_end_: nop\n");
+	__asm__ volatile("_packet_end_: nop	\n");
 
 	__asm__ volatile("_ret_:\n");
 }
@@ -167,21 +194,25 @@ IMPL_SPIM_SHIFT(SPI_MASTER)
 {
 	SPI_DISABLE_INT(SPI_MASTER);
 
-	if (_SPIM_(SPI_MASTER, pRX) !=
-		_SPIM_(SPI_MASTER, pTX)) // Busy
-		_SPIM_(SPI_MASTER, len) = -1;
+	if (_SPIM_(SPI_MASTER, pRX) != // Busy
+		_SPIM_(SPI_MASTER, pTX)) rlen = -1;
 	else {
 		SPI_DISABLE(SPI_MASTER); // Use SDO or IO
 		if (tlen) SPICON1bits(SPI_MASTER).DISSDO = 0;
 		else  SPICON1bits(SPI_MASTER).DISSDO = 1;
 		SPI_ENABLE(SPI_MASTER);
 
-		if (rlen) {
+		// Read or dummy read
+		if (rlen) _SPIM_(SPI_MASTER, len) = rlen-1;
+		else _SPIM_(SPI_MASTER, len) = -(tlen-1);
+
+		if (_SPIM_(SPI_MASTER, len)) {
 			_SPIM_(SPI_MASTER, pRX) = buf;
 			_SPIM_(SPI_MASTER, pTX) = buf+1;
-			_SPIM_(SPI_MASTER, len) = rlen-1;
 			SPI_WRITE(SPI_MASTER, *buf); // Run
 		}
+
+		if (tlen > rlen) rlen = tlen;
 	}
 
 	SPI_ENABLE_INT(SPI_MASTER);
