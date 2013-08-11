@@ -58,12 +58,12 @@ void spi_test(void)
 			++stage; break; // Next test
 
 		case 1: // Profile
-			i = sys_clock(); PROFILE_START(1);
+			i = sys_clock(); PROFILE_START(SYS_TIMER);
 
 			spim_shift(SPI_MASTER, buf, packet_siz);
 
 			while (!spim_ready(SPI_MASTER));
-			PROFILE_END(1, ltime);
+			PROFILE_END(SYS_TIMER, ltime);
 			i = sys_clock() - i;
 
 			ltime *= 8; // Timer1 @ 2MHz
@@ -140,12 +140,12 @@ void spi_test(void)
 			++stage; break; // Next test
 
 		case 7: // Profile
-			i = sys_clock(); PROFILE_START(1);
+			i = sys_clock(); PROFILE_START(SYS_TIMER);
 
 			spim_send(SPI_MASTER, buf, packet_siz);
 
 			while (!spim_ready(SPI_MASTER));
-			PROFILE_END(1, ltime);
+			PROFILE_END(SYS_TIMER, ltime);
 			i = sys_clock() - i;
 
 			ltime *= 8; // Timer1 @ 2MHz
@@ -197,10 +197,10 @@ void spi_test(void)
 
 		case 10: // Test for any length of packet
 			{
-				int ipl_T1 = TIMER_GET_IPL(1);
+				int ipl_T1 = TIMER_GET_IPL(SYS_TIMER);
 				int ipl_SPI = SPI_GET_IPL(SPI_MASTER);
+				TIMER_SET_IPL(SYS_TIMER, ipl_SPI); 
 				SPI_SET_IPL(SPI_MASTER, ipl_T1);
-				TIMER_SET_IPL(1, ipl_SPI); 
 			} // Timer1 IPL > SPI IPL
 
 			for (packet_siz = 1; packet_siz < PACKET_SIZE;
@@ -221,10 +221,10 @@ void spi_test(void)
 			}
 
 			{
-				int ipl_T1 = TIMER_GET_IPL(1);
+				int ipl_T1 = TIMER_GET_IPL(SYS_TIMER);
 				int ipl_SPI = SPI_GET_IPL(SPI_MASTER);
+				TIMER_SET_IPL(SYS_TIMER, ipl_SPI); 
 				SPI_SET_IPL(SPI_MASTER, ipl_T1);
-				TIMER_SET_IPL(1, ipl_SPI); 
 			} // Restore IPLs
 
 			__asm__ volatile ("nop\nnop");
