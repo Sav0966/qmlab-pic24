@@ -30,8 +30,10 @@
 #define T1_MODE_EXT_SYNC	(T_MODE_EXT | T1_SYNC)
 
 /* Timer control register */
-#define TCON(timer)	T##timer##CON
-#define TCONbits(timer) T##timer##CONbits
+#define _TCON(timer)	T##timer##CON
+#define _TCONbits(timer) T##timer##CONbits
+#define TCONbits(timer)	_TCONbits(timer)
+#define TCON(timer)		_TCON(timer)
 
 /* Start and stop timer counting */
 #define TIMER_ON(timer)		TCONbits(timer).TON = 1
@@ -43,8 +45,10 @@
 #define TIMER_READ(timer)		((int)TMR##timer)
 
 /* Setup and obtain timer period register */
-#define TIMER_SET_PR(timer, n)	PR##timer = n
-#define TIMER_GET_PR(timer)		((int)PR##timer)
+#define _TIMER_SET_PR(timer, n)	PR##timer = n
+#define _TIMER_GET_PR(timer)		((int)PR##timer)
+#define TIMER_SET_PR(timer, n)	_TIMER_SET_PR(timer, n)
+#define TIMER_GET_PR(timer)		_TIMER_GET_PR(timer)
 
 // Interrupt Priority Level
 #define _TIP(timer)		_T##timer##IP

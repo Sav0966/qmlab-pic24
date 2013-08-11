@@ -11,10 +11,12 @@
 #define __OSC__		PRIPLL
 #include <fcy.h>
 /*
-* Interrupt priority levels (IPL)
+* Interrupt priority levels (IPL) and modules
 */
 #define MAIN_IPL	0	// Main loop
 #define SYSCLK_IPL	1	// System timer (Timer1)
+
+#define SYS_TIMER	1	// System timer
 /*
 * Definitions of Config Words
 */
