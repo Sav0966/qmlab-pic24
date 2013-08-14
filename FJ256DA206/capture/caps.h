@@ -12,6 +12,11 @@
 #define IC_READ(n)		(ICBUF(n))
 #define IC_FIFO_SIZE	4
 /*
+* IC Timer Register
+*/
+#define _ICTMR(n)		IC##n##TMR
+#define ICTMR(n)		_ICTMR(n)
+/*
 * IC Control Register 1
 */
 #define _ICCON1(n)		IC##n##CON1
