@@ -14,6 +14,12 @@
 
 static int stage = 0; // Test stage
 
+void IC_INTFUNC(IC_USED, no_auto_psv)(void)
+{
+	IC_CLR_FLAG(IC_USED);
+
+}
+
 void cap_test(void)
 { // Called from Main Loop more often than once per 10 ms
 
