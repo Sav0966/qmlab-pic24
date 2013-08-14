@@ -4,6 +4,10 @@
 #include <timers.h>
 #include <clock.h>
 
+#include "caps.h"
+
+#define IC_USED	9
+
 #ifndef ARSIZE
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
 #endif
@@ -15,13 +19,15 @@ void cap_test(void)
 
 	if ((sys_clock() & 0x3F) == 0) {
 	 // Once per 0.64 seccond test SPI
-//		if (!spim_isinit(SPI_MASTER)) {
-//			spim_init(SPI_MASTER, SPI_MODE, SYSCLK_IPL+1);
-//			stage = 0; // Start test
-//		}
+		if (!IC_IS_INIT(IC_USED)) {
+			IC_INIT(IC_USED,
+				ICT_FCY2 | ICM_DISABLE, 0, SYSCLK_IPL+1);
+
+			stage = 0; // Start test
+		}
 	}
 
-//	if (!spim_isinit(SPI_MASTER)) return;
+	if (!IC_IS_INIT(IC_USED)) return;
 
 	switch(stage) {
 		case 0:
@@ -34,6 +40,7 @@ void cap_test(void)
 			++stage; break; // Next test
 
 		default: stage = 0;
+			IC_PWOFF(IC_USED);
 			break;
 	} // switch(stage)
 }

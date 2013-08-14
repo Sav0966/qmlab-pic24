@@ -198,7 +198,7 @@
 #define SPI_SET_ERFLAG(n)	_SPFIF(n) = 1
 #define SPI_IS_ERFLAG(n)	(_SPFIF(n) != 0)
 /*
-* Power management of SPI module (PMDx.UnMD bit)
+* Power management of SPI module (PMDx.SPInMD bit)
 */
 #define __SPIMD(n)			_SPI##n##MD
 #define _SPIMD(n)			__SPIMD(n)
