@@ -21,6 +21,11 @@
 * Redefinition of default MCU pins configuration
 */
 #include <pinscfg.h>
+
+#ifdef _IC_TEST_
+#define RP29_OUT	RP_OC1	// RB15/RP29 (REFO) OC1
+#define PR_IC9		RP29_IN // output and IC9 input
+#endif
 /*
 * Definitions of Config Words
 */
