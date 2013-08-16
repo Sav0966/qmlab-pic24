@@ -51,7 +51,7 @@ int uart_init(void)
 
 		U_TXI_READY | U_RXI_ANY |		// Defaul event settings
 		U_TXEN, FCY2BRG(FCY2, 9600),	// TX Enabled; 9600 baud
-		2, 2 // All interrupts are enabled
+		SYSCLK_IPL + 1 // All interrupts are enabled
 	);
 
 	return(UART_IS_INIT(UART_USED) ? 0 : ENODEV);
@@ -321,7 +321,7 @@ IMPL_UART_PUTC(UART_USED)
 	// Access from main thread only
 	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	if (QUEBUF_FULL(TXB)) c = EOF;
+	if (QUEBUF_FULL(TXB)) return(EOF);
 	else {
 		QUEBUF_PUSH(TXB, (char)c);
 		UART_SET_TXFLAG(UART_USED);
@@ -464,7 +464,7 @@ void UART_INTFUNC(UART_USED, Err)(void)
 #define U1_SHDN_SET()	((void)0)
 #define U1_SHDN_CLR()	((void)0)
 void uart_1_test_init(void) // Test only - UART1 is used for SIM
-{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), SYSCLK_IPL+1); }
 
 // The same for UART3
 #undef	UART_USED
@@ -481,7 +481,7 @@ void uart_1_test_init(void) // Test only - UART1 is used for SIM
 #define U3_SHDN_SET()	((void)0)
 #define U3_SHDN_CLR()	((void)0)
 void uart_3_test_init(void) // Use defauld UART configuration
-{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), SYSCLK_IPL+1); }
 
 // The same for UART4
 #undef	UART_USED
@@ -496,4 +496,4 @@ void uart_3_test_init(void) // Use defauld UART configuration
 #define U4_SHDN_SET()	((void)0)
 #define U4_SHDN_CLR()	((void)0)
 void uart_4_test_init(void) // Use defauld UART configuration
-{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), 1, 1); }
+{ UART_INIT(UART_USED, UART_EN, U_TXEN, FCY2BRG(FCY2, 9600), SYSCLK_IPL+1); }

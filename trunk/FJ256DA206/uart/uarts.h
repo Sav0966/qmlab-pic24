@@ -219,5 +219,33 @@ USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
 */
 #define __UMD(n)		_U##n##MD
 #define _UMD(n)			__UMD(n)
+/*
+*	Public and protected modele names
+*/
+#define ___U_(n, name)		_uart_##n##_##name
+#define __U_(n, name)		uart_##n##_##name
+#define _U_(n, name)		___U_(n, name) // Protected
+#define U_(n, name)			__U_(n, name) // Public
+/*
+*	Templates of writing and reading functions
+*/
+#define _UART_GETC(n)		U_(n, getc)
+#define _UART_PUTC(n)		U_(n, putc)
+#define IMPL_UART_GETC(n)	int _UART_GETC(n)(void)
+#define IMPL_UART_PUTC(n)	int _UART_PUTC(n)(const int c)
+#define DECL_UART_GETC(n)	extern IMPL_UART_GETC(n)
+#define DECL_UART_PUTC(n)	extern IMPL_UART_PUTC(n)
+
+#define _UART_WRITE(n)		U_(n, write)
+#define _UART_READ(n)		U_(n, read)
+#define IMPL_UART_WRITE(n)	int _UART_WRITE(n)(const char* buf, int len)
+#define IMPL_UART_READ(n)	int _UART_READ(n)(char* buf, int len)
+#define DECL_UART_WRITE(n)	extern IMPL_UART_WRITE(n)
+#define DECL_UART_READ(n)	extern IMPL_UART_READ(n)
+
+#define uart_write(n, buf, len)		_UART_WRITE(n)(buf, len)
+#define uart_read(n, buf, len)		_UART_READ(n)(buf, len)
+#define uart_putc(c, n)				_UART_PUTC(n)(c)
+#define uart_getc(n)				_UART_GETC(n)()
 
 #endif /*_UART_INCL_*/

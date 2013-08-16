@@ -27,22 +27,6 @@ __attribute__((__interrupt__, auto_psv)) _U##n##isr##Interrupt
 #define IMPL_UBUF_PURGE(n, buf)	void _UBUF_PURGE(n, buf)(void)
 #define DECL_UBUF_PURGE(n, buf)	extern IMPL_UBUF_PURGE(n, buf)
 /*
-*	Templates of writing and reading functions
-*/
-#define _UART_GETC(n)		uart_##n##_getc
-#define _UART_PUTC(n)		uart_##n##_putc
-#define IMPL_UART_GETC(n)	int _UART_GETC(n)(void)
-#define IMPL_UART_PUTC(n)	int _UART_PUTC(n)(int c)
-#define DECL_UART_GETC(n)	extern IMPL_UART_GETC(n)
-#define DECL_UART_PUTC(n)	extern IMPL_UART_PUTC(n)
-
-#define _UART_WRITE(n)		uart_##n##_write
-#define _UART_READ(n)		uart_##n##_read
-#define IMPL_UART_WRITE(n)	int _UART_WRITE(n)(const char* buf, int len)
-#define IMPL_UART_READ(n)	int _UART_READ(n)(char* buf, int len)
-#define DECL_UART_WRITE(n)	extern IMPL_UART_WRITE(n)
-#define DECL_UART_READ(n)	extern IMPL_UART_READ(n)
-/*
 *	Template of user interface declaration
 */
 #define DECL_UART_UI(n)\
@@ -66,11 +50,6 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 
 #define uart_tx_purge(n)	_UBUF_PURGE(n, TX)() // Purge TX buffer
 #define uart_rx_purge(n)	_UBUF_PURGE(n, RX)() // Purge RX buffer
-
-#define uart_write(n, buf, len)		_UART_WRITE(n)(buf, len)
-#define uart_read(n, buf, len)		_UART_READ(n)(buf, len)
-#define uart_putc(c, n)				_UART_PUTC(n)(c)
-#define uart_getc(n)				_UART_GETC(n)()
 /*
 * ~SHDN and ~INVALID lines of RS-232 Driver
 */
@@ -114,7 +93,7 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 * brg - BRG register value (use FCY2BRG(FCY2, baud_rate))
 * ipl - interrupt priority levels, if <= 0 - no unterrupt
 */
-#define UART_INIT(n, mode, sta, brg, rx_ipl, tx_ipl) {\
+#define UART_INIT(n, mode, sta, brg, ipl) {\
 	UART_DISABLE_TXINT(n); /* Disable UART interrupts */\
 	UART_DISABLE_RXINT(n); UART_DISABLE_ERINT(n);\
 \
@@ -131,15 +110,13 @@ DECL_UART_GETC(n); DECL_UART_PUTC(n)
 		/* Clear all interrupt status flags (Rx, Tx and Error */\
 		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
 \
-		if (rx_ipl > 0) {\
-			UART_SET_RXIPL(n, rx_ipl); /* Receive IPL */\
-			UART_SET_ERIPL(n, rx_ipl); /* Set the same */\
+		if (ipl > 0) {\
+			UART_SET_RXIPL(n, ipl); /* Receive IPL */\
+			UART_SET_ERIPL(n, ipl); /* Set the same */\
 			UART_ENABLE_ERINT(n); /* Enable interrupt */\
 			UART_ENABLE_RXINT(n); /* Enable interrupt */\
-		}\
 \
-		if (tx_ipl > 0) {\
-			UART_SET_TXIPL(n, tx_ipl); /* Transmit IPL */\
+			UART_SET_TXIPL(n, ipl); /* Transmit IPL */\
 			UART_ENABLE_TXINT(n); /* Enable interrupt */\
 		}\
 \

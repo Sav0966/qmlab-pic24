@@ -146,7 +146,7 @@
 __attribute__((__interrupt__, attr)) _IC##n##Interrupt
 #define IC_INTFUNC(n, attr) _IC_INTFUNC(n, attr)
 /*
-*	Initialization functions
+*	Initialization functions and common interface
 */
 #define IC_INIT(n, mode, sync, ipl) {\
 	IC_DISABLE_INT(n); /* Disable interrupt */\
@@ -179,5 +179,12 @@ __attribute__((__interrupt__, attr)) _IC##n##Interrupt
 #define IC_PWOFF(n)\
 	IC_DONE(n); /* Disable IC and interrupt */\
 	_ICMD(n) = 1 /* Power off IC module */
+/*
+*	Public and protected modele names
+*/
+#define ___IC_(n, name)		_ic_##n##_##name
+#define __IC_(n, name)		ic_##n##_##name
+#define _IC_(n, name)		___IC_(n, name) // Protected
+#define IC_(n, name)		__IC_(n, name) // Public
 
 #endif /*_IC_INCL_*/
