@@ -52,6 +52,36 @@
 	(defined(R##port##n##_LOW) || defined(R##port##n##_HIGHT)\
 	|| defined(R##port##n##_IN) || defined(R##port##n##_AN))
 /*
+* Used Input Captur modules
+*/
+#if defined(RP_IC1)
+#define IC1_USED
+#endif
+#if defined(RP_IC2)
+#define IC2_USED
+#endif
+#if defined(RP_IC3)
+#define IC3_USED
+#endif
+#if defined(RP_IC4)
+#define IC4_USED
+#endif
+#if defined(RP_IC5)
+#define IC5_USED
+#endif
+#if defined(RP_IC6)
+#define IC6_USED
+#endif
+#if defined(RP_IC7)
+#define IC7_USED
+#endif
+#if defined(RP_IC8)
+#define IC8_USED
+#endif
+#if defined(RP_IC9)
+#define IC9_USED
+#endif
+/*
 * Used SPI modules
 */
 #if defined(RP_SDI1)
