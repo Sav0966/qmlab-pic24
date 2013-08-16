@@ -60,6 +60,7 @@ file_032=.
 file_033=.
 file_034=.
 file_035=.
+file_036=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -97,6 +98,7 @@ file_032=no
 file_033=no
 file_034=no
 file_035=no
+file_036=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -130,10 +132,11 @@ file_028=no
 file_029=no
 file_030=no
 file_031=no
-file_032=yes
+file_032=no
 file_033=yes
 file_034=yes
 file_035=yes
+file_036=yes
 [FILE_INFO]
 file_000=C:\MPLab Projects\FJ256DA206\pins\pins.c
 file_001=C:\MPLab Projects\FJ256DA206\pm\mcu_id.s
@@ -167,10 +170,11 @@ file_028=C:\MPLab Projects\FJ256DA206\spi\spimui.h
 file_029=main.h
 file_030=caps.h
 file_031=config.h
-file_032=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.inc
-file_033=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.h
-file_034=C:\MPLab Projects\FJ256DA206\libpic30.h
-file_035=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.gld
+file_032=..\incl\eds.h
+file_033=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.inc
+file_034=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.h
+file_035=C:\MPLab Projects\FJ256DA206\libpic30.h
+file_036=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=

@@ -4,6 +4,7 @@
 #include <timers.h>
 #include <clock.h>
 #include <refo.h>
+#include <eds.h>
 
 #include "caps.h"
 
@@ -13,30 +14,6 @@
 #ifndef ARSIZE
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
 #endif
-
-#define DSR_PAGE(page)\
-	{	register int _dsr_to_save = DSRPAG;\
-		DSRPAG = page
-		// Read data from 'page' in EDS memory
-#define DSR_END() DSRPAG = _dsr_to_save; } ((void)0)
-
-#define DSW_PAGE(page)\
-	{	register int _dsw_to_save = DSWPAG;\
-		DSWPAG = page
-		// Write data to 'page' in EDS memory
-#define DSW_END() DSWPAG = _dsw_to_save; } ((void)0)
-
-#define EDS_PAGE(page) DSR_PAGE(page); DSW_PAGE(page)
-	// Read-write data from 'page' in EDS memory
-#define EDS_END() DSW_END(); DSR_END()
-
-#define _EDS_PTR(type) union {\
-	__eds__ typeof(type) *peds;\
-	struct { typeof(type) *addr; int page; } p; }
-
-typedef _EDS_PTR(char)	EDS_SPTR, *PEDS_SPTR;
-typedef _EDS_PTR(long)	EDS_LPTR, *PEDS_LPTR;
-typedef _EDS_PTR(int)	EDS_IPTR, *PEDS_IPTR;
 
 #define ___IC_(n, name)		_ic_##n##_##name
 #define __IC_(n, name)		ic_##n##_##name
@@ -49,7 +26,7 @@ typedef _EDS_PTR(int)	EDS_IPTR, *PEDS_IPTR;
 #define err		_IC_(IC_USED, err)
 
 __eds__ int buf[BUF_SIZE] __attribute__((page, space(eds), noload));
-/*volatile*/ EDS_IPTR pbuf __attribute__((near));
+volatile PEINT pbuf __attribute__((near));
 volatile int *pend __attribute__((near));
 int err __attribute__((near)) /* = 0 */;
 
