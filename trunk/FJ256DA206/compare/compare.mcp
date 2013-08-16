@@ -8,7 +8,7 @@ dir_src=
 dir_bin=bin
 dir_tmp=bin
 dir_sin=
-dir_inc=.;..\incl;..\pins;..\pm;..\osc;..\reset;..\timers;..\uart;..\spi;..\compare
+dir_inc=.;..\incl;..\pins;..\pm;..\osc;..\reset;..\timers;..\uart;..\spi;..\capture
 dir_lib=
 dir_lkr=
 [CAT_FILTERS]
@@ -60,6 +60,7 @@ file_032=.
 file_033=.
 file_034=.
 file_035=.
+file_036=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -97,6 +98,7 @@ file_032=no
 file_033=no
 file_034=no
 file_035=no
+file_036=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -130,10 +132,11 @@ file_028=no
 file_029=no
 file_030=no
 file_031=no
-file_032=yes
+file_032=no
 file_033=yes
 file_034=yes
 file_035=yes
+file_036=yes
 [FILE_INFO]
 file_000=C:\MPLab Projects\FJ256DA206\pins\pins.c
 file_001=C:\MPLab Projects\FJ256DA206\pm\mcu_id.s
@@ -144,7 +147,7 @@ file_005=C:\MPLab Projects\FJ256DA206\reset\reset.c
 file_006=C:\MPLab Projects\FJ256DA206\timers\clock.c
 file_007=C:\MPLab Projects\FJ256DA206\uart\uartui.c
 file_008=C:\MPLab Projects\FJ256DA206\spi\spimui.c
-file_009=cap_test.c
+file_009=comp_test.c
 file_010=config.c
 file_011=main.c
 file_012=C:\MPLab Projects\FJ256DA206\incl\pinscfg.h
@@ -164,27 +167,22 @@ file_025=C:\MPLab Projects\FJ256DA206\uart\uartui.h
 file_026=C:\MPLab Projects\FJ256DA206\uart\uarts.h
 file_027=C:\MPLab Projects\FJ256DA206\spi\spis.h
 file_028=C:\MPLab Projects\FJ256DA206\spi\spimui.h
-file_029=main.h
-file_030=config.h
-file_031=caps.h
-file_032=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.inc
-file_033=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.h
+file_029=C:\MPLab Projects\FJ256DA206\capture\caps.h
+file_030=main.h
+file_031=config.h
+file_032=comp.h
+file_033=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.gld
 file_034=C:\MPLab Projects\FJ256DA206\libpic30.h
-file_035=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.gld
+file_035=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.h
+file_036=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.inc
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
 [TOOL_SETTINGS]
 TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}=-g
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -Wall -D_IC_TEST_
+TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -Wall
 TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}=-o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)" -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem
 TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}=
-TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}009=-g
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}009=-g -Wall -O3
-TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}009=-o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)" -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem
-TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}009=
-[ACTIVE_FILE_SETTINGS]
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}009_active=yes
 [INSTRUMENTED_TRACE]
 enable=0
 transport=0
