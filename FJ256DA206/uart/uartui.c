@@ -115,7 +115,7 @@ IMPL_UART_PUTC(UART_USED)
 	// Access from main thread only
 	ASSERT(SRbits.IPL == MAIN_IPL);
 
-	if (QUEBUF_FULL(TXB)) c = EOF;
+	if (QUEBUF_FULL(TXB)) return(EOF);
 	else {
 		QUEBUF_PUSH(TXB, (char)c);
 		UART_SET_TXFLAG(UART_USED);

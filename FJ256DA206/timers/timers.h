@@ -114,6 +114,13 @@ __attribute__((__interrupt__, attr)) _T##timer##Interrupt
 	TIMER_DONE(timer);	/* Disable timer and interrupt */\
 	_TMD(timer) = 1 /* Disable module to energy saving */
 /*
+*	Public and protected modele names
+*/
+#define ___T_(n, name)		_timer_##n##_##name
+#define __T_(n, name)		timer_##n##_##name
+#define _T_(n, name)		___T_(n, name) // Protected
+#define T_(n, name)			__T_(n, name) // Public
+/*
 *	Time profile macros
 */
 #ifdef __DEBUG

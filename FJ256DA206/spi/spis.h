@@ -227,5 +227,18 @@ __attribute__((__interrupt__, attr)) _SPI##n##ErrInterrupt
 #define SPI_PWOFF(n)\
 	SPI_DONE(n); /* Disable SPI and interrupt */\
 	_SPIMD(n) = 1 /* Power off SPI module */
+/*
+*	Public and protected modele names
+*/
+#define ___SPI_(n, name)	_spi_##n##_##name
+#define __SPI_(n, name)		spi_##n##_##name
+#define _SPI_(n, name)		___SPI_(n, name)
+#define SPI_(n, name)		__SPI_(n, name)
+/*
+*	Template of shift function (expand FIFO to buffer)
+*/
+#define _SPI_SHIFT(n)		_SPI_(n, shift)
+#define IMPL_SPI_SHIFT(n)	int _SPI_SHIFT(n)(char* buf, int rlen, int tlen)
+#define DECL_SPI_SHIFT(n)	extern IMPL_SPI_SHIFT(n)
 
 #endif /*_SPI_INCL_*/

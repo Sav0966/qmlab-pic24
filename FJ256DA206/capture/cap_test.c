@@ -15,11 +15,7 @@
 #define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
 #endif
 
-#define ___IC_(n, name)		_ic_##n##_##name
-#define __IC_(n, name)		ic_##n##_##name
-#define _IC_(n, name)		___IC_(n, name)
-#define IC_(n, name)		__IC_(n, name)
-
+// Short names for this module
 #define buf		_IC_(IC_USED, buf)
 #define pbuf	_IC_(IC_USED, pbuf)
 #define pend	_IC_(IC_USED, pend)

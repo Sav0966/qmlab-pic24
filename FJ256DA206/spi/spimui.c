@@ -19,37 +19,37 @@ __asm__("	.equiv	SPITBF, 1	\n" // TX FIFO is full
 #if (SPI_MASTER == 1) // Registers and vars
 __asm__("	.equiv	_BUF, _SPI1BUF		\n"
 		"	.equiv	_STAT, _SPI1STAT	\n"
-		"	.equiv	_cnt, __spim_1_cnt	\n"
-		"	.equiv	_len, __spim_1_len	\n"
-		"	.equiv	_pRX, __spim_1_pRX	\n"
-		"	.equiv	_pTX, __spim_1_pTX	");
+		"	.equiv	_cnt, __spi_1_cnt	\n"
+		"	.equiv	_len, __spi_1_len	\n"
+		"	.equiv	_pRX, __spi_1_pRX	\n"
+		"	.equiv	_pTX, __spi_1_pTX	");
 #elif (SPI_MASTER == 2)
 __asm__("	.equiv	_BUF, _SPI2BUF		\n"
 		"	.equiv	_STAT, _SPI2STAT	\n"
-		"	.equiv	_cnt, __spim_2_cnt	\n"
-		"	.equiv	_len, __spim_2_len	\n"
-		"	.equiv	_pRX, __spim_2_pRX	\n"
-		"	.equiv	_pTX, __spim_2_pTX	");
+		"	.equiv	_cnt, __spi_2_cnt	\n"
+		"	.equiv	_len, __spi_2_len	\n"
+		"	.equiv	_pRX, __spi_2_pRX	\n"
+		"	.equiv	_pTX, __spi_2_pTX	");
 #elif (SPI_MASTER == 3)
 __asm__("	.equiv	_BUF, _SPI3BUF		\n"
 		"	.equiv	_STAT, _SPI3STAT	\n"
-		"	.equiv	_cnt, __spim_3_cnt	\n"
-		"	.equiv	_len, __spim_3_len	\n"
-		"	.equiv	_pRX, __spim_3_pRX	\n"
-		"	.equiv	_pTX, __spim_3_pTX	");
+		"	.equiv	_cnt, __spi_3_cnt	\n"
+		"	.equiv	_len, __spi_3_len	\n"
+		"	.equiv	_pRX, __spi_3_pRX	\n"
+		"	.equiv	_pTX, __spi_3_pTX	");
 #endif // Registers and vars
 
-volatile int _SPIM_(SPI_MASTER, err);
-volatile char* _SPIM_(SPI_MASTER, pRX) __attribute__((near));
-volatile char* _SPIM_(SPI_MASTER, pTX) __attribute__((near));
-volatile int _SPIM_(SPI_MASTER, len) __attribute__((near));
-volatile int _SPIM_(SPI_MASTER, cnt) __attribute__((near));
+volatile int _SPI_(SPI_MASTER, err);
+volatile char* _SPI_(SPI_MASTER, pRX) __attribute__((near));
+volatile char* _SPI_(SPI_MASTER, pTX) __attribute__((near));
+volatile int _SPI_(SPI_MASTER, len) __attribute__((near));
+volatile int _SPI_(SPI_MASTER, cnt) __attribute__((near));
 
 void SPI_ERR_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 { // Needs to decrease speed
 	SPI_CLR_ERFLAG(SPI_MASTER);
 	SPI_CLR_OERR(SPI_MASTER);
-	++_SPIM_(SPI_MASTER, err);
+	++_SPI_(SPI_MASTER, err);
 }
 /*
 *	SPI ISR (Enhanced Master mode)
@@ -190,13 +190,13 @@ void SPI_INTFUNC(SPI_MASTER, no_auto_psv)(void)
 	__asm__ volatile("_ret_:\n");
 }
 
-IMPL_SPIM_SHIFT(SPI_MASTER)
+IMPL_SPI_SHIFT(SPI_MASTER)
 // (char* buf, int rlen, int tlen)
 {
 	SPI_DISABLE_INT(SPI_MASTER);
 
-	if (_SPIM_(SPI_MASTER, pRX) != // Busy
-		_SPIM_(SPI_MASTER, pTX)) rlen = -1;
+	if (_SPI_(SPI_MASTER, pRX) != // Busy
+		_SPI_(SPI_MASTER, pTX)) rlen = -1;
 	else {
 		SPI_DISABLE(SPI_MASTER); // Use SDO or IO
 		if (tlen) SPICON1bits(SPI_MASTER).DISSDO = 0;
@@ -204,12 +204,12 @@ IMPL_SPIM_SHIFT(SPI_MASTER)
 		SPI_ENABLE(SPI_MASTER);
 
 		// Read or dummy read
-		if (rlen) _SPIM_(SPI_MASTER, len) = rlen-1;
-		else _SPIM_(SPI_MASTER, len) = -(tlen-1);
+		if (rlen) _SPI_(SPI_MASTER, len) = rlen-1;
+		else _SPI_(SPI_MASTER, len) = -(tlen-1);
 
-		if (_SPIM_(SPI_MASTER, len)) {
-			_SPIM_(SPI_MASTER, pRX) = buf;
-			_SPIM_(SPI_MASTER, pTX) = buf+1;
+		if (_SPI_(SPI_MASTER, len)) {
+			_SPI_(SPI_MASTER, pRX) = buf;
+			_SPI_(SPI_MASTER, pTX) = buf+1;
 			SPI_WRITE(SPI_MASTER, *buf); // Run
 		}
 
