@@ -25,6 +25,7 @@
 #ifdef _IC_TEST_
 #define RP29_OUT	RP_OC9	// RB15/RP29 (REFO) OC9
 #define RP_IC9		RP29_IN // output and IC9 input
+#define IC_USED		9
 #endif
 /*
 * Definitions of Config Words

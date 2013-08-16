@@ -4,51 +4,10 @@
 #include <timers.h>
 #include <clock.h>
 #include <refo.h>
-#include <eds.h>
 
-#include "caps.h"
+#include "pmeter.h"
 
-#define IC_USED		9
-#define BUF_SIZE	1024
-
-#ifndef ARSIZE
-#define ARSIZE(buf) (sizeof(buf)/sizeof(buf[0]))
-#endif
-
-// Short names for this module
-#define buf		_IC_(IC_USED, buf)
-#define pbuf	_IC_(IC_USED, pbuf)
-#define pend	_IC_(IC_USED, pend)
-#define err		_IC_(IC_USED, err)
-
-__eds__ int buf[BUF_SIZE] __attribute__((page, space(eds), noload));
-volatile PEINT pbuf __attribute__((near));
-volatile int *pend __attribute__((near));
-int err __attribute__((near)) /* = 0 */;
-
-#define INIT_BUF() /* &buf[0] - &buf[BUF_SIZE-2] */\
-pbuf.peds = buf; pend = pbuf.p.addr + (BUF_SIZE - 1)
-
-#define IS_BUFERR()	(pend == pbuf.p.addr)
-#define IS_OERR()	(err) /* Overrun FIFO */
-
-void IC_INTFUNC(IC_USED, no_auto_psv)(void)
-{
-	IC_CLR_FLAG(IC_USED);
-
-	__asm__ volatile ("push _DSWPAG");
-	DSWPAG = pbuf.p.page;
-
-	if (IC_IS_OERR(IC_USED)) ++err;
-
-	while (IC_CAN_READ(IC_USED)) {
-		*pbuf.p.addr = IC_READ(IC_USED);
-		// Never overrun buffer boundaries
-		if (pbuf.p.addr < pend) ++pbuf.p.addr;
-	} // This loop clears OERR flag (if needed)
-
-	__asm__ volatile ("pop _DSWPAG");
-}
+DECL_PMETER_UI(IC_USED);
 
 static int i, stage = 0; // Test stage
 
@@ -72,14 +31,14 @@ void cap_test(void)
 
 			IC_DISABLE(IC_USED);
 			refo_div(RODIV_8192);
-			refo_on(); // 3096 Hz
-			// (256 us period)
+			refo_on(); // ~3096 Hz
+			// (== 256 us period)
 
 			++stage; break; // Next test
 
 		case 1: // Run sampling
 
-			INIT_BUF();
+			INIT_BUF(BUF_SIZE);
 			IC_ENABLE(IC_USED, ICM_RAISE);
 
 			++stage; break; // Next test
@@ -90,7 +49,8 @@ void cap_test(void)
 
 			++stage; break; // Next test
 
-		case 3: ++stage; break; // + 1 event
+		case 3: // + 1 event (overwrite buffer)
+			++stage; break;
 
 		case 4: // Stop and nalyse buffer
 
