@@ -60,9 +60,14 @@
 #define ICM_INT			7 // Input capture functions as interrupt
 // pin only in CPU Sleep and Idle mode (Interrupt mode), rising
 // edge detect only, all other control bits are not applicable
+
 #define IC_ENABLE(n, icm)	ICCON1bits(n).ICM = icm
 #define IC_DISABLE(n)		ICCON1bits(n).ICM = ICM_DISABLE
 #define IC_IS_ENABLE(n)		(ICCON1bits(n).ICM != ICM_DISABLE)
+
+// Reset the overflow condition flag, reset the receive
+// capture FIFO to the empty state, reset the prescale count
+#define IC_RESET(n)	ICCON1bits(n).ICM = ICM_OFF; IC_DISABLE(n)
 /*
 * IC Control Register 2
 */

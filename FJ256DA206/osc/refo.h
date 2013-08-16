@@ -29,7 +29,10 @@ void refo_on(void); // REFO enabled on output pin
 void refo_off(void); // REFO disabled (no output)
 #define refo_off()	{ REFOCONbits.ROON = 0; }
 
+void refo_pwoff(void); // REFO disabled (no power)
+#define refo_pwoff()  { refo_off(); _REFOMD = 1; }
+
 void refo_div(REFODIV val); // Set REFO Divisor value
-#define refo_div(val) { REFOCONbits.RODIV = val; }
+#define refo_div(val)	 { REFOCONbits.RODIV = val; }
 
 #endif /*_REFO_INCL_*/
