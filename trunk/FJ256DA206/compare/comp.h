@@ -4,6 +4,93 @@
 #ifndef _OC_INCL_
 #define _OC_INCL_
 
+/*
+* OC Control Register 1
+*/
+#define _OCCON1(n)		OC##n##CON1
+#define _OCCON1bits(n)	OC##n##CON1bits
+#define OCCON1bits(n)	_OCCON1bits(n)
+#define OCCON1(n)		_OCCON1(n)
+
+#define OC_SIDL		(1 << 13) // Stop Output Compare in Idle Mode
+
+// OCTSEL - Output Compare Timer Select bits
+// (def) Clock source of Timer2 is the clock source
+#define OCT_TIMER2	0    //  of the capture counter
+#define OCT_TIMER3	(1 << 10) // -/- Timer3 is source
+#define OCT_TIMER4	(2 << 10) // -/- Timer4 is source
+#define OCT_TIMER5	(3 << 10) // -/- Timer5 is source
+#define OCT_TIMER1	(4 << 10) // (only synchronous clock is supported)
+#define OCT_FCY2	(7 << 10) // System clock is used
+
+// Refer to the device data sheet to find the Fault bits mapping
+#define ENFLT2		(1 << 9) // Fault 2 Input Enable bit
+#define ENFLT1		(1 << 8) // Fault 1 Input Enable bit
+#define ENFLT0		(1 << 7) // Fault 0 (corresponds to OCFA pin)
+#define OCFLT2		(1 << 6) // PWM Fault 2 Condition Status bit
+#define OCFLT1		(1 << 5) // PWM Fault 1 Condition Status bit
+#define OCFLT0		(1 << 4) // PWM Fault 0 Condition Status bit
+
+#define TRIGMODE	(1 << 3) // Trigger Status Mode Select bit
+// 1 = TRIGSTAT (OCxCON2<6>) is cleared when OCxRS = OCxTMR
+// or in software; 0 = TRIGSTAT is cleared only by software
+
+// OCM - Output Compare Mode Select bits
+#define OCM_DISABLE		0 // Output compare channel is disabled
+#define OCM_SSHOTL		1 // Single Compare Single-Shot mode: Initialize
+			// OCx pin low, compare event with OCxR; forces OCx pin high
+#define OCM_SSHOTH		2 // Single Compare Single-Shot mode: Initialize
+			// OCx pin high, compare event with OCxR; forces OCx pin low
+#define OCM_SINGLE		3 // Single Compare mode: Compare events with
+						  // OCxR, continuously toggle OCx pin
+#define OCM_DSHOT		4 // Double Compare Single-Shot mode: Initialize
+// OCx pin low, toggle OCx state on matches of OCxR & OCxRS for one cycle
+#define OCM_DOUBLE		5 // Double Compare Continuous Pulse mode:
+			// Initialize OCx pin low, toggle OCx state continuously
+			// on alternate matches of OCxR and OCxRS
+#define OCM_EPWM		6 // Edge-Aligned PWM mode: Output set
+		// high when OCxTMR = 0 and set low when OCxTMR = OCxR
+#define OCM_CPWM		7 // Center-Aligned PWM mode: Output set
+		// high when OCxTMR = OCxR and set low when OCxTMR = OCxRS
+
+#define OC_ENABLE(n, ocm)	OCCON1bits(n).OCM = ocm
+#define OC_DISABLE(n)		OCCON1bits(n).OCM = OCM_DISABLE
+#define OC_IS_ENABLE(n)		(OCCON1(n) != 0)
+
+
+/*
+* Interrupt management of OC module
+*/
+// Interrupt Priority levels
+#define _OCIP(n) _OC##n##IP
+// Setup and obtain OC IPL values
+#define OC_SET_IPL(n, ipl)		_OCIP(n) = ipl
+#define OC_GET_IPL(n)			((int)_OCIP(n))
+
+// Interrupt Enable bits
+#define _OCIE(n) _OC##n##IE
+// Enable and disable OC interrupts
+#define OC_ENABLE_INT(n)		_OCIE(n) = 1
+#define OC_DISABLE_INT(n)		_OCIE(n) = 0
+#define OC_IS_ENABLE_INT(n)		(_OCIE(n) == 1)
+
+// Interrupt Status bits
+#define _OCIF(n) _OC##n##IF
+// Clear, Set and Check Interrupt Status
+#define OC_CLR_FLAG(n)		_OCIF(n) = 0
+#define OC_SET_FLAG(n)		_OCIF(n) = 1
+#define OC_IS_FLAG(n)		(_OCIF(n) != 0)
+/*
+* Power management of OC module (PMDx.OCnMD bit)
+*/
+#define __OCMD(n)			_OC##n##MD
+#define _OCMD(n)			__OCMD(n)
+/*
+*	Template of OC Interrupt Service Routines
+*/
+#define _OC_INTFUNC(n, attr)\
+__attribute__((__interrupt__, attr)) _OC##n##Interrupt
+#define OC_INTFUNC(n, attr) _OC_INTFUNC(n, attr)
 
 #endif /*_OC_INCL_*/
 
@@ -21,53 +108,6 @@
 */
 #define _ICTMR(n)		IC##n##TMR
 #define ICTMR(n)		_ICTMR(n)
-/*
-* IC Control Register 1
-*/
-#define _ICCON1(n)		IC##n##CON1
-#define _ICCON1bits(n)	IC##n##CON1bits
-#define ICCON1bits(n)	_ICCON1bits(n)
-#define ICCON1(n)		_ICCON1(n)
-
-#define IC_SIDL		(1 << 13) // Stop operation in Idle mode
-
-// ICTSEL - Input Capture Timer Select bits
-// (def) Clock source of Timer3 is the clock source
-#define ICT_TIMER3	0    //  of the capture counter
-#define ICT_TIMER2	(1 << 10) // -/- Timer2 is source
-#define ICT_TIMER4	(2 << 10) // -/- Timer4 is source
-#define ICT_TIMER5	(3 << 10) // -/- Timer5 is source
-#define ICT_TIMER1	(4 << 10) // -/- Timer1 is source
-#define ICT_FCY2	(7 << 10) // System clock is used
-
-// ICI - Number of Captures per Interrupt Select bits
-//  (this field is not used if ICM<2:0> = 001 or 111)
-#define IC_RXI_ANY		0      // On every capture event
-#define IC_RXI_2DATA	(1 << 5) // On every second event	
-#define IC_RXI_3DATA	(2 << 5) // On every third event	
-#define IC_RXI_4DATA	(3 << 5) // On every fourth event	
-
-// Input Capture Buffer Not Empty Status bit
-#define IC_CAN_READ(n)	(ICCON1bits(n).ICBNE != 0)
-
-// Input Capture Overflow Status Flag bit
-#define IC_IS_OERR(n)	(ICCON1bits(n).ICOV != 0)
-#define IC_CLR_OERR(n)	while (IC_CAN_READ(n)) (void)IC_READ(n)
-
-// ICM - Input Capture Mode Select bits
-#define ICM_OFF			0 // Input capture module is turned off
-#define ICM_DISABLE		6 // Unused (module is disabled)
-#define ICM_EDGE		1 // Every edge, rising and falling
-#define ICM_FALL		2 // Every falling edge (simple mode)
-#define ICM_RAISE		3 // Every rising edge (simple mode)
-#define ICM_PRE4		4 // Every 4th rising edge (prescaler)
-#define ICM_PRE16		5 // Every 16th rising edge (prescaler)
-#define ICM_INT			7 // Input capture functions as interrupt
-// pin only in CPU Sleep and Idle mode (Interrupt mode), rising
-// edge detect only, all other control bits are not applicable
-#define IC_ENABLE(n, icm)	ICCON1bits(n).ICM = icm
-#define IC_DISABLE(n)		ICCON1bits(n).ICM = ICM_DISABLE
-#define IC_IS_ENABLE(n)		(ICCON1bits(n).ICM != ICM_DISABLE)
 /*
 * IC Control Register 2
 */
@@ -112,39 +152,6 @@
 #define IC_SYNC_IC9		30		// Input is ICAP9
 #define IC_SYNC_NONE	0 		// Default - none
 #define IC_SYNC_MASK	31		// Reserved
-/*
-* Interrupt management of IC module
-*/
-// Interrupt Priority levels
-#define _ICIP(n) _IC##n##IP
-// Setup and obtain IC IPL values
-#define IC_SET_IPL(n, ipl)		_ICIP(n) = ipl
-#define IC_GET_IPL(n)			((int)_ICIP(n))
-
-// Interrupt Enable bits
-#define _ICIE(n) _IC##n##IE
-// Enable and disable IC interrupts
-#define IC_ENABLE_INT(n)		_ICIE(n) = 1
-#define IC_DISABLE_INT(n)		_ICIE(n) = 0
-#define IC_IS_ENABLE_INT(n)		(_ICIE(n) == 1)
-
-// Interrupt Status bits
-#define _ICIF(n) _IC##n##IF
-// Clear, Set and Check Interrupt Status
-#define IC_CLR_FLAG(n)		_ICIF(n) = 0
-#define IC_SET_FLAG(n)		_ICIF(n) = 1
-#define IC_IS_FLAG(n)		(_ICIF(n) != 0)
-/*
-* Power management of IC module (PMDx.ICnMD bit)
-*/
-#define __ICMD(n)			_IC##n##MD
-#define _ICMD(n)			__ICMD(n)
-/*
-*	Template of IC Interrupt Service Routines
-*/
-#define _IC_INTFUNC(n, attr)\
-__attribute__((__interrupt__, attr)) _IC##n##Interrupt
-#define IC_INTFUNC(n, attr) _IC_INTFUNC(n, attr)
 /*
 *	Initialization functions
 */
