@@ -26,7 +26,7 @@ __eds__ int buf[BUF_SIZE] // Sampling buffer
 
 volatile PEINT pbuf __attribute__((near));
 volatile int *pend __attribute__((near));
-int err __attribute__((near)) /* = 0 */;
+volatile int err __attribute__((near)) /* = 0 */;
 
 void IC_INTFUNC(IC_USED, no_auto_psv)(void)
 {

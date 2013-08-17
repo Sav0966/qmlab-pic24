@@ -6,7 +6,6 @@
 #include <refo.h>
 
 #include "pmeter.h"
-
 DECL_PMETER_UI(IC_USED);
 
 static int i, stage = 0; // Test stage
@@ -38,14 +37,14 @@ void cap_test(void)
 
 		case 1: // Run sampling
 
-			INIT_BUF(BUF_SIZE);
+			INIT_BUF(IC_USED, BUF_SIZE);
 			IC_ENABLE(IC_USED, ICM_RAISE);
 
 			++stage; break; // Next test
 
 		case 2: // Wait while buffer is not full
 
-			if (!IS_BUFERR()) break;
+			if (!IS_BUFERR(IC_USED)) break;
 
 			++stage; break; // Next test
 
@@ -54,17 +53,17 @@ void cap_test(void)
 
 		case 4: // Stop and nalyse buffer
 
-			ASSERT(!IS_OERR()); // Not overrun FIFO
+			ASSERT(!IS_OERR(IC_USED)); // Not overrun FIFO
 			IC_RESET(IC_USED); // Stop sampling
 			refo_off(); // Turn off REF output
 
 			for (i = 1; i < BUF_SIZE-1; ++i)
-				ASSERT(((unsigned)buf[i] - // = 256 us
-						(unsigned)buf[i-1]) == 0x1000);
+				ASSERT(((unsigned)_IC_(IC_USED, buf)[i] - // = 256 us
+						(unsigned)_IC_(IC_USED, buf)[i-1]) == 0x1000);
 
 			// Last buffer data must be overwriten
-			ASSERT(((unsigned)buf[i] - // i = BUF_SIZ-1
-						(unsigned)buf[i-1]) != 0x1000);
+			ASSERT(((unsigned)_IC_(IC_USED, buf)[i] - // i = BUF_SIZ-1
+						(unsigned)_IC_(IC_USED, buf)[i-1]) != 0x1000);
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test

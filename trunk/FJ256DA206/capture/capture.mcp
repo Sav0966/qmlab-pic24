@@ -153,10 +153,10 @@ file_005=C:\MPLab Projects\FJ256DA206\reset\reset.c
 file_006=C:\MPLab Projects\FJ256DA206\timers\clock.c
 file_007=C:\MPLab Projects\FJ256DA206\uart\uartui.c
 file_008=C:\MPLab Projects\FJ256DA206\spi\spimui.c
-file_009=cap_test.c
-file_010=config.c
-file_011=main.c
-file_012=pmeter.c
+file_009=config.c
+file_010=main.c
+file_011=pmeter.c
+file_012=cap_test.c
 file_013=C:\MPLab Projects\FJ256DA206\incl\pinscfg.h
 file_014=C:\MPLab Projects\FJ256DA206\incl\_tools.h
 file_015=C:\MPLab Projects\FJ256DA206\incl\buffer.h
@@ -176,9 +176,9 @@ file_028=C:\MPLab Projects\FJ256DA206\spi\spis.h
 file_029=C:\MPLab Projects\FJ256DA206\spi\spimui.h
 file_030=main.h
 file_031=caps.h
-file_032=config.h
-file_033=..\incl\eds.h
-file_034=pmeter.h
+file_032=..\incl\eds.h
+file_033=pmeter.h
+file_034=config.h
 file_035=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.inc
 file_036=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.h
 file_037=C:\MPLab Projects\FJ256DA206\libpic30.h
@@ -191,12 +191,6 @@ TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}=-g
 TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -fno-short-double -Wall -D_IC_TEST_
 TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}=--heap=0 -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
 TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}=
-TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}009=-g
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}009=-g -Wall -O3
-TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}009=-o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)" -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem
-TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}009=
-[ACTIVE_FILE_SETTINGS]
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}009_active=yes
 [INSTRUMENTED_TRACE]
 enable=0
 transport=0
