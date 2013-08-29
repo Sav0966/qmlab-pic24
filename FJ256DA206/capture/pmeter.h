@@ -13,13 +13,13 @@
 #define PM_BUF(n, i) _IC_(n, buf)[i]
 
 #define DECL_PMETER_UI(n)\
-	extern volatile PEINT _IC_(n, pbuf) __attribute__((near));\
+	extern volatile PEINT _IC_(n, pcur) __attribute__((near));\
 	extern volatile int *_IC_(n, pend) __attribute__((near));\
 	extern volatile int _IC_(n, err) __attribute__((near))
 
-#define PM_GET_PAGE(n)	(_IC_(n, pbuf).p.page)
+#define PM_GET_PAGE(n)	(_IC_(n, pcur).p.page)
 
-#define PM_IS_OBUF(n)	(_IC_(n, pbuf).p.addr >= _IC_(n, pend))
+#define PM_IS_OBUF(n)	(_IC_(n, pcur).p.addr >= _IC_(n, pend))
 #define PM_IS_OERR(n)	(_IC_(n, err)) /* Overrun IC FIFO */
 
 #define PM_INIT(n, rxi, sync, ipl)\
@@ -33,9 +33,9 @@
 #define PM_DONE(n)		IC_PWOFF(n)
 
 #define PM_START(n, size, mode)\
-	/* From buf[0] to buf[size-2] */\
-	_IC_(n, pbuf).peds = _IC_(n, buf);\
-	_IC_(n, pend) =_IC_(n, pbuf).p.addr + ((size) - 1);\
+	_IC_(n, pcur).peds = _IC_(n, buf);\
+	/* buf[0] - buf[size-2], last cell is not used */\
+	_IC_(n, pend) =_IC_(n, pcur).p.addr + ((size) - 1);\
 	IC_ENABLE(n, mode) /* Enable IC with icm = mode */
 
 #define PM_STOP(n)		IC_RESET(n)
