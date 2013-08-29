@@ -12,7 +12,7 @@
 
 // Short names for this C module
 #define _buf	_IC_(IC_USED, buf)
-#define _pbuf	_IC_(IC_USED, pbuf)
+#define _pcur	_IC_(IC_USED, pcur)
 #define _pend	_IC_(IC_USED, pend)
 #define _err	_IC_(IC_USED, err)
 
@@ -20,7 +20,7 @@
 //  period meter buffer in your module
 extern __eds__ int _buf[]; // Must-be
 
-volatile PEINT _pbuf __attribute__((near));
+volatile PEINT _pcur __attribute__((near));
 volatile int *_pend __attribute__((near));
 volatile int _err __attribute__((near)) /* = 0 */;
 
@@ -34,9 +34,8 @@ void IC_INTFUNC(IC_USED, no_auto_psv)(void)
 	if (IC_IS_OERR(IC_USED)) ++_err;
 
 	while (IC_CAN_READ(IC_USED)) {
-		*_pbuf.p.addr = IC_READ(IC_USED);
-		// Never overrun buffer boundaries
-		if (_pbuf.p.addr < _pend) ++_pbuf.p.addr;
+		*_pcur.p.addr = IC_READ(IC_USED);
+		if (_pcur.p.addr < _pend) ++_pcur.p.addr;
 	} // This loop clears OERR flag (if needed)
 
 	__asm__ volatile ("pop _DSWPAG");

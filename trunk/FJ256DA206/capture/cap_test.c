@@ -27,45 +27,38 @@ void cap_test(void)
 	if (!PM_IS_INIT(IC_USED)) return;
 
 	switch(stage) {
-		case 0: // REF frequency
+		case 0: // Start sampling
 
-			IC_DISABLE(IC_USED);
 			refo_div(RODIV_8192);
-			refo_on(); // ~3096 Hz
-			// (== 256 us period)
-
-			++stage; break; // Next test
-
-		case 1: // Run sampling
-
+			refo_on(); // == 256 us period on REFO
 			PM_START(IC_USED, BUF_SIZE, ICM_RAISE);
 
 			++stage; break; // Next test
 
-		case 2: // Wait while buffer is not full
+		case 1: // Wait while buffer is not full
 
 			if (!PM_IS_OBUF(IC_USED)) break;
 
 			++stage; break; // Next test
 
-		case 3: // + 1 event (overwrite buffer)
+		case 2: // + 1 event (overwrite last cell)
 			++stage; break;
 
-		case 4: // Stop and nalyse buffer
+		case 3: // Stop and nalyse buffer
 
 			ASSERT(!PM_IS_OERR(IC_USED));
 			PM_STOP(IC_USED); // Stop sampling
 			refo_off(); // Turn off REF output
 
 			for (i = 1; i < BUF_SIZE-1; ++i)
-				ASSERT(((unsigned)_IC_(IC_USED, buf)[i] - // = 256 us
-						(unsigned)_IC_(IC_USED, buf)[i-1]) == 0x1000);
+				ASSERT(((unsigned)PM_BUF(IC_USED, i) - // = 256 us
+						(unsigned)PM_BUF(IC_USED, i-1)) == 0x1000);
 
 			// Last buffer data must be overwriten
-			ASSERT(((unsigned)_IC_(IC_USED, buf)[i] - // i = BUF_SIZ-1
-						(unsigned)_IC_(IC_USED, buf)[i-1]) != 0x1000);
+			ASSERT(((unsigned)PM_BUF(IC_USED, i) - // i = BUF_SIZ-1
+						(unsigned)PM_BUF(IC_USED, i-1)) != 0x1000);
 
-			// Extra buffer data must be not changed
+			// Extra buffer data must not be changed
 			ASSERT(PM_BUF(IC_USED, BUF_SIZE) == 0xABCD);
 
 			__asm__ volatile ("nop\nnop");
