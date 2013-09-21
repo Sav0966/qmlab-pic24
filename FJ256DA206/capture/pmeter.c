@@ -22,7 +22,7 @@ extern __eds__ int _buf[]; // Must-be
 
 volatile PEINT _pcur __attribute__((near));
 volatile int *_pend __attribute__((near));
-volatile int _err __attribute__((near)) /* = 0 */;
+volatile int _err __attribute__((near));
 
 void IC_INTFUNC(IC_USED, no_auto_psv)(void)
 {
@@ -39,6 +39,87 @@ void IC_INTFUNC(IC_USED, no_auto_psv)(void)
 	} // This loop clears OERR flag (if needed)
 
 	__asm__ volatile ("pop _DSWPAG");
+}
+
+// Short names for methematics
+#define _pT1	_IC_(IC_USED, pT1)
+#define _pT2	_IC_(IC_USED, pT2)
+#define _pT3	_IC_(IC_USED, pT3)
+#define _S1		_IC_(IC_USED, S1)
+#define _S2		_IC_(IC_USED, S2)
+#define _S3		_IC_(IC_USED, S3)
+#define _N1		_IC_(IC_USED, N1)
+#define _N2		_IC_(IC_USED, N2)
+#define _N3		_IC_(IC_USED, N3)
+
+static unsigned int _N1 __attribute__((near));
+static unsigned int _N2 __attribute__((near));
+static unsigned int _N3 __attribute__((near));
+static unsigned int *_pT1 __attribute__((near));
+static unsigned int *_pT2 __attribute__((near));
+static unsigned int *_pT3 __attribute__((near));
+static unsigned long long _S1 __attribute__((near));
+static unsigned long long _S2 __attribute__((near));
+static unsigned long long _S3 __attribute__((near));
+
+IMPL_PM_MATH_INIT(IC_USED)
+{
+	register PEINT p; p.peds = _buf; // Buffer
+	_pT1 = (unsigned*)p.p.addr; // Math pointer 1
+	_pT2 = (unsigned*)p.p.addr; // Math pointer 2
+	_pT3 = (unsigned*)p.p.addr; // Math pointer 3
+	_S1 = 0; _S2 = 0; _S3 = 0; // 1/3, 2/3 and full sums
+	_N1 = 0; _N2 = 0; _N3 = 0; // Current steps (periods)
+	return(0);
+}
+
+static void _IC_(IC_USED, math_sum_13)(void)
+{
+	register unsigned long T;
+	register unsigned int T1, T2;
+
+	T1 = *_pT1++; T2 = *_pT1;
+	T = T2 - T1; T *= ++_N1;
+	_S1 += T; // 1/3 sum
+}
+
+static void _IC_(IC_USED, math_sum_23)(void)
+{
+	register unsigned long T;
+	register unsigned int T1, T2;
+
+	T1 = *_pT2++; T2 = *_pT2++;
+	T = T2 - T1; T *= ++_N2; _S2 += T;
+	T1 = *_pT2; T = T1 - T2; T *= ++_N2;
+	_S2 += T; // 2/3 sum
+}
+
+static void _IC_(IC_USED, math_sum_33)(void)
+{
+	register unsigned long T;
+	register unsigned int T1, T2;
+
+	T1 = *_pT3++; T2 = *_pT3++;
+	T = T2 - T1; T *= ++_N3; _S3 += T;
+	T1 = *_pT3++; T = T1 - T2; T *= ++_N3; _S3 += T;
+	T2 = *_pT3; T = T2 - T1; T *= ++_N3;
+	_S3 += T; // Full sum
+}
+
+IMPL_PM_MATH23(IC_USED)
+{
+	__asm__ volatile ("push _DSRPAG");
+	DSRPAG = PM_GET_PAGE(IC_USED);
+
+	// Buffer has three extra bytes for this condition
+	while ((typeof(_pT3))_pcur.p.addr > (_pT3 + 3)) {
+		_IC_(IC_USED, math_sum_13)(); // Calculate 1/3 sum
+		_IC_(IC_USED, math_sum_23)(); // Calculate 2/3 sum
+		_IC_(IC_USED, math_sum_33)(); // Calculate full sum
+	}
+
+	__asm__ volatile ("pop _DSRPAG");
+	return(0);
 }
 
 #endif // IC_USED

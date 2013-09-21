@@ -9,17 +9,17 @@
 #include "pmeter.h"
 
 #define BUF_SIZE	1024
-PM_BUFFER(IC_USED, BUF_SIZE+1); // Buffer
-DECL_PMETER_UI(IC_USED); // User interfase
+PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
+DECL_PMETER_UI(IC_USED); // Declare user interfase
 
-static int i, stage = 0; // Test stage
+static int i, tim, stage = 0; // Test stage
 
 void cap_test(void)
 { // Called from Main Loop more often than once per 10 ms
 
 	if ((sys_clock() & 0x3F) == 0) {
 	 // Once per 0.64 seccond test period meter
-		PM_INIT(IC_USED, IC_RXI_4DATA, 0, SYSCLK_IPL+1);
+		PM_INIT(IC_USED, IC_RXI_3DATA, 0, SYSCLK_IPL+1);
 		PM_BUF(IC_USED, BUF_SIZE) = 0xABCD; // Check ptr
 		stage = 0; // Start test
 	}
@@ -44,7 +44,7 @@ void cap_test(void)
 		case 2: // + 1 event (overwrite last cell)
 			++stage; break;
 
-		case 3: // Stop and nalyse buffer
+		case 3: // Stop and analyse buffer
 
 			ASSERT(!PM_IS_OERR(IC_USED));
 			PM_STOP(IC_USED); // Stop sampling
@@ -60,6 +60,21 @@ void cap_test(void)
 
 			// Extra buffer data must not be changed
 			ASSERT(PM_BUF(IC_USED, BUF_SIZE) == 0xABCD);
+
+			__asm__ volatile ("nop\nnop");
+			++stage; break; // Next test
+
+		case 4: // Methematics: 2/3 method
+
+			pm_math_init(IC_USED);
+
+			do {
+				int clk = sys_clock();
+				PROFILE_START(SYS_TIMER);
+				pm_math23_task(IC_USED);
+				PROFILE_END(SYS_TIMER, tim);
+				clk = sys_clock() - clk; 
+			} while PM_IS_RUN(IC_USED);
 
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test

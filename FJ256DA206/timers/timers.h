@@ -127,10 +127,10 @@ __attribute__((__interrupt__, attr)) _T##timer##Interrupt
 #define PROFILE_START(TIMER)\
 {	unsigned int __profile = (unsigned)TIMER_READ(TIMER)
 
-#define PROFILE_END(TIMER, time)\
-	time = (unsigned)TIMER_READ(TIMER);\
-	if (time < __profile) time += (unsigned)TIMER_GET_PR(TIMER);\
-	time -= __profile; } ((void)0)
+#define PROFILE_END(TIMER, tim)\
+	tim = (unsigned)TIMER_READ(TIMER);\
+	if (tim < __profile) tim += (unsigned)TIMER_GET_PR(TIMER);\
+	tim -= __profile; } ((void)0)
 #else //__DEBUG
 #define PROFILE_START(TIMER)
 #define PROFILE_END(TIMER, time)
