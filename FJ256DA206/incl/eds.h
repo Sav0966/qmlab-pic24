@@ -10,7 +10,7 @@
 	struct { typeof(type) *addr; int page; } p; }
 
 typedef _EDS_PTR(char)	PECHAR, *PPECHAR;
-typedef _EDS_PTR(long)	PELONL, *PPELONG;
+typedef _EDS_PTR(long)	PELONG, *PPELONG;
 typedef _EDS_PTR(short)	PESHORT, *PPESHORT;
 typedef _EDS_PTR(unsigned char)	PEBYTE, *PPEBYTE;
 typedef _EDS_PTR(unsigned short)PEWORD, *PPEWORD;
