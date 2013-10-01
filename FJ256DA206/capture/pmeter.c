@@ -79,8 +79,7 @@ static void _IC_(IC_USED, math_sum_13)(void)
 	register unsigned int T1, T2;
 
 	T1 = *_pT1++; T2 = *_pT1;
-	T = T2 - T1; T *= ++_N1;
-	_S1 += T; // 1/3 sum
+	T = T2 - T1; T *= ++_N1; _S1 += T;
 }
 
 static void _IC_(IC_USED, math_sum_23)(void)
