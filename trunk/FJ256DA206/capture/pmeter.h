@@ -8,15 +8,15 @@
 #include <eds.h>
 
 // Use this definition to declare period meter buffer
-#define PM_BUFFER(n, size) __eds__ int _IC_(n, buf)[size + 3]\
-	__attribute__((page, space(eds), noload)) /* +3 bytes */
+#define PM_BUFFER(n, size) __eds__ int _IC_(n, buf)[size]\
+	__attribute__((page, space(eds), noload))
 #define PM_BUF(n, i) _IC_(n, buf)[i]
 
 #define DECL_PMETER_UI(n)\
 	extern volatile PEINT _IC_(n, pcur) __attribute__((near));\
 	extern volatile int *_IC_(n, pend) __attribute__((near));\
 	extern volatile int _IC_(n, err) __attribute__((near));\
-	DECL_PM_MATH_INIT(n); DECL_PM_MATH23(n)
+	DECL_PM_MATH_INIT(n); DECL_PM_MATH23_TASK(n)
 
 #define PM_GET_PAGE(n)	(_IC_(n, pcur).p.page)
 
@@ -52,11 +52,11 @@
 #define IMPL_PM_MATH_INIT(n)	int _PM_MATH_INIT(n)(void)
 #define DECL_PM_MATH_INIT(n)	extern IMPL_PM_MATH_INIT(n)
 
-#define _PM_MATH23(n)		IC_(n, math_23_task)
-#define IMPL_PM_MATH23(n)	int _PM_MATH23(n)(void)
-#define DECL_PM_MATH23(n)	extern IMPL_PM_MATH23(n)
+#define _PM_MATH23_TASK(n)		IC_(n, math_23_task)
+#define IMPL_PM_MATH23_TASK(n)	int _PM_MATH23_TASK(n)(void)
+#define DECL_PM_MATH23_TASK(n)	extern IMPL_PM_MATH23_TASK(n)
 
 #define pm_math_init(n)		_PM_MATH_INIT(n)()
-#define pm_math23_task(n)	_PM_MATH23(n)()
+#define pm_math23_task(n)	_PM_MATH23_TASK(n)()
 
 #endif //_PMETER_INCL_

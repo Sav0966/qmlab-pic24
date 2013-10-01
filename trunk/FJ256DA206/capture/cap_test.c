@@ -69,11 +69,9 @@ void cap_test(void)
 			pm_math_init(IC_USED);
 
 			do {
-				int clk = sys_clock();
 				PROFILE_START(SYS_TIMER);
-				pm_math23_task(IC_USED);
+					pm_math23_task(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
-				clk = sys_clock() - clk; 
 			} while PM_IS_RUN(IC_USED);
 
 			__asm__ volatile ("nop\nnop");
@@ -84,3 +82,8 @@ void cap_test(void)
 			break;
 	} // switch(stage)
 }
+
+// Check names
+#undef IC_USED
+#define IC_USED	1
+//#include "pmeter.c"

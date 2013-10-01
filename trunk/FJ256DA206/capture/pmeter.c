@@ -105,13 +105,13 @@ static void _IC_(IC_USED, math_sum_33)(void)
 	_S3 += T; // Full sum
 }
 
-IMPL_PM_MATH23(IC_USED)
+IMPL_PM_MATH23_TASK(IC_USED)
 {
 	__asm__ volatile ("push _DSRPAG");
 	DSRPAG = PM_GET_PAGE(IC_USED);
 
-	// Buffer has three extra bytes for this condition
-	while ((typeof(_pT3))_pcur.p.addr > (_pT3 + 3)) {
+	// _pcur.p.addr must be >= 3 (it's true for EDS)
+	while (((typeof(_pT3))_pcur.p.addr - 3) > _pT3) {
 		_IC_(IC_USED, math_sum_13)(); // Calculate 1/3 sum
 		_IC_(IC_USED, math_sum_23)(); // Calculate 2/3 sum
 		_IC_(IC_USED, math_sum_33)(); // Calculate full sum
