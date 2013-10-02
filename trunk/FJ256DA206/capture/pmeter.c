@@ -17,7 +17,7 @@
 #define _err	_IC_(IC_USED, err)
 
 // Use PM_BUFFER() definition to declare
-//  period meter buffer in your module
+//  period meter buffer into your module
 extern __eds__ int _buf[]; // Must-be
 
 volatile PEINT _pcur __attribute__((near));
@@ -64,45 +64,14 @@ static unsigned long long _S3 __attribute__((near));
 
 IMPL_PM_MATH_INIT(IC_USED)
 {
-	register PEINT p; p.peds = _buf; // Buffer
-	_pT1 = (unsigned*)p.p.addr; // Math pointer 1
-	_pT2 = (unsigned*)p.p.addr; // Math pointer 2
-	_pT3 = (unsigned*)p.p.addr; // Math pointer 3
+	register PEINT p; p.peds = _buf;
+	// First N cells into the buffer are used (has data)
+	_pT1 = (unsigned*)p.p.addr; // Pointer up to (1/3)N
+	_pT2 = (unsigned*)p.p.addr; // Pointer up to (2/3)N
+	_pT3 = (unsigned*)p.p.addr; // Pointer up to N (full)
 	_S1 = 0; _S2 = 0; _S3 = 0; // 1/3, 2/3 and full sums
 	_N1 = 0; _N2 = 0; _N3 = 0; // Current steps (periods)
 	return(0);
-}
-
-static void _IC_(IC_USED, math_sum_13)(void)
-{
-	register unsigned long T;
-	register unsigned int T1, T2;
-
-	T1 = *_pT1++; T2 = *_pT1;
-	T = T2 - T1; T *= ++_N1; _S1 += T;
-}
-
-static void _IC_(IC_USED, math_sum_23)(void)
-{
-	register unsigned long T;
-	register unsigned int T1, T2;
-
-	T1 = *_pT2++; T2 = *_pT2++;
-	T = T2 - T1; T *= ++_N2; _S2 += T;
-	T1 = *_pT2; T = T1 - T2; T *= ++_N2;
-	_S2 += T; // 2/3 sum
-}
-
-static void _IC_(IC_USED, math_sum_33)(void)
-{
-	register unsigned long T;
-	register unsigned int T1, T2;
-
-	T1 = *_pT3++; T2 = *_pT3++;
-	T = T2 - T1; T *= ++_N3; _S3 += T;
-	T1 = *_pT3++; T = T1 - T2; T *= ++_N3; _S3 += T;
-	T2 = *_pT3; T = T2 - T1; T *= ++_N3;
-	_S3 += T; // Full sum
 }
 
 IMPL_PM_MATH23_TASK(IC_USED)
@@ -110,11 +79,32 @@ IMPL_PM_MATH23_TASK(IC_USED)
 	__asm__ volatile ("push _DSRPAG");
 	DSRPAG = PM_GET_PAGE(IC_USED);
 
-	// _pcur.p.addr must be >= 3 (it's true for EDS)
-	while (((typeof(_pT3))_pcur.p.addr - 3) > _pT3) {
-		_IC_(IC_USED, math_sum_13)(); // Calculate 1/3 sum
-		_IC_(IC_USED, math_sum_23)(); // Calculate 2/3 sum
-		_IC_(IC_USED, math_sum_33)(); // Calculate full sum
+	// _pcur.p.addr must be >= 3 (it's always true)
+	while (((typeof(_pT3))_pcur.p.addr - 3) > _pT3)
+	{
+		register unsigned int T1, T2; // Times[i]
+		register unsigned long T;	 // Period[i]
+
+		{ // Calculate full sum
+			T1 = *_pT3++; T2 = *_pT3++;
+			T = T2 - T1; T *= ++_N3; _S3 += T;
+			T1 = *_pT3++; T = T1 - T2; T *= ++_N3; _S3 += T;
+			T2 = *_pT3; T = T2 - T1; T *= ++_N3; _S3 += T;
+			// _S3 = Sum(i * T[i]), where i = 1 ... N
+		}
+
+		{ // Calculate 2/3 sum
+			T1 = *_pT2++; T2 = *_pT2++;
+			T = T2 - T1; T *= ++_N2; _S2 += T;
+			T1 = *_pT2; T = T1 - T2; T *= ++_N2; _S2 += T;
+ 			// _S2 = Sum(i * T[i]), where i = 1 ... (2/3)N
+		}
+
+		{ // Calculate 1/3 sum
+			T1 = *_pT1++; T2 = *_pT1;
+			T = T2 - T1; T *= ++_N1; _S1 += T;
+ 			// _S1 = Sum(i * T[i]), where i = 1 ... (1/3)N
+		}
 	}
 
 	__asm__ volatile ("pop _DSRPAG");
