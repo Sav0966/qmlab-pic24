@@ -132,17 +132,23 @@ static unsigned long dif_time(unsigned* pT1, unsigned* pT2)
 
 IMPL_PM_MATH23_SUM(IC_USED)
 {
+	unsigned long long ret;
 	unsigned long dT2, dT3;
 
 	DSR_PAGE(PM_GET_PAGE(IC_USED));
-
+	{
 		dT2 = dif_time(_pT1, _pT2);
 		dT3 = dif_time(_pT2, _pT3);
+	}
+	DSR_LEAVE();
 
-	DSR_END();
+	ret = _S1;
+	ret += _N1*dT2;
+	ret += _N3*dT3;
+	ret += _S2;
+	ret -= _S3;
 
-	__asm__ volatile ("nop\nnop");
-	return(_S1 + _N1*dT2 + _N3*dT3 - (_S3 - _S2));
+	return(ret);//_S1 + _N1*dT2 + _N3*dT3 - (_S3 - _S2));
 }
 
 #endif // IC_USED

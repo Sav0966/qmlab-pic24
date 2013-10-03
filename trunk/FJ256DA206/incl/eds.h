@@ -22,17 +22,17 @@ typedef _EDS_PTR(int)			PEINT, *PPEINT;
 	{	int _dsr_to_save = DSRPAG;\
 		DSRPAG = page
 		// Read data from 'page' in EDS memory
-#define DSR_END() DSRPAG = _dsr_to_save; } ((void)0)
+#define DSR_LEAVE() DSRPAG = _dsr_to_save; } ((void)0)
 
 #define DSW_PAGE(page)\
 	{	int _dsw_to_save = DSWPAG;\
 		DSWPAG = page
 		// Write data to 'page' in EDS memory
-#define DSW_END() DSWPAG = _dsw_to_save; } ((void)0)
+#define DSW_LEAVE() DSWPAG = _dsw_to_save; } ((void)0)
 
 #define EDS_PAGE(page) DSR_PAGE(page); DSW_PAGE(page)
 	// Read-write data from 'page' in EDS memory
-#define EDS_END() DSW_END(); DSR_END()
+#define EDS_LEAVE() DSW_LEAVE(); DSR_LEAVE()
 
 #endif //__HAS_EDS__
 #endif //_EDS_INCL_
