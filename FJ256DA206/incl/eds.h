@@ -19,13 +19,13 @@ typedef _EDS_PTR(unsigned int)	PEUINT, *PPEUINT;
 typedef _EDS_PTR(int)			PEINT, *PPEINT;
 
 #define DSR_PAGE(page)\
-	{	register int _dsr_to_save = DSRPAG;\
+	{	int _dsr_to_save = DSRPAG;\
 		DSRPAG = page
 		// Read data from 'page' in EDS memory
 #define DSR_END() DSRPAG = _dsr_to_save; } ((void)0)
 
 #define DSW_PAGE(page)\
-	{	register int _dsw_to_save = DSWPAG;\
+	{	int _dsw_to_save = DSWPAG;\
 		DSWPAG = page
 		// Write data to 'page' in EDS memory
 #define DSW_END() DSWPAG = _dsw_to_save; } ((void)0)
