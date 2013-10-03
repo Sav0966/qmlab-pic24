@@ -30,10 +30,24 @@ void cap_test(void)
 
 			refo_div(RODIV_8192);
 			refo_on(); // == 256 us period on REFO
-			PM_START(IC_USED, BUF_SIZE, ICM_RAISE);
 
+#ifndef __MPLAB_SIM  // Start IC (hardware only)
+			PM_START(IC_USED, BUF_SIZE, ICM_RAISE);
 			++stage; break; // Next test
 
+#else		// Fill buffer by software (SIM)
+			_IC_(IC_USED, pcur).peds = _IC_(IC_USED, buf);
+			_IC_(IC_USED, pend) =_IC_(IC_USED, pcur).p.addr +
+											((BUF_SIZE) - 1);
+
+			for (i = 1; i < BUF_SIZE-1; ++i) {
+				PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000; }
+			// Last buffer data must be overwriten, i = BUF_SIZ-1
+			PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1) + 0x2000;
+
+			_IC_(IC_USED, pcur).p.addr = _IC_(IC_USED, pend);
+			stage = 3; break;
+#endif
 		case 1: // Wait while buffer is not full
 
 			if (!PM_IS_OBUF(IC_USED)) break;
@@ -77,12 +91,17 @@ void cap_test(void)
 			__asm__ volatile ("nop\nnop");
 
 			{ // Calculate average period
-				unsigned long long sum, ull;
 				unsigned int num;
 				double s, n, period;
 
+				union {
+					unsigned long long ll;
+					struct {	unsigned long lo;
+								unsigned long hi; } l;
+				 } sum;
+
 				PROFILE_START(SYS_TIMER);
-					sum = pm_math23_sum(IC_USED);
+					sum.ll = pm_math23_sum(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 				// 0.42 us per one period
 
@@ -92,8 +111,9 @@ void cap_test(void)
 					num = pm_math23_num(IC_USED);
 					n = (double)num;
 					n *= n; n *= 2.0;
-					s = (double)sum;
-					period = sum/n;
+					s = (double)sum.l.hi * 65536.0 +
+						(double)sum.l.lo;
+					period = s/n;
 				PROFILE_END(SYS_TIMER, tim); // ~120 us
 
 //				ASSERT(sum == ((num * num) * 8192UL));
