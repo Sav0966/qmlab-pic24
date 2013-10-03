@@ -8,7 +8,7 @@
 
 #include "pmeter.h"
 
-#define BUF_SIZE	1024
+#define BUF_SIZE	4000
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
@@ -17,8 +17,7 @@ static int i, tim, stage = 0; // Test stage
 void cap_test(void)
 { // Called from Main Loop more often than once per 10 ms
 
-	if ((sys_clock() & 0x3F) == 0) {
-	 // Once per 0.64 seccond test period meter
+	if (!PM_IS_INIT(IC_USED)) {
 		PM_INIT(IC_USED, IC_RXI_3DATA, 0, SYSCLK_IPL+1);
 		PM_BUF(IC_USED, BUF_SIZE) = 0xABCD; // Check ptr
 		stage = 0; // Start test
@@ -64,17 +63,45 @@ void cap_test(void)
 			__asm__ volatile ("nop\nnop");
 			++stage; break; // Next test
 
-		case 4: // Methematics: 2/3 method
+		case 4: // Methematics (statistical algorithm)
 
 			pm_math_init(IC_USED);
 
-			do {
+			do { // Prepare statistics
 				PROFILE_START(SYS_TIMER);
 					pm_math23_task(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 			} while PM_IS_RUN(IC_USED);
+			// 2.48 us per one period
 
 			__asm__ volatile ("nop\nnop");
+
+			{ // Calculate average period
+				unsigned long long sum, ull;
+				unsigned int num;
+				double s, n, period;
+
+				PROFILE_START(SYS_TIMER);
+					sum = pm_math23_sum(IC_USED);
+				PROFILE_END(SYS_TIMER, tim);
+				// 0.42 us per one period
+
+				__asm__ volatile ("nop\nnop");
+
+				PROFILE_START(SYS_TIMER);
+					num = pm_math23_num(IC_USED);
+					n = (double)num;
+					n *= n; n *= 2.0;
+					s = (double)sum;
+					period = sum/n;
+				PROFILE_END(SYS_TIMER, tim); // ~120 us
+
+//				ASSERT(sum == ((num * num) * 8192UL));
+				ASSERT(period == (double)0x1000);
+
+				__asm__ volatile ("nop\nnop");
+			}
+
 			++stage; break; // Next test
 
 		default:

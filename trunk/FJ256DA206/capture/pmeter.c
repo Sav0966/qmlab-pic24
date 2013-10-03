@@ -1,5 +1,6 @@
 /*
 *	Period meter with Input Capture module
+*	and methematics (statistical algorithm)
 */
 #ifndef _PMETER_INCL_
 #define _PMERT_INCL_
@@ -41,7 +42,7 @@ void IC_INTFUNC(IC_USED, no_auto_psv)(void)
 	__asm__ volatile ("pop _DSWPAG");
 }
 
-// Short names for methematics
+// Short names for the methematics
 #define _pT1	_IC_(IC_USED, pT1)
 #define _pT2	_IC_(IC_USED, pT2)
 #define _pT3	_IC_(IC_USED, pT3)
@@ -62,15 +63,19 @@ static unsigned long long _S1 __attribute__((near));
 static unsigned long long _S2 __attribute__((near));
 static unsigned long long _S3 __attribute__((near));
 
+IMPL_PM_MATH23_NUM(IC_USED) { return(_N1); }
+
 IMPL_PM_MATH_INIT(IC_USED)
 {
 	register PEINT p; p.peds = _buf;
+
 	// First N cells into the buffer are used (has data)
 	_pT1 = (unsigned*)p.p.addr; // Pointer up to (1/3)N
 	_pT2 = (unsigned*)p.p.addr; // Pointer up to (2/3)N
 	_pT3 = (unsigned*)p.p.addr; // Pointer up to N (full)
 	_S1 = 0; _S2 = 0; _S3 = 0; // 1/3, 2/3 and full sums
 	_N1 = 0; _N2 = 0; _N3 = 0; // Current steps (periods)
+
 	return(0);
 }
 
@@ -109,6 +114,35 @@ IMPL_PM_MATH23_TASK(IC_USED)
 
 	__asm__ volatile ("pop _DSRPAG");
 	return(0);
+}
+
+static unsigned long dif_time(unsigned* pT1, unsigned* pT2)
+{
+	register union {
+		unsigned long ul;
+		struct { unsigned lo; unsigned hi; } u;
+	} tim;
+
+	// Calculate the counter overflows
+	for (tim.ul = *pT2; pT2 > pT1; --pT2)
+		if (*pT2 < *(pT2-1)) ++tim.u.hi;
+
+	return(tim.ul - (unsigned long)(*pT1));
+}
+
+IMPL_PM_MATH23_SUM(IC_USED)
+{
+	unsigned long dT2, dT3;
+
+	DSR_PAGE(PM_GET_PAGE(IC_USED));
+
+		dT2 = dif_time(_pT1, _pT2);
+		dT3 = dif_time(_pT2, _pT3);
+
+	DSR_END();
+
+	__asm__ volatile ("nop\nnop");
+	return(_S1 + _N1*dT2 + _N3*dT3 - (_S3 - _S2));
 }
 
 #endif // IC_USED
