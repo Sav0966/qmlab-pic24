@@ -99,14 +99,15 @@ void cap_test(void)
 				PROFILE_START(SYS_TIMER);
 					sum = pm_math23_sum(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
-				// 0.42 us per one period
+				// 0.42 us per one period +
+				// 20 us for Sum calculation
 
 				__asm__ volatile ("nop\nnop");
 
 				PROFILE_START(SYS_TIMER);
 					num = pm_math23_num(IC_USED); num *= num;
 					period = (double)sum / num; // = 2 * ~T~
-				PROFILE_END(SYS_TIMER, tim); // ~120 us
+				PROFILE_END(SYS_TIMER, tim); // ~115 us
 
 				ASSERT(period == (2.0 * 0x1000));
 
