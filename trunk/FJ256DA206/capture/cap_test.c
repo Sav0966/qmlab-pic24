@@ -8,7 +8,7 @@
 
 #include "pmeter.h"
 
-#define BUF_SIZE	1024
+#define BUF_SIZE	3002
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
@@ -35,18 +35,25 @@ void cap_test(void)
 			PM_START(IC_USED, BUF_SIZE, ICM_RAISE);
 			++stage; break; // Next test
 
-#else		// Fill buffer by software (SIM)
-			_IC_(IC_USED, pcur).peds = _IC_(IC_USED, buf);
-			_IC_(IC_USED, pend) =_IC_(IC_USED, pcur).p.addr +
+#else
+			{ // Fill buffer by software (SIM)
+				static char __time__[] = __TIME__; // Rnd()
+
+				_IC_(IC_USED, pcur).peds = _IC_(IC_USED, buf);
+				_IC_(IC_USED, pend) =_IC_(IC_USED, pcur).p.addr +
 											((BUF_SIZE) - 1);
 
-			for (i = 1; i < BUF_SIZE-1; ++i) {
-				PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000; }
-			// Last buffer data must be overwriten, i = BUF_SIZ-1
-			PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1) + 0x2000;
+				for (i = 0; __time__[i] != 0; ++i)
+					PM_BUF(IC_USED, 0) += __time__[i];
 
-			_IC_(IC_USED, pcur).p.addr = _IC_(IC_USED, pend);
-			stage = 3; break;
+				for (i = 1; i < BUF_SIZE-1; ++i) {
+					PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000; }
+				// Last buffer data must be overwriten, i = BUF_SIZ-1
+				PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1) + 0x2000;
+
+				_IC_(IC_USED, pcur).p.addr = _IC_(IC_USED, pend);
+				stage = 3; break;
+			}
 #endif
 		case 1: // Wait while buffer is not full
 
@@ -86,7 +93,7 @@ void cap_test(void)
 					pm_math23_task(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 			} while PM_IS_RUN(IC_USED);
-			// 2.48 us per one period
+			// 3.31 us per one period
 
 			__asm__ volatile ("nop\nnop");
 
@@ -98,16 +105,9 @@ void cap_test(void)
 				// ~T~ = S / (2*_N1*_N1)
 				PROFILE_START(SYS_TIMER);
 					sum = pm_math23_sum(IC_USED);
-				PROFILE_END(SYS_TIMER, tim);
-				// 0.42 us per one period +
-				// 20 us for Sum calculation
-
-				__asm__ volatile ("nop\nnop");
-
-				PROFILE_START(SYS_TIMER);
 					num = pm_math23_num(IC_USED); num *= num;
-					period = (double)sum / num; // = 2 * ~T~
-				PROFILE_END(SYS_TIMER, tim); // ~115 us
+					if (num) period = (double)sum / num;
+				PROFILE_END(SYS_TIMER, tim); // ~135 us
 
 				ASSERT(period == (2.0 * 0x1000));
 
