@@ -63,8 +63,6 @@ static unsigned long long _S1 __attribute__((near));
 static unsigned long long _S2 __attribute__((near));
 static unsigned long long _S3 __attribute__((near));
 
-IMPL_PM_MATH23_NUM(IC_USED) { return(_N1); }
-
 IMPL_PM_MATH_INIT(IC_USED)
 {
 	register PEINT p; p.peds = _buf;
@@ -132,8 +130,7 @@ static unsigned long dif_time(unsigned* pT1, unsigned* pT2)
 
 IMPL_PM_MATH23_SUM(IC_USED)
 {
-	unsigned long long ret;
-	unsigned long dT2, dT3;
+	unsigned long long dT2, dT3;
 
 	DSR_PAGE(PM_GET_PAGE(IC_USED));
 	{
@@ -142,14 +139,11 @@ IMPL_PM_MATH23_SUM(IC_USED)
 	}
 	DSR_LEAVE();
 
-	ret = _S1;
-	ret += _N1*dT2;
-	ret += _N3*dT3;
-	ret += _S2;
-	ret -= _S3;
-
-	return(ret);//_S1 + _N1*dT2 + _N3*dT3 - (_S3 - _S2));
+	return( // Average period ~T~ = Sum / (2*_N1*_N1)
+			_S1 + _N1*dT2 + (_N3*dT3 - (_S3 - _S2)));
 }
+
+IMPL_PM_MATH23_NUM(IC_USED) { return(_N1); }
 
 #endif // IC_USED
 #endif //_PMETER_INCL_
