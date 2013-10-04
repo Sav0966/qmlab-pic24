@@ -8,7 +8,7 @@
 
 #include "pmeter.h"
 
-#define BUF_SIZE	4000
+#define BUF_SIZE	1024
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
@@ -90,34 +90,25 @@ void cap_test(void)
 
 			__asm__ volatile ("nop\nnop");
 
-			{ // Calculate average period
-				unsigned int num;
-				double s, n, period;
+			{ // Calculate average period (~T~)
+				unsigned long long sum;
+				unsigned long num;
+				double period;
 
-				union {
-					unsigned long long ll;
-					struct {	unsigned long lo;
-								unsigned long hi; } l;
-				 } sum;
-
+				// ~T~ = S / (2*_N1*_N1)
 				PROFILE_START(SYS_TIMER);
-					sum.ll = pm_math23_sum(IC_USED);
+					sum = pm_math23_sum(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 				// 0.42 us per one period
 
 				__asm__ volatile ("nop\nnop");
 
 				PROFILE_START(SYS_TIMER);
-					num = pm_math23_num(IC_USED);
-					n = (double)num;
-					n *= n; n *= 2.0;
-					s = (double)sum.l.hi * 65536.0 +
-						(double)sum.l.lo;
-					period = s/n;
+					num = pm_math23_num(IC_USED); num *= num;
+					period = (double)sum / num; // = 2 * ~T~
 				PROFILE_END(SYS_TIMER, tim); // ~120 us
 
-//				ASSERT(sum == ((num * num) * 8192UL));
-				ASSERT(period == (double)0x1000);
+				ASSERT(period == (2.0 * 0x1000));
 
 				__asm__ volatile ("nop\nnop");
 			}
