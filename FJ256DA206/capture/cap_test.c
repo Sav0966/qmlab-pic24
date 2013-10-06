@@ -30,12 +30,13 @@ void cap_test(void)
 
 			refo_div(RODIV_8192);
 			refo_on(); // == 256 us period on REFO
-
-#ifndef __MPLAB_SIM  // Start IC (hardware only)
 			PM_START(IC_USED, BUF_SIZE, ICM_RAISE);
+
 			++stage; break; // Next test
 
-#else
+		case 1: // Wait while buffer is not full
+
+#ifdef __MPLAB_SIM
 			{ // Fill buffer by software (SIM)
 				static char __time__[] = __TIME__; // Rnd()
 
@@ -51,11 +52,9 @@ void cap_test(void)
 				// Last buffer data must be overwriten, i = BUF_SIZ-1
 				PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1) + 0x2000;
 
-				_IC_(IC_USED, pcur).p.addr = _IC_(IC_USED, pend);
-				stage = 3; break;
+				_IC_(IC_USED, pcur).p.addr = (int*)_IC_(IC_USED, pend);
 			}
-#endif
-		case 1: // Wait while buffer is not full
+#endif //__MPLAB_SIM
 
 			if (!PM_IS_OBUF(IC_USED)) break;
 
@@ -93,7 +92,7 @@ void cap_test(void)
 					pm_math23_task(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 			} while PM_IS_RUN(IC_USED);
-			// 3.31 us per one period
+			// 2.71 us per one period
 
 			__asm__ volatile ("nop\nnop");
 
