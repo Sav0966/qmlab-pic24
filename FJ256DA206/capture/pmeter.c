@@ -8,10 +8,16 @@
 #define _PMERT_INCL_
 
 #include <config.h>
+#include <timers.h>
 
 #ifdef IC_USED // Only for used Cupture module
 
+#ifndef _NSE
+#define _NSE	0.41
+#endif
+
 #include <pmeter.h>
+DECL_PMETER_UI(IC_USED);
 
 // Short names for this C module
 #define _buf	_IC_(IC_USED, buf)
@@ -44,17 +50,28 @@ void IC_INTFUNC(IC_USED, no_auto_psv)(void)
 	__asm__ volatile ("pop _DSWPAG");
 }
 
-#include <pmvars.h> // Short names for the methematics
-
+#include <pmvars.h>
+// Short names for the methematics
 static unsigned int _N1 __attribute__((near));
 static unsigned int _N2 __attribute__((near));
 static unsigned int _N3 __attribute__((near));
 static unsigned int *_pT1 __attribute__((near));
 static unsigned int *_pT2 __attribute__((near));
 static unsigned int *_pT3 __attribute__((near));
+static unsigned int *_pQ0 __attribute__((near));
+static unsigned int *_pQ1 __attribute__((near));
+static unsigned int *_pQ2 __attribute__((near));
+static unsigned int *_pQ3 __attribute__((near));
 static unsigned long long _S1 __attribute__((near));
 static unsigned long long _S2 __attribute__((near));
 static unsigned long long _S3 __attribute__((near));
+static unsigned long _Sqmc __attribute__((near));
+static unsigned long _T02 __attribute__((near));
+static unsigned long _T13 __attribute__((near));
+static unsigned long _ave __attribute__((near));
+static unsigned int _Tave __attribute__((near));
+static unsigned int _cmp __attribute__((near));
+
 static union { // Durations of _Sn sampling
 	unsigned long ul;
 	struct { unsigned lo; unsigned hi; } u;
@@ -63,21 +80,75 @@ _dT3 __attribute__((near))/*, _dT0 __attribute__((near))*/;
 
 IMPL_PM_MATH_INIT(IC_USED)
 {
-	register PEINT p; p.peds = _buf;
+	PEINT p; p.peds = _buf;
 
 	// First N cells into the buffer are used (has data)
 	_pT1 = (unsigned*)p.p.addr; // Pointer up to (1/3)N
 	_pT2 = (unsigned*)p.p.addr; // Pointer up to (2/3)N
 	_pT3 = (unsigned*)p.p.addr; // Pointer up to N (full)
+	_pQ0 = (unsigned*)p.p.addr; // Start pointer of T02
+	_pQ1 = (unsigned*)p.p.addr; // Start pointer of T13
+	_pQ2 = (unsigned*)p.p.addr; // End pointer of T02
+	_pQ3 = (unsigned*)p.p.addr; // End pointer of T13
 	_S1 = 0; _S2 = 0; _S3 = 0; // 1/3, 2/3 and full sums
 	_N1 = 0; _N2 = 0; _N3 = 0; // Current steps (periods)
+	_cmp = 0; // Acceptable deviation from average period
+	_Tave = 0; // Average period, calculated at start()
+	_ave = 0; // Average time of two correlation times
 	_dT0.ul = 0; _dT1.ul = 0; _dT2.ul = 0; _dT3.ul = 0;
+	_Sqmc = 0; // QMC sum = Sum(|T02 - T13| - ave)
+	_T02 = 0; _T13 = 0; // 
 
 	return(0);
 }
 
+IMPL_PM_MATH23_START(IC_USED)
+{
+	unsigned int tim = (unsigned)TIMER_READ(SYS_TIMER);
+
+	do
+	{
+		unsigned int t, n = _N3;
+
+		pm_math23_task(IC_USED); // _cmp == 0
+
+		if (n != _N3) // Set new time-out
+			tim = (unsigned)TIMER_READ(SYS_TIMER);
+
+		if (_N3 < nCT3)
+		{ // Wait three correlation times
+			t = (unsigned)TIMER_READ(SYS_TIMER);
+			if (t < tim) t += (unsigned)TIMER_GET_PR(SYS_TIMER);
+			if ((t - tim) > timeout) break; // Wait time-out
+		}
+		else
+		{ // Three correlation times have been observed
+			_ave = (unsigned long)(pm_math23_sum(IC_USED)/_N1);
+			_Tave = _ave / _N2; // Average period
+			_cmp = _Tave * _NSE; // Deviation
+
+			{ // Calculate QMC sum
+				_pQ1 += _N1; _pQ3 += _N1;
+
+				DSR_PAGE(PM_GET_PAGE(IC_USED));
+					for (n = 0; n < _N2; ++n)
+					{ _T02 += *_pQ2++; _T13 += *_pQ3++; }
+				DSR_LEAVE();
+
+				_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
+				_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
+			} // Qmc sum
+		} // _N3 >= nCT
+	}
+	while (_N3 < nCT3);
+
+			__asm__ volatile ("nop\nnop");
+	return(_N3);
+}
+
 IMPL_PM_MATH23_TASK(IC_USED)
 {
+	int ret = 0; // OK
 	unsigned int* _pT = _pT3;
 
 	__asm__ volatile ("push _DSRPAG");
@@ -86,13 +157,41 @@ IMPL_PM_MATH23_TASK(IC_USED)
 	DSWPAG = PM_GET_PAGE(IC_USED);
 
 	// _pcur.p.addr must be >= 3 (it's always true)
-	while (((typeof(_pT3))_pcur.p.addr - 3) > _pT)
+	while (((typeof(_pT))_pcur.p.addr - 3) > _pT)
 	{
 		// Prepare buffer (Period[i])
 		//	buf[i] = buf[i+1] - buf[i]
 		*_pT = *(_pT+1) - *_pT; ++_pT;
 		*_pT = *(_pT+1) - *_pT; ++_pT;
 		*_pT = *(_pT+1) - *_pT; ++_pT;
+
+		if (_cmp != 0) // Task condition
+		{
+			unsigned int T;
+			// Check deviation error (NSE)
+			T = *(_pT - 1) - _Tave; if (T < 0) T = -T;
+			if (T > _cmp) { ret = -1; break; } // Error
+			T = *(_pT - 2) - _Tave; if (T < 0) T = -T;
+			if (T > _cmp) { ret = -1; break; } // Error
+			T = *(_pT - 3) - _Tave; if (T < 0) T = -T;
+			if (T > _cmp) { ret = -1; break; } // Error
+
+			// Calculate QMC sum
+			_T02 -= *_pQ0++; _T02 += *_pQ2++;
+			_T13 -= *_pQ1++; _T13 += *_pQ3++;
+			_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
+			_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
+
+			_T02 -= *_pQ0++; _T02 += *_pQ2++;
+			_T13 -= *_pQ1++; _T13 += *_pQ3++;
+			_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
+			_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
+
+			_T02 -= *_pQ0++; _T02 += *_pQ2++;
+			_T13 -= *_pQ1++; _T13 += *_pQ3++;
+			_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
+			_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
+		}
 
 		// Calculate sums and duration times
 
@@ -209,11 +308,13 @@ IMPL_PM_MATH23_TASK(IC_USED)
 			"	mov		W1, _N1				\n" // _N1 = W1
 			::: "w0", "w1", "w2", "w3", "w4", "w5", "w6");
 		} // _S1 = Sum(i * T[i]), i = 1..(1/3)N
+
+		if (_cmp == 0) break; // Start condition
 	}
 
 	__asm__ volatile ("pop _DSWPAG");
 	__asm__ volatile ("pop _DSRPAG");
-	return(0);
+	return(ret);
 }
 
 IMPL_PM_MATH23_SUM(IC_USED)
@@ -228,67 +329,7 @@ IMPL_PM_MATH23_SUM(IC_USED)
 
 IMPL_PM_MATH23_NUM(IC_USED) { return(_N1); }
 
+IMPL_PM_MATH23_QMC(IC_USED) { return(_Sqmc); }
+
 #endif // IC_USED
 #endif //_PMETER_INCL_
-
-#ifdef __not_compile__// v1.0 -> (3.31us *_N3 + 135us)
-
-IMPL_PM_MATH23_TASK(IC_USED)
-{
-	__asm__ volatile ("push _DSRPAG");
-	DSRPAG = PM_GET_PAGE(IC_USED);
-
-	// _pcur.p.addr must be >= 3 (it's always true)
-	while (((typeof(_pT3))_pcur.p.addr - 3) > _pT3)
-	{
-		unsigned int T1, T2; // Times[i]
-		unsigned long T;	 // Period[i]
-
-		// Calculate sums and timer owerflows
-
-		{ // Calculate full sum
-			T1 = *_pT3++; T2 = *_pT3++;
-			if (T1 > T2) ++_dT3.u.hi;
-			T = T2 - T1; T *= ++_N3; _S3 += T;
-			T1 = *_pT3++; if (T2 > T1) ++_dT3.u.hi;
-			T = T1 - T2; T *= ++_N3; _S3 += T;
-			T2 = *_pT3; if (T1 > T2) ++_dT3.u.hi;
-			T = T2 - T1; T *= ++_N3; _S3 += T;
-		} // _S3 = Sum(i * T[i]), i = 1..N
-
-		{ // Calculate 2/3 sum
-			T1 = *_pT2++; T2 = *_pT2++;
-			if (T1 > T2) ++_dT2.u.hi;
-			T = T2 - T1; T *= ++_N2; _S2 += T;
-			T1 = *_pT2; if (T2 > T1) ++_dT2.u.hi;
-			T = T1 - T2; T *= ++_N2; _S2 += T;
-		} // _S2 = Sum(i * T[i]), i = 1..(2/3)N
-
-		{ // Calculate 1/3 sum
-			T1 = *_pT1++; T2 = *_pT1;
-			if (T1 > T2) ++_dT1.u.hi;
-			T = T2 - T1; T *= ++_N1; _S1 += T;
-		} // _S1 = Sum(i * T[i]), i = 1..(1/3)N
-	}
-
-	__asm__ volatile ("pop _DSRPAG");
-	return(0);
-}
-
-IMPL_PM_MATH23_SUM(IC_USED)
-{
-	unsigned long long dT2, dT3;
-
-	DSR_PAGE(PM_GET_PAGE(IC_USED));
-	{ // _dTx.u.hi was determined in task(), _dT0 is't needed
-		_dT1.u.lo = *_pT1; _dT2.u.lo = *_pT2; _dT3.u.lo = *_pT3;
-	}
-	DSR_LEAVE();
-
-	dT2 = _dT2.ul - _dT1.ul; dT3 = _dT3.ul - _dT2.ul;
-
-	return( // Average period ~T~ = SUM / (2*_N1*_N1)
-			_S1 + _N1*dT2 + (_N3*dT3 - (_S3 - _S2)));
-}
-
-#endif // v1.0

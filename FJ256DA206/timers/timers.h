@@ -41,12 +41,14 @@
 #define TIMER_IS_ON(timer)	(TCONbits(timer).TON == 1)
 
 /* Read and write timer register */
-#define TIMER_WRITE(timer, n)	TMR##timer = n
-#define TIMER_READ(timer)		((int)TMR##timer)
+#define _TIMER_WRITE(timer, n)	TMR##timer = n
+#define _TIMER_READ(timer)		((int)TMR##timer)
+#define TIMER_WRITE(timer, n)	_TIMER_WRITE(timer, n)
+#define TIMER_READ(timer)		_TIMER_READ(timer)
 
 /* Setup and obtain timer period register */
 #define _TIMER_SET_PR(timer, n)	PR##timer = n
-#define _TIMER_GET_PR(timer)		((int)PR##timer)
+#define _TIMER_GET_PR(timer)	((int)PR##timer)
 #define TIMER_SET_PR(timer, n)	_TIMER_SET_PR(timer, n)
 #define TIMER_GET_PR(timer)		_TIMER_GET_PR(timer)
 
