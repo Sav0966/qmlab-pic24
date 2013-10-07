@@ -103,7 +103,7 @@ void cap_test(void)
 					__asm__ volatile ("nop\nnop");
 				}
 			PROFILE_END(SYS_TIMER, tim);
-			// 570 us + 3.7 us per period
+			// 580 us + 5.23 us per period
 			clk -= sys_clock();
 
 			__asm__ volatile ("nop\nnop");
@@ -114,7 +114,7 @@ void cap_test(void)
 					pm_math23_task(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 			} while PM_IS_RUN(IC_USED);
-			// 2.71 us per one period
+			// 6.59 us per one period
 			clk -= sys_clock();
 
 			__asm__ volatile ("nop\nnop");
