@@ -8,11 +8,11 @@
 
 #include "pmeter.h"
 
-#define BUF_SIZE	3002
+#define BUF_SIZE	3026
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
-static int i, tim, stage = 0; // Test stage
+static int i, tim, clk, stage = 0; // Test stage
 
 void cap_test(void)
 { // Called from Main Loop more often than once per 10 ms
@@ -46,6 +46,14 @@ void cap_test(void)
 
 				for (i = 0; __time__[i] != 0; ++i)
 					PM_BUF(IC_USED, 0) += __time__[i];
+
+				pm_math_init(IC_USED); // No data
+				ASSERT(!pm_math23_start(IC_USED, 24, 0));
+
+				for (i = 1; i < 24; ++i) // Not enough data
+				 PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000;
+				_IC_(IC_USED, pcur).p.addr = (int*)&PM_BUF(IC_USED, 23);
+				ASSERT(pm_math23_start(IC_USED, 24, 4000) == 21);
 
 				for (i = 1; i < BUF_SIZE-1; ++i) {
 					PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000; }
@@ -87,28 +95,46 @@ void cap_test(void)
 
 			pm_math_init(IC_USED);
 
+			clk = sys_clock();
+			PROFILE_START(SYS_TIMER);
+				// Start methematics with 2 ms timeout
+				if (!pm_math23_start(IC_USED, 24, 4000))
+				{ // Wait time-out error
+					__asm__ volatile ("nop\nnop");
+				}
+			PROFILE_END(SYS_TIMER, tim);
+			// 570 us + 3.7 us per period
+			clk -= sys_clock();
+
+			__asm__ volatile ("nop\nnop");
+
+			clk = sys_clock();
 			do { // Prepare statistics
 				PROFILE_START(SYS_TIMER);
 					pm_math23_task(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 			} while PM_IS_RUN(IC_USED);
 			// 2.71 us per one period
+			clk -= sys_clock();
 
 			__asm__ volatile ("nop\nnop");
 
 			{ // Calculate average period (~T~)
 				unsigned long long sum;
 				unsigned long num;
-				double period;
+				double period = 0;
 
-				// ~T~ = S / (2*_N1*_N1)
+				clk = sys_clock();
 				PROFILE_START(SYS_TIMER);
+					// ~T~ = S / (2*_N1*_N1)
 					sum = pm_math23_sum(IC_USED);
 					num = pm_math23_num(IC_USED); num *= num;
 					if (num) period = (double)sum / num;
 				PROFILE_END(SYS_TIMER, tim); // ~135 us
+				clk -= sys_clock();
 
 				ASSERT(period == (2.0 * 0x1000));
+				ASSERT(pm_math23_qmc(IC_USED) == 0);
 
 				__asm__ volatile ("nop\nnop");
 			}

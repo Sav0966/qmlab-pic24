@@ -16,8 +16,9 @@
 	extern volatile PEINT _IC_(n, pcur) __attribute__((near));\
 	extern volatile int *_IC_(n, pend) __attribute__((near));\
 	extern volatile int _IC_(n, err) __attribute__((near));\
-	DECL_PM_MATH_INIT(n); DECL_PM_MATH23_TASK(n);\
-	DECL_PM_MATH23_SUM(n); DECL_PM_MATH23_NUM(n)
+	DECL_PM_MATH_INIT(n); DECL_PM_MATH23_START(n);\
+	DECL_PM_MATH23_SUM(n); DECL_PM_MATH23_NUM(n);\
+	DECL_PM_MATH23_QMC(n); DECL_PM_MATH23_TASK(n)
 
 #define PM_GET_PAGE(n)	(_IC_(n, pcur).p.page)
 
@@ -65,9 +66,19 @@
 #define IMPL_PM_MATH23_NUM(n)	unsigned int _PM_MATH23_NUM(n)(void)
 #define DECL_PM_MATH23_NUM(n)	extern IMPL_PM_MATH23_NUM(n)
 
-#define pm_math_init(n)		_PM_MATH_INIT(n)()
-#define pm_math23_task(n)	_PM_MATH23_TASK(n)()
-#define pm_math23_sum(n)	_PM_MATH23_SUM(n)()
-#define pm_math23_num(n)	_PM_MATH23_NUM(n)()
+#define _PM_MATH23_QMC(n)		IC_(n, math_23_qmc)
+#define IMPL_PM_MATH23_QMC(n)	unsigned long _PM_MATH23_QMC(n)(void)
+#define DECL_PM_MATH23_QMC(n)	extern IMPL_PM_MATH23_QMC(n)
+
+#define _PM_MATH23_START(n)		IC_(n, math_23_start)
+#define IMPL_PM_MATH23_START(n)	int _PM_MATH23_START(n)(int nCT3, int timeout)
+#define DECL_PM_MATH23_START(n)	extern IMPL_PM_MATH23_START(n)
+
+#define pm_math_init(n)						_PM_MATH_INIT(n)()
+#define pm_math23_task(n)					_PM_MATH23_TASK(n)()
+#define pm_math23_sum(n)					_PM_MATH23_SUM(n)()
+#define pm_math23_num(n)					_PM_MATH23_NUM(n)()
+#define pm_math23_qmc(n)					_PM_MATH23_QMC(n)()
+#define pm_math23_start(n, nCT3, timeout)	_PM_MATH23_START(n)(nCT3, timeout)
 
 #endif //_PMETER_INCL_
