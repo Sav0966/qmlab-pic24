@@ -98,12 +98,12 @@ void cap_test(void)
 			clk = sys_clock();
 			PROFILE_START(SYS_TIMER);
 				// Start methematics with 2 ms timeout
-				if (!pm_math23_start(IC_USED, 24, 4000))
+				if (24 != pm_math23_start(IC_USED, 24, 4000))
 				{ // Wait time-out error
 					__asm__ volatile ("nop\nnop");
 				}
 			PROFILE_END(SYS_TIMER, tim);
-			// 580 us + 5.23 us per period
+			// 72 us + 5.12 us/period
 			clk -= sys_clock();
 
 			__asm__ volatile ("nop\nnop");
@@ -114,7 +114,7 @@ void cap_test(void)
 					pm_math23_task(IC_USED);
 				PROFILE_END(SYS_TIMER, tim);
 			} while PM_IS_RUN(IC_USED);
-			// 6.59 us per one period
+			// 5.32 us per one period
 			clk -= sys_clock();
 
 			__asm__ volatile ("nop\nnop");

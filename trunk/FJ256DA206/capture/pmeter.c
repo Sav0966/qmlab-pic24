@@ -13,7 +13,7 @@
 #ifdef IC_USED // Only for used Cupture module
 
 #ifndef _NSE
-#define _NSE	0.41
+#define _NSE	((float)0.41)
 #endif
 
 #include <pmeter.h>
@@ -68,8 +68,6 @@ static unsigned long long _S3 __attribute__((near));
 static unsigned long _Sqmc __attribute__((near));
 static unsigned long _T02 __attribute__((near));
 static unsigned long _T13 __attribute__((near));
-static unsigned long _ave __attribute__((near));
-static unsigned int _Tave __attribute__((near));
 static unsigned int _cmp __attribute__((near));
 
 static union { // Durations of _Sn sampling
@@ -92,57 +90,50 @@ IMPL_PM_MATH_INIT(IC_USED)
 	_pQ3 = (unsigned*)p.p.addr; // End pointer of T13
 	_S1 = 0; _S2 = 0; _S3 = 0; // 1/3, 2/3 and full sums
 	_N1 = 0; _N2 = 0; _N3 = 0; // Current steps (periods)
-	_cmp = 0; // Acceptable deviation from average period
-	_Tave = 0; // Average period, calculated at start()
-	_ave = 0; // Average time of two correlation times
+	_cmp = 0; // Acceptable deviation of T02,13(~T~*_NSE)
+	_T02 = 0; _T13 = 0; // Durations of two correlations
 	_dT0.ul = 0; _dT1.ul = 0; _dT2.ul = 0; _dT3.ul = 0;
-	_Sqmc = 0; // QMC sum = Sum(|T02 - T13| - ave)
-	_T02 = 0; _T13 = 0; // 
+	_Sqmc = 0; // QMC sum = Sum(|T02 - T13|)
 
 	return(0);
 }
 
 IMPL_PM_MATH23_START(IC_USED)
 {
-	unsigned int tim = (unsigned)TIMER_READ(SYS_TIMER);
+	unsigned long T;
+	unsigned int t, n, tim =
+				(unsigned)TIMER_READ(SYS_TIMER);
 
 	do
-	{
-		unsigned int t, n = _N3;
+	{ // Wait three correlation times
 
+		n = _N3;
 		pm_math23_task(IC_USED); // _cmp == 0
-
-		if (n != _N3) // Set new time-out
+		if (n != _N3) // New time-out on new data
 			tim = (unsigned)TIMER_READ(SYS_TIMER);
 
-		if (_N3 < nCT3)
-		{ // Wait three correlation times
-			t = (unsigned)TIMER_READ(SYS_TIMER);
-			if (t < tim) t += (unsigned)TIMER_GET_PR(SYS_TIMER);
-			if ((t - tim) > timeout) break; // Wait time-out
-		}
-		else
-		{ // Three correlation times have been observed
-			_ave = (unsigned long)(pm_math23_sum(IC_USED)/_N1);
-			_Tave = _ave / _N2; // Average period
-			_cmp = _Tave * _NSE; // Deviation
-
-			{ // Calculate QMC sum
-				_pQ1 += _N1; _pQ3 += _N1;
-
-				DSR_PAGE(PM_GET_PAGE(IC_USED));
-					for (n = 0; n < _N2; ++n)
-					{ _T02 += *_pQ2++; _T13 += *_pQ3++; }
-				DSR_LEAVE();
-
-				_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
-				_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
-			} // Qmc sum
-		} // _N3 >= nCT
+		t = (unsigned)TIMER_READ(SYS_TIMER);
+		if (t < tim) t += (unsigned)TIMER_GET_PR(SYS_TIMER);
+		if ((t - tim) > timeout) break; // Wait time-out
 	}
 	while (_N3 < nCT3);
 
-			__asm__ volatile ("nop\nnop");
+	if (_N3 >= nCT3)
+	{ // 3 correlation times have been observed
+		_cmp = ((float)pm_math23_sum(IC_USED)/
+			((unsigned long)_N1*_N2)) * _NSE;
+
+		_pQ3 += _N1; _pQ1 = _pQ3;
+		// Prepare T02,13 for task()
+		DSR_PAGE(PM_GET_PAGE(IC_USED));
+			for (n = 0; n < _N2; ++n)
+			{ _T02 += *_pQ2++; _T13 += *_pQ3++; }
+		DSR_LEAVE();
+
+		T = _T13 - _T02; if (T < 0) T = -T;
+		_Sqmc += T; // Calculate QMC sum
+	}
+
 	return(_N3);
 }
 
@@ -167,30 +158,25 @@ IMPL_PM_MATH23_TASK(IC_USED)
 
 		if (_cmp != 0) // Task condition
 		{
-			unsigned int T;
+			unsigned long T;
 			// Check deviation error (NSE)
-			T = *(_pT - 1) - _Tave; if (T < 0) T = -T;
-			if (T > _cmp) { ret = -1; break; } // Error
-			T = *(_pT - 2) - _Tave; if (T < 0) T = -T;
-			if (T > _cmp) { ret = -1; break; } // Error
-			T = *(_pT - 3) - _Tave; if (T < 0) T = -T;
-			if (T > _cmp) { ret = -1; break; } // Error
-
-			// Calculate QMC sum
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
-			_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
+			T = _T02 - _T13; if (T < 0) T = -T;
+			if (T > _cmp) break; // Error
+			_Sqmc += T;
 
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
-			_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
+			T = _T02 - _T13; if (T < 0) T = -T;
+			if (T > _cmp) break; // Error
+			_Sqmc += T;
 
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			_Sqmc += (_T02 > _ave)? _T02 -_ave: _ave -_T02;
-			_Sqmc += (_T13 > _ave)? _T13 -_ave: _ave -_T13;
+			T = _T02 - _T13; if (T < 0) T = -T;
+			if (T > _cmp) break; // Error
+			_Sqmc += T;
 		}
 
 		// Calculate sums and duration times
