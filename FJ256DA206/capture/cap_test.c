@@ -12,7 +12,18 @@
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
-static int i, tim, clk, stage = 0; // Test stage
+// QMC calculation constants sqrt((27 * pi)/(16 * n))
+#define rt_27pi_16n_EDGE	((float)2.302485) // n=1
+#define rt_27pi_16n_FALL	((float)1.628103) // n=2
+#define rt_27pi_16n_PRE4	((float)0.814051) // n=8
+//#define rt_27pi_16n_PRE16	((float)0.407026) // n=32
+// Number of periods into three correlation times
+#define _CT3_	24 
+
+static int i, clk, stage = 0; // Test stage
+#ifdef __DEBUG
+static int tim;
+#endif
 
 void cap_test(void)
 { // Called from Main Loop more often than once per 10 ms
@@ -48,12 +59,16 @@ void cap_test(void)
 					PM_BUF(IC_USED, 0) += __time__[i];
 
 				pm_math_init(IC_USED); // No data
-				ASSERT(!pm_math23_start(IC_USED, 24, 0));
+				ASSERT(!pm_math23_start(IC_USED,_CT3_, 0));
 
-				for (i = 1; i < 24; ++i) // Not enough data
+				for (i = 1; i < _CT3_; ++i) // Not enough data
 				 PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000;
-				_IC_(IC_USED, pcur).p.addr = (int*)&PM_BUF(IC_USED, 23);
-				ASSERT(pm_math23_start(IC_USED, 24, 4000) == 21);
+				_IC_(IC_USED, pcur).p.addr =
+									(int*)&PM_BUF(IC_USED, _CT3_-1);
+
+				ASSERT((_CT3_-3) ==
+						pm_math23_start(IC_USED, _CT3_, 4000));
+				ASSERT(!pm_math23_task(IC_USED));
 
 				for (i = 1; i < BUF_SIZE-1; ++i) {
 					PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000; }
@@ -95,16 +110,14 @@ void cap_test(void)
 
 			pm_math_init(IC_USED);
 
-			clk = sys_clock();
 			PROFILE_START(SYS_TIMER);
 				// Start methematics with 2 ms timeout
-				if (24 != pm_math23_start(IC_USED, 24, 4000))
+				if (_CT3_ != pm_math23_start(IC_USED, _CT3_, 4000))
 				{ // Wait time-out error
 					__asm__ volatile ("nop\nnop");
 				}
 			PROFILE_END(SYS_TIMER, tim);
 			// 72 us + 5.12 us/period
-			clk -= sys_clock();
 
 			__asm__ volatile ("nop\nnop");
 
@@ -124,14 +137,12 @@ void cap_test(void)
 				unsigned long num;
 				double period = 0;
 
-				clk = sys_clock();
 				PROFILE_START(SYS_TIMER);
 					// ~T~ = S / (2*_N1*_N1)
 					sum = pm_math23_sum(IC_USED);
 					num = pm_math23_num(IC_USED); num *= num;
 					if (num) period = (double)sum / num;
 				PROFILE_END(SYS_TIMER, tim); // ~135 us
-				clk -= sys_clock();
 
 				ASSERT(period == (2.0 * 0x1000));
 				ASSERT(pm_math23_qmc(IC_USED) == 0);

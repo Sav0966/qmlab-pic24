@@ -29,6 +29,7 @@ DECL_PMETER_UI(IC_USED);
 //  period meter buffer into your module
 extern __eds__ int _buf[]; // Must-be
 
+char _IC_(IC_USED, icm); // = 0 (ICM_OFF)
 volatile PEINT _pcur __attribute__((near));
 volatile int *_pend __attribute__((near));
 volatile int _err __attribute__((near));
@@ -139,8 +140,12 @@ IMPL_PM_MATH23_START(IC_USED)
 
 IMPL_PM_MATH23_TASK(IC_USED)
 {
-	int ret = 0; // OK
+	unsigned long T;
 	unsigned int* _pT = _pT3;
+
+	if (_IC_(IC_USED, icm) == ICM_EDGE)
+	if (((typeof(_pT))_pcur.p.addr - 6) <= _pT)
+		return(0); // Number of adges must be even
 
 	__asm__ volatile ("push _DSRPAG");
 	__asm__ volatile ("push _DSWPAG");
@@ -156,36 +161,36 @@ IMPL_PM_MATH23_TASK(IC_USED)
 		*_pT = *(_pT+1) - *_pT; ++_pT;
 		*_pT = *(_pT+1) - *_pT; ++_pT;
 
-		if (_cmp != 0) // Task condition
+		if (_cmp != 0)		// Task condition
+		for(;;) // Check deviation error (NSE)
 		{
-			unsigned long T;
-			// Check deviation error (NSE)
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
 			T = _T02 - _T13; if (T < 0) T = -T;
-			if (T > _cmp) break; // Error
-			_Sqmc += T;
+			if (T < _cmp) { _Sqmc += T;
+				_T02 -= *_pQ0++; _T02 += *_pQ2++;
+				_T13 -= *_pQ1++; _T13 += *_pQ3++;
+				T = _T02 - _T13; if (T < 0) T = -T;
+				if (T < _cmp) { _Sqmc += T;
+					_T02 -= *_pQ0++; _T02 += *_pQ2++;
+					_T13 -= *_pQ1++; _T13 += *_pQ3++;
+					T = _T02 - _T13; if (T < 0) T = -T;
+					if (T < _cmp) { _Sqmc += T; break; }
+				}
+			}
 
-			_T02 -= *_pQ0++; _T02 += *_pQ2++;
-			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			T = _T02 - _T13; if (T < 0) T = -T;
-			if (T > _cmp) break; // Error
-			_Sqmc += T;
-
-			_T02 -= *_pQ0++; _T02 += *_pQ2++;
-			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			T = _T02 - _T13; if (T < 0) T = -T;
-			if (T > _cmp) break; // Error
-			_Sqmc += T;
+			__asm__ volatile ("pop _DSWPAG");
+			__asm__ volatile ("pop _DSRPAG");
+			return(-1); // Deviation error
 		}
 
 		// Calculate sums and duration times
 
 		{ // Calculate full sum
-			 // unsigned long T;	 // Period[i]
-			 // T = *_pT3++; _dT3.ul += T; _S3 += ++_N3 * T;
-			 // T = *_pT3++; _dT3.ul += T; _S3 += ++_N3 * T;
-			 // T = *_pT3++; _dT3.ul += T; _S3 += ++_N3 * T;
+			// unsigned long T;	 // Period[i]
+			// T = *_pT3++; _dT3.ul += T; _S3 += ++_N3 * T;
+			// T = *_pT3++; _dT3.ul += T; _S3 += ++_N3 * T;
+			// T = *_pT3++; _dT3.ul += T; _S3 += ++_N3 * T;
 			__asm__ volatile(
 			"	mov		_pT3, W0			\n" // W0 = _pT3
 			"	mov		_N3, W1				\n" // W1 = _N3
@@ -300,7 +305,7 @@ IMPL_PM_MATH23_TASK(IC_USED)
 
 	__asm__ volatile ("pop _DSWPAG");
 	__asm__ volatile ("pop _DSRPAG");
-	return(ret);
+	return(0); // OK
 }
 
 IMPL_PM_MATH23_SUM(IC_USED)
