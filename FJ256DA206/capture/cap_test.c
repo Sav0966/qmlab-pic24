@@ -5,6 +5,7 @@
 #include <clock.h>
 #include <refo.h>
 
+#include <math.h>
 
 #include "pmeter.h"
 
@@ -12,13 +13,18 @@
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
-// QMC calculation constants sqrt((27 * pi)/(16 * n))
-#define rt_27pi_16n_EDGE	((float)2.302485) // n=1
-#define rt_27pi_16n_FALL	((float)1.628103) // n=2
-#define rt_27pi_16n_PRE4	((float)0.814051) // n=8
-//#define rt_27pi_16n_PRE16	((float)0.407026) // n=32
+// QMC calculation constants sqrt(pi)/(2 * n))
+#define _pi		3.1415926535897932384626433832795
+#define _rpi	1.7724538509055160272981674833411
+#define QMC_PRE4	(float)(2*_rpi)		// n = 4
+#define QMC_FALL	(float)(_rpi/2)		// n = 1
+#define QMC_EDGE	(float)(_rpi)		// n = 1/2
 // Number of periods into three correlation times
 #define _CT3_	24 
+
+static unsigned long long sum;
+static unsigned long num;
+static double period, qmc;
 
 static int i, clk, stage = 0; // Test stage
 #ifdef __DEBUG
@@ -133,19 +139,27 @@ void cap_test(void)
 			__asm__ volatile ("nop\nnop");
 
 			{ // Calculate average period (~T~)
-				unsigned long long sum;
-				unsigned long num;
-				double period = 0;
 
 				PROFILE_START(SYS_TIMER);
-					// ~T~ = S / (2*_N1*_N1)
+					// ~T~ = S / (2*_N1*(_N1+1))
 					sum = pm_math23_sum(IC_USED);
-					num = pm_math23_num(IC_USED); num *= (num+1);
-					if (num) period = (double)sum / num;
+					num = pm_math23_num(IC_USED);
+					if (num) period = (double)sum / (num*(num+1));
+					else period = 0;
 				PROFILE_END(SYS_TIMER, tim); // ~135 us
 
 				ASSERT(period == (2.0 * 0x1000));
-				ASSERT(pm_math23_qmc(IC_USED) == 0);
+
+				__asm__ volatile ("nop\nnop");
+
+				qmc = pm_math23_qmc(IC_USED);
+				ASSERT(qmc == 0); // No STD
+
+				PROFILE_START(SYS_TIMER);
+					if (num >= _CT3_) qmc /= (1/QMC_FALL) *
+						((3*num+1 -_CT3_) * num) * sqrt(num+1);
+					else qmc = 65535;
+				PROFILE_END(SYS_TIMER, tim); // ~150 us
 
 				__asm__ volatile ("nop\nnop");
 			}
