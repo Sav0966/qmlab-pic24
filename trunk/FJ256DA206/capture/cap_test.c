@@ -140,7 +140,7 @@ void cap_test(void)
 				PROFILE_START(SYS_TIMER);
 					// ~T~ = S / (2*_N1*_N1)
 					sum = pm_math23_sum(IC_USED);
-					num = pm_math23_num(IC_USED); num *= num;
+					num = pm_math23_num(IC_USED); num *= (num+1);
 					if (num) period = (double)sum / num;
 				PROFILE_END(SYS_TIMER, tim); // ~135 us
 
