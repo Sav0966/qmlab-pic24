@@ -314,8 +314,8 @@ IMPL_PM_MATH23_SUM(IC_USED)
 
 	dT2 = _dT2.ul - _dT1.ul; dT3 = _dT3.ul - _dT2.ul;
 
-	return( // Average period ~T~ = SUM / (2*_N1*_N1)
-			_S1 + _N1*dT2 + (_N3*dT3 - (_S3 - _S2)));
+	return( // Average period ~T~ = SUM / (2*_N1*(_N1+1))
+		_S1 + (_N1+1)*dT2 + ((_N3+1)*dT3 - (_S3 - _S2)));
 }
 
 IMPL_PM_MATH23_NUM(IC_USED) { return(_N1); }
