@@ -14,17 +14,18 @@ PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
 // QMC calculation constants sqrt(pi)/(2 * n))
-#define _pi		3.1415926535897932384626433832795
-#define _rpi	1.7724538509055160272981674833411
-#define QMC_PRE4	(float)(2*_rpi)		// n = 4
-#define QMC_FALL	(float)(_rpi/2)		// n = 1
-#define QMC_EDGE	(float)(_rpi)		// n = 1/2
+#define _PI		3.1415926535897932384626433832795
+#define _rPI	1.7724538509055160272981674833411
+#define STD_PRE4	(2*_rPI)			// n = 4
+#define STD_FALL	(_rPI/2)			// n = 1
+#define STD_EDGE	(_rPI)				// n = 1/2
 // Number of periods into three correlation times
 #define _CT3_	24 
 
 static unsigned long long sum;
 static unsigned long num;
-static double period, qmc;
+static double period;
+float std;
 
 static int i, clk, stage = 0; // Test stage
 #ifdef __DEBUG
@@ -152,14 +153,14 @@ void cap_test(void)
 
 				__asm__ volatile ("nop\nnop");
 
-				qmc = pm_math23_qmc(IC_USED);
-				ASSERT(qmc == 0); // No STD
+				std = pm_math23_qmc(IC_USED);
+				ASSERT(std == 0); // No STD
 
 				PROFILE_START(SYS_TIMER);
-					if (num >= _CT3_) qmc /= (1/QMC_FALL) *
-						((3*num+1 -_CT3_) * num) * sqrt(num+1);
-					else qmc = 65535;
-				PROFILE_END(SYS_TIMER, tim); // ~150 us
+					if (num >= _CT3_) std /= (1/(float)STD_FALL) *
+						((3*num+1 -_CT3_) * num) * sqrtf(num+1);
+					else std = 65535;
+				PROFILE_END(SYS_TIMER, tim); // ~70 us
 
 				__asm__ volatile ("nop\nnop");
 			}
