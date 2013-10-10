@@ -179,6 +179,7 @@ IMPL_PM_MATH23_TASK(IC_USED)
 				}
 			}
 
+			_Sqmc = -1; // Maximum value
 			__asm__ volatile ("pop _DSWPAG");
 			__asm__ volatile ("pop _DSRPAG");
 			return(-1); // Deviation error
