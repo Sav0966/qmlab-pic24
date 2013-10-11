@@ -5,7 +5,7 @@
 #include <clock.h>
 #include <refo.h>
 
-#include <math.h>
+#include <mathlib.h>
 
 #include "pmeter.h"
 
@@ -13,7 +13,7 @@
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
-// QMC calculation constants sqrt(pi)/(2 * n))
+// QMC calculation constants = (sqrt(pi)/(2 * n))
 #define _PI		3.1415926535897932384626433832795
 #define _rPI	1.7724538509055160272981674833411
 #define STD_PRE4	(2*_rPI)			// n = 4
@@ -25,12 +25,32 @@ DECL_PMETER_UI(IC_USED); // Declare user interfase
 static unsigned long long sum;
 static unsigned long num;
 static double period;
-float std;
+float qmc;
+
+static char __time__[] = __TIME__; // Rnd()
 
 static int i, clk, stage = 0; // Test stage
 #ifdef __DEBUG
 static int tim;
 #endif
+
+static void fill_buffer(int period, int size)
+{
+	int n;
+	for (n = 1; n < size; ++n)
+	PM_BUF(IC_USED, n) = PM_BUF(IC_USED, n-1) + period;
+}
+
+static double math23_dperiod(unsigned long long s, unsigned int n)
+{ // ~T~ = S / (2*_N1*(_N1+1)), return doubled period (n = (1/3)N)
+	return(num? (double)s / ((unsigned long)n * (n+1)): 0.0);
+}
+
+static float math23_qmc(unsigned long s, unsigned int n)
+{
+	return( ((float)STD_FALL) * qmc /
+			(((3*num+1 -_CT3_) * num) * sqrtf(num+1)) );
+}
 
 void cap_test(void)
 { // Called from Main Loop more often than once per 10 ms
@@ -38,6 +58,10 @@ void cap_test(void)
 	if (!PM_IS_INIT(IC_USED)) {
 		PM_INIT(IC_USED, IC_RXI_3DATA, 0, SYSCLK_IPL+1);
 		PM_BUF(IC_USED, BUF_SIZE) = 0xABCD; // Check ptr
+
+		for (i = 0; __time__[i] != 0; ++i) clk += __time__[i];
+		m_srand(sys_clock() + clk); // Initialize rand()
+
 		stage = 0; // Start test
 	}
 
@@ -54,36 +78,27 @@ void cap_test(void)
 
 		case 1: // Wait while buffer is not full
 
-#ifdef __MPLAB_SIM
-			{ // Fill buffer by software (SIM)
-				static char __time__[] = __TIME__; // Rnd()
+#ifdef __MPLAB_SIM // Fill buffer by software (SIM)
 
-				_IC_(IC_USED, pcur).peds = _IC_(IC_USED, buf);
-				_IC_(IC_USED, pend) =_IC_(IC_USED, pcur).p.addr +
+			_IC_(IC_USED, pcur).peds = _IC_(IC_USED, buf);
+			_IC_(IC_USED, pend) =_IC_(IC_USED, pcur).p.addr +
 											((BUF_SIZE) - 1);
 
-				for (i = 0; __time__[i] != 0; ++i)
-					PM_BUF(IC_USED, 0) += __time__[i];
+			pm_math_init(IC_USED); // No data
+			ASSERT(!pm_math23_start(IC_USED,_CT3_, 0));
 
-				pm_math_init(IC_USED); // No data
-				ASSERT(!pm_math23_start(IC_USED,_CT3_, 0));
+			PM_BUF(IC_USED, 0) = m_rand();
+			fill_buffer(0x1000, _CT3_); // Not enough data
+			_IC_(IC_USED, pcur).p.addr = (int*)&PM_BUF(IC_USED, _CT3_-1);
 
-				for (i = 1; i < _CT3_; ++i) // Not enough data
-				 PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000;
-				_IC_(IC_USED, pcur).p.addr =
-									(int*)&PM_BUF(IC_USED, _CT3_-1);
+			ASSERT((_CT3_-3) == pm_math23_start(IC_USED, _CT3_, 4000));
+			ASSERT(!pm_math23_task(IC_USED));
 
-				ASSERT((_CT3_-3) ==
-						pm_math23_start(IC_USED, _CT3_, 4000));
-				ASSERT(!pm_math23_task(IC_USED));
+			PM_BUF(IC_USED, 0) = m_rand();
+			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
+			PM_BUF(IC_USED, BUF_SIZE-1) += 0x1000; // Overwrit it
+			_IC_(IC_USED, pcur).p.addr = (int*)_IC_(IC_USED, pend);
 
-				for (i = 1; i < BUF_SIZE-1; ++i) {
-					PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1)+0x1000; }
-				// Last buffer data must be overwriten, i = BUF_SIZ-1
-				PM_BUF(IC_USED, i) = PM_BUF(IC_USED, i-1) + 0x2000;
-
-				_IC_(IC_USED, pcur).p.addr = (int*)_IC_(IC_USED, pend);
-			}
 #endif //__MPLAB_SIM
 
 			if (!PM_IS_OBUF(IC_USED)) break;
@@ -129,11 +144,12 @@ void cap_test(void)
 			__asm__ volatile ("nop\nnop");
 
 			clk = sys_clock();
-			do { // Prepare statistics
-				PROFILE_START(SYS_TIMER);
-					pm_math23_task(IC_USED);
-				PROFILE_END(SYS_TIMER, tim);
-			} while PM_IS_RUN(IC_USED);
+			PROFILE_START(SYS_TIMER);
+				do { // Prepare statistics
+						pm_math23_task(IC_USED);
+				} while PM_IS_RUN(IC_USED);
+				pm_math23_task(IC_USED);
+			PROFILE_END(SYS_TIMER, tim);
 			// 5.32 us per one period
 			clk -= sys_clock();
 
@@ -145,25 +161,47 @@ void cap_test(void)
 					// ~T~ = S / (2*_N1*(_N1+1))
 					sum = pm_math23_sum(IC_USED);
 					num = pm_math23_num(IC_USED);
-					if (num) period = (double)sum / (num*(num+1));
-					else period = 0;
+					period = math23_dperiod(sum, num);
 				PROFILE_END(SYS_TIMER, tim); // ~135 us
 
 				ASSERT(period == (2.0 * 0x1000));
 
 				__asm__ volatile ("nop\nnop");
 
-				std = pm_math23_qmc(IC_USED);
-				ASSERT(std == 0); // No STD
+				qmc = pm_math23_qmc(IC_USED);
+				ASSERT(qmc == 0); // No STD
 
 				PROFILE_START(SYS_TIMER);
-					if (num >= _CT3_) std /= (1/(float)STD_FALL) *
-						((3*num+1 -_CT3_) * num) * sqrtf(num+1);
-					else std = 65535;
+					if (num >= _CT3_) qmc = math23_qmc(qmc, num);
+					else qmc = 65535; // Maximum error value
 				PROFILE_END(SYS_TIMER, tim); // ~70 us
 
 				__asm__ volatile ("nop\nnop");
 			}
+
+			++stage; break; // Next test
+
+		case 5: // Algorithm validation
+
+			PM_BUF(IC_USED, 0) = m_rand();
+			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
+
+			for (i = 1; i < BUF_SIZE; ++i)
+				PM_BUF(IC_USED, i) += (int)m_grandf(0, 0x10);
+
+			pm_math_init(IC_USED);
+			pm_math23_start(IC_USED, _CT3_, 4000);
+			do { pm_math23_task(IC_USED);
+			} while PM_IS_RUN(IC_USED);
+			pm_math23_task(IC_USED);
+
+			period = math23_dperiod(
+				pm_math23_sum(IC_USED), pm_math23_num(IC_USED));
+
+			qmc = math23_qmc(
+				pm_math23_qmc(IC_USED), pm_math23_num(IC_USED));
+
+			__asm__ volatile ("nop\nnop");
 
 			++stage; break; // Next test
 
