@@ -65,6 +65,7 @@ file_037=.
 file_038=.
 file_039=.
 file_040=.
+file_041=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -107,6 +108,7 @@ file_037=no
 file_038=no
 file_039=no
 file_040=no
+file_041=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -145,10 +147,11 @@ file_033=no
 file_034=no
 file_035=no
 file_036=no
-file_037=yes
+file_037=no
 file_038=yes
 file_039=yes
 file_040=yes
+file_041=yes
 [FILE_INFO]
 file_000=C:\MPLab Projects\FJ256DA206\pins\pins.c
 file_001=C:\MPLab Projects\FJ256DA206\pm\mcu_id.s
@@ -187,16 +190,17 @@ file_033=pmeter.h
 file_034=config.h
 file_035=pmvars.h
 file_036=..\..\..\program files\microchip\mplab c30\include\math.h
-file_037=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.inc
-file_038=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.h
-file_039=C:\MPLab Projects\FJ256DA206\libpic30.h
-file_040=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.gld
+file_037=C:\MPLab Projects\FJ256DA206\math\bin\mathlib.a
+file_038=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.inc
+file_039=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.h
+file_040=C:\MPLab Projects\FJ256DA206\libpic30.h
+file_041=C:\MPLab Projects\FJ256DA206\p24FJ256DA206.gld
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
 [TOOL_SETTINGS]
 TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}=-g
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -Wall -D_IC_TEST_
+TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -fno-short-double -Wall -D_IC_TEST_
 TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}=--heap=0 -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
 TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}=
 TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}011=-g
