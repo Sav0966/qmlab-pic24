@@ -8,7 +8,7 @@ dir_src=
 dir_bin=bin
 dir_tmp=bin
 dir_sin=
-dir_inc=.;..\incl;..\pins;..\pm;..\osc;..\reset;..\timers;..\uart;..\spi;..\compare
+dir_inc=.;..\incl;..\math;..\pins;..\pm;..\osc;..\reset;..\timers;..\uart;..\spi;..\compare
 dir_lib=
 dir_lkr=
 [CAT_FILTERS]

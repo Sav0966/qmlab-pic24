@@ -166,15 +166,15 @@ IMPL_PM_MATH23_TASK(IC_USED)
 		{
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			T = _T02 - _T13; if (T < 0) T = -T;
+			T = _T02 - _T13; //if (T < 0) T = -T;
 			if (T < _cmp) { _Sqmc += T;
 				_T02 -= *_pQ0++; _T02 += *_pQ2++;
 				_T13 -= *_pQ1++; _T13 += *_pQ3++;
-				T = _T02 - _T13; if (T < 0) T = -T;
+				T = _T02 - _T13; //if (T < 0) T = -T;
 				if (T < _cmp) { _Sqmc += T;
 					_T02 -= *_pQ0++; _T02 += *_pQ2++;
 					_T13 -= *_pQ1++; _T13 += *_pQ3++;
-					T = _T02 - _T13; if (T < 0) T = -T;
+					T = _T02 - _T13;// if (T < 0) T = -T;
 					if (T < _cmp) { _Sqmc += T; break; }
 				}
 			}
