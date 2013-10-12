@@ -1,5 +1,5 @@
 /*
-*	MPLAB DEBUGGER tools
+*	MPLAB DEBUGGER tools and useful definitions
 */
 #ifndef __TOOLS_INCL_
 #define __TOOLS_INCL_
@@ -66,6 +66,10 @@
 #ifndef ASSERT
 #define	ASSERT(f) DEBUG_ONLY(\
 	(void)((f) || AssertFiledLine(f) || (abort(), 0)))
+#endif
+
+#ifndef ARSIZE
+#define ARSIZE(ar) (sizeof(ar)/sizeof(ar[0]))
 #endif
 
 #endif /*__TOOLS_INCL_*/

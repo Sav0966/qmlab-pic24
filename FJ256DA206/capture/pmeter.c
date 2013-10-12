@@ -140,7 +140,6 @@ IMPL_PM_MATH23_START(IC_USED)
 
 IMPL_PM_MATH23_TASK(IC_USED)
 {
-	unsigned long T;
 	unsigned int* _pT = _pT3;
 
 	if (_IC_(IC_USED, icm) == ICM_EDGE)
@@ -164,17 +163,18 @@ IMPL_PM_MATH23_TASK(IC_USED)
 		if (_cmp != 0)		// Task condition
 		for(;;) // Check deviation error (NSE)
 		{
+			long T;
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			T = _T02 - _T13; //if (T < 0) T = -T;
+			T = _T02 - _T13; if (T < 0) T = -T;
 			if (T < _cmp) { _Sqmc += T;
 				_T02 -= *_pQ0++; _T02 += *_pQ2++;
 				_T13 -= *_pQ1++; _T13 += *_pQ3++;
-				T = _T02 - _T13; //if (T < 0) T = -T;
+				T = _T02 - _T13; if (T < 0) T = -T;
 				if (T < _cmp) { _Sqmc += T;
 					_T02 -= *_pQ0++; _T02 += *_pQ2++;
 					_T13 -= *_pQ1++; _T13 += *_pQ3++;
-					T = _T02 - _T13;// if (T < 0) T = -T;
+					T = _T02 - _T13; if (T < 0) T = -T;
 					if (T < _cmp) { _Sqmc += T; break; }
 				}
 			}

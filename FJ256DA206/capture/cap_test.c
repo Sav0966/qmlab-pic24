@@ -9,7 +9,7 @@
 
 #include "pmeter.h"
 
-#define BUF_SIZE	3026
+#define BUF_SIZE	2048
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
@@ -22,12 +22,13 @@ DECL_PMETER_UI(IC_USED); // Declare user interfase
 // Number of periods into three correlation times
 #define _CT3_	24 
 
-static unsigned long long sum;
 static unsigned long num;
-static double period;
-float qmc;
+static unsigned long long sum;
+static double period, mean, std;
+float qmc, qmc_ave;
 
-static char __time__[] = __TIME__; // Rnd()
+static char __time__[] = __TIME__; // Rand()
+static int seed __attribute__((persistent));
 
 static int i, clk, stage = 0; // Test stage
 #ifdef __DEBUG
@@ -43,13 +44,13 @@ static void fill_buffer(int period, int size)
 
 static double math23_dperiod(unsigned long long s, unsigned int n)
 { // ~T~ = S / (2*_N1*(_N1+1)), return doubled period (n = (1/3)N)
-	return(num? (double)s / ((unsigned long)n * (n+1)): 0.0);
+	return((n != 0)? (double)s / ((unsigned long)n * (n+1)): 0.0);
 }
 
 static float math23_qmc(unsigned long s, unsigned int n)
 {
-	return( ((float)STD_FALL) * qmc /
-			(((3*num+1 -_CT3_) * num) * sqrtf(num+1)) );
+	return( ((float)STD_FALL) * (float)s /
+	(((3 * (unsigned long)n + 1 -_CT3_) * n) * sqrtf(n + 1)) );
 }
 
 void cap_test(void)
@@ -59,8 +60,8 @@ void cap_test(void)
 		PM_INIT(IC_USED, IC_RXI_3DATA, 0, SYSCLK_IPL+1);
 		PM_BUF(IC_USED, BUF_SIZE) = 0xABCD; // Check ptr
 
-		for (i = 0; __time__[i] != 0; ++i) clk += __time__[i];
-		m_srand(sys_clock() + clk); // Initialize rand()
+		for (i = 0; __time__[i] != 0; ++i) seed +=__time__[i];
+		m_srand(sys_clock() + seed); // Initialize rand()
 
 		stage = 0; // Start test
 	}
@@ -91,7 +92,7 @@ void cap_test(void)
 			fill_buffer(0x1000, _CT3_); // Not enough data
 			_IC_(IC_USED, pcur).p.addr = (int*)&PM_BUF(IC_USED, _CT3_-1);
 
-			ASSERT((_CT3_-3) == pm_math23_start(IC_USED, _CT3_, 4000));
+			ASSERT(_CT3_ > pm_math23_start(IC_USED, _CT3_, 4000));
 			ASSERT(!pm_math23_task(IC_USED));
 
 			PM_BUF(IC_USED, 0) = m_rand();
@@ -147,7 +148,7 @@ void cap_test(void)
 			PROFILE_START(SYS_TIMER);
 				do { // Prepare statistics
 						pm_math23_task(IC_USED);
-				} while PM_IS_RUN(IC_USED);
+				} while (PM_IS_RUN(IC_USED));
 				pm_math23_task(IC_USED);
 			PROFILE_END(SYS_TIMER, tim);
 			// 5.32 us per one period
@@ -186,20 +187,45 @@ void cap_test(void)
 			PM_BUF(IC_USED, 0) = m_rand();
 			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
 
-			for (i = 1; i < BUF_SIZE; ++i)
-				PM_BUF(IC_USED, i) += (int)m_grandf(0, 0x10);
+			for (i = 1; i < BUF_SIZE; ++i) // Add deviation
+				PM_BUF(IC_USED, i) += (int)m_grandf(0, 0xA0);
 
 			pm_math_init(IC_USED);
-			pm_math23_start(IC_USED, _CT3_, 4000);
-			do { pm_math23_task(IC_USED);
-			} while PM_IS_RUN(IC_USED);
-			pm_math23_task(IC_USED);
+			num = pm_math23_start(IC_USED, _CT3_, 4000);
+			do {
+				if (pm_math23_task(IC_USED) < 0)
+					num = 0; // Deviation error
+			} while (PM_IS_RUN(IC_USED));
+			if (num) pm_math23_task(IC_USED);
 
-			period = math23_dperiod(
+			period = math23_dperiod( // Doubled period
 				pm_math23_sum(IC_USED), pm_math23_num(IC_USED));
 
-			qmc = math23_qmc(
+			if (num >= _CT3_) qmc = math23_qmc(
 				pm_math23_qmc(IC_USED), pm_math23_num(IC_USED));
+			else qmc = 65535;
+
+			{ // Compute Median and STD
+				static double p[64]; static float q[64];
+				static int j = 0; double d[64];
+
+				p[j] = (period / 2); // Real period
+q[j] = qmc / 2; // ќшибка в два раза !!!
+				if (++j >= ARSIZE(p)) { j = 0; mean = period; }
+
+				if (mean != 0) {
+					mean = 0; std = 0; qmc_ave = 0;
+					for (i = 0; i < ARSIZE(p); ++i) mean += p[i];
+					mean /= ARSIZE(p);
+
+					for (i = 0; i < ARSIZE(p); ++i) d[i] = p[i] - mean;
+					for (i = 0; i < ARSIZE(p); ++i) std += d[i]*d[i];
+					std = sqrt(std/ARSIZE(p));
+
+					for (i = 0; i < ARSIZE(q); ++i) qmc_ave += q[i];
+					qmc_ave /= ARSIZE(q);
+				}
+			}
 
 			__asm__ volatile ("nop\nnop");
 
