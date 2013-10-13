@@ -90,7 +90,7 @@ void cap_test(void)
 
 			PM_BUF(IC_USED, 0) = m_rand();
 			fill_buffer(0x1000, _CT3_); // Not enough data
-			_IC_(IC_USED, pcur).p.addr = (int*)&PM_BUF(IC_USED, _CT3_-1);
+			_IC_(IC_USED, pcur).p.addr = (unsigned*)&PM_BUF(IC_USED, _CT3_-1);
 
 			ASSERT(_CT3_ > pm_math23_start(IC_USED, _CT3_, 4000));
 			ASSERT(!pm_math23_task(IC_USED));
@@ -98,7 +98,7 @@ void cap_test(void)
 			PM_BUF(IC_USED, 0) = m_rand();
 			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
 			PM_BUF(IC_USED, BUF_SIZE-1) += 0x1000; // Overwrit it
-			_IC_(IC_USED, pcur).p.addr = (int*)_IC_(IC_USED, pend);
+			_IC_(IC_USED, pcur).p.addr = (unsigned*)_IC_(IC_USED, pend);
 
 #endif //__MPLAB_SIM
 
@@ -184,11 +184,18 @@ void cap_test(void)
 
 		case 5: // Algorithm validation
 
-			PM_BUF(IC_USED, 0) = m_rand();
-			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
+#ifdef __MPLAB_SIM
 
-			for (i = 1; i < BUF_SIZE; ++i) // Add deviation
-				PM_BUF(IC_USED, i) += (int)m_grandf(0, 0xA0);
+			PM_BUF(IC_USED, 0) = m_rand();
+//			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
+
+//			for (i = 1; i < BUF_SIZE; ++i) // Add deviation
+//				PM_BUF(IC_USED, i) += (int)m_grandf(0, 0xA0);
+
+			for (i = 1; i < BUF_SIZE; ++i) // Fill buffer and
+			PM_BUF(IC_USED, i) = (unsigned int) // add deviation
+				((PM_BUF(IC_USED, 0) + (unsigned long)i * 0x1000)
+				+ (long)m_grandf(0, 0xA0));
 
 			pm_math_init(IC_USED);
 			num = pm_math23_start(IC_USED, _CT3_, 4000);
@@ -210,7 +217,9 @@ void cap_test(void)
 				static int j = 0; double d[64];
 
 				p[j] = (period / 2); // Real period
+
 q[j] = qmc / 2; // ќшибка в два раза !!!
+
 				if (++j >= ARSIZE(p)) { j = 0; mean = period; }
 
 				if (mean != 0) {
@@ -228,6 +237,8 @@ q[j] = qmc / 2; // ќшибка в два раза !!!
 			}
 
 			__asm__ volatile ("nop\nnop");
+
+#endif //__MPLAB_SIM
 
 			++stage; break; // Next test
 

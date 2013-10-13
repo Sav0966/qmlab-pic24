@@ -30,8 +30,8 @@ DECL_PMETER_UI(IC_USED);
 extern __eds__ int _buf[]; // Must-be
 
 char _IC_(IC_USED, icm); // = 0 (ICM_OFF)
-volatile PEINT _pcur __attribute__((near));
-volatile int *_pend __attribute__((near));
+volatile PEUINT _pcur __attribute__((near));
+volatile unsigned int *_pend __attribute__((near));
 volatile int _err __attribute__((near));
 
 void IC_INTFUNC(IC_USED, no_auto_psv)(void)

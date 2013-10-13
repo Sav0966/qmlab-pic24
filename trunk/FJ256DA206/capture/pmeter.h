@@ -8,14 +8,14 @@
 #include <eds.h>
 
 // Use this definition to declare period meter buffer
-#define PM_BUFFER(n, size) __eds__ int _IC_(n, buf)[size]\
-	__attribute__((page, space(eds), noload))
+#define PM_BUFFER(n, size) __eds__ unsigned int _IC_(n, buf)[size]\
+						__attribute__((page, space(eds), noload))
 #define PM_BUF(n, i) _IC_(n, buf)[i]
 
 #define DECL_PMETER_UI(n)\
 	extern char _IC_(n, icm);\
-	extern volatile PEINT _IC_(n, pcur) __attribute__((near));\
-	extern volatile int *_IC_(n, pend) __attribute__((near));\
+	extern volatile PEUINT _IC_(n, pcur) __attribute__((near));\
+	extern volatile unsigned int *_IC_(n, pend) __attribute__((near));\
 	extern volatile int _IC_(n, err) __attribute__((near));\
 	DECL_PM_MATH_INIT(n); DECL_PM_MATH23_START(n);\
 	DECL_PM_MATH23_SUM(n); DECL_PM_MATH23_NUM(n);\
