@@ -1,6 +1,5 @@
 #include <mathlib.h>
 
-
 double m_ndrand(void)
 { // Normal (or Gaussian) distribution
 	static char is_second = 0;
