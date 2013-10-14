@@ -163,23 +163,23 @@ IMPL_PM_MATH23_TASK(IC_USED)
 		if (_cmp != 0)		// Task condition
 		for(;;) // Check deviation error (NSE)
 		{
-			long T;
+			long dT1 = 0, dT2 = 0, dT3 = 0;
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			T = _T02 - _T13; if (T < 0) T = -T;
-			if (T < _cmp) { _Sqmc += T;
+			dT1 = _T02 - _T13; if (dT1 < 0) dT1 = -dT1;
+			if (dT1 < _cmp) {// _Sqmc += T;
 				_T02 -= *_pQ0++; _T02 += *_pQ2++;
 				_T13 -= *_pQ1++; _T13 += *_pQ3++;
-				T = _T02 - _T13; if (T < 0) T = -T;
-				if (T < _cmp) { _Sqmc += T;
+				dT2 = _T02 - _T13; if (dT2 < 0) dT2 = -dT2;
+				if (dT2 < _cmp) {// _Sqmc += T;
 					_T02 -= *_pQ0++; _T02 += *_pQ2++;
 					_T13 -= *_pQ1++; _T13 += *_pQ3++;
-					T = _T02 - _T13; if (T < 0) T = -T;
-					if (T < _cmp) { _Sqmc += T; break; }
+					dT3 = _T02 - _T13; if (dT3 < 0) dT3 = -dT3;
+					if (dT3 < _cmp) { _Sqmc += dT1+dT2+dT3; break; }
 				}
 			}
 
-			_Sqmc = -1; // Maximum value
+//			_Sqmc = -1; // Maximum value
 			__asm__ volatile ("pop _DSWPAG");
 			__asm__ volatile ("pop _DSRPAG");
 			return(-1); // Deviation error

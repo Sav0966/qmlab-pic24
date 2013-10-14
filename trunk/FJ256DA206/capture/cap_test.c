@@ -9,38 +9,37 @@
 
 #include "pmeter.h"
 
-#define BUF_SIZE	2048
+#define BUF_SIZE	3026
 PM_BUFFER(IC_USED, BUF_SIZE+1); // +1 for checking
 DECL_PMETER_UI(IC_USED); // Declare user interfase
 
-// QMC calculation constants = (sqrt(pi)/(2 * n))
-#define _PI		3.1415926535897932384626433832795
-#define _rPI	1.7724538509055160272981674833411
-#define STD_PRE4	(2*_rPI)			// n = 4
-#define STD_FALL	(_rPI/2)			// n = 1
-#define STD_EDGE	(_rPI)				// n = 1/2
 // Number of periods into three correlation times
 #define _CT3_	24 
 
-static unsigned long num;
+static unsigned long num, err;
 static unsigned long long sum;
-static double period, mean, std;
-float qmc, qmc_ave;
+static double period;
+float qmc;
 
 static char __time__[] = __TIME__; // Rand()
 static int seed __attribute__((persistent));
 
 static int i, clk, stage = 0; // Test stage
+
 #ifdef __DEBUG
 static int tim;
 #endif
 
+#ifdef __MPLAB_SIM
+static float qmc_ave;
+static double std, mean;
 static void fill_buffer(int period, int size)
 {
 	int n;
 	for (n = 1; n < size; ++n)
 	PM_BUF(IC_USED, n) = PM_BUF(IC_USED, n-1) + period;
 }
+#endif
 
 static double math23_dperiod(unsigned long long s, unsigned int n)
 { // ~T~ = S / (2*_N1*(_N1+1)), return doubled period (n = (1/3)N)
@@ -48,8 +47,8 @@ static double math23_dperiod(unsigned long long s, unsigned int n)
 }
 
 static float math23_qmc(unsigned long s, unsigned int n)
-{
-	return( ((float)STD_FALL) * (float)s /
+{ // QMC calculation constants = sqrt(pi)/4
+	return( ((float)(_rPI/4)) * (float)s /
 	(((3 * (unsigned long)n + 1 -_CT3_) * n) * sqrtf(n + 1)) );
 }
 
@@ -187,23 +186,22 @@ void cap_test(void)
 #ifdef __MPLAB_SIM
 
 			PM_BUF(IC_USED, 0) = m_rand();
-//			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
+			fill_buffer(0x1000, BUF_SIZE); // Fill buffer
+			for (i = 1; i < BUF_SIZE; ++i) {
+				int d = (int)m_grandf(0, 0x1000);
+				if ((d < -0x200) || (d > 0x200))continue;
+				PM_BUF(IC_USED, i) += d; // Add deviation
+			}
 
-//			for (i = 1; i < BUF_SIZE; ++i) // Add deviation
-//				PM_BUF(IC_USED, i) += (int)m_grandf(0, 0xA0);
-
-			for (i = 1; i < BUF_SIZE; ++i) // Fill buffer and
-			PM_BUF(IC_USED, i) = (unsigned int) // add deviation
-				((PM_BUF(IC_USED, 0) + (unsigned long)i * 0x1000)
-				+ (long)m_grandf(0, 0xA0));
-
-			pm_math_init(IC_USED);
+			pm_math_init(IC_USED); err = 0;
 			num = pm_math23_start(IC_USED, _CT3_, 4000);
 			do {
 				if (pm_math23_task(IC_USED) < 0)
-					num = 0; // Deviation error
+				{ // Deviation error
+					err = 1; break; 
+				}
 			} while (PM_IS_RUN(IC_USED));
-			if (num) pm_math23_task(IC_USED);
+			if (!err) pm_math23_task(IC_USED);
 
 			period = math23_dperiod( // Doubled period
 				pm_math23_sum(IC_USED), pm_math23_num(IC_USED));
@@ -213,14 +211,14 @@ void cap_test(void)
 			else qmc = 65535;
 
 			{ // Compute Median and STD
-				static double p[64]; static float q[64];
-				static int j = 0; double d[64];
+				static double p[15]; static float q[15];
+				static int j = 0; double d[15];
 
-				p[j] = (period / 2); // Real period
-
-q[j] = qmc / 2; // ќшибка в два раза !!!
-
-				if (++j >= ARSIZE(p)) { j = 0; mean = period; }
+				if (qmc != 65535) {
+					p[j] = (period / 2);	// Real periods
+					q[j] = qmc;			// Store QMC values
+					if (++j >= ARSIZE(p)) { j = 0; mean = period; }
+				}
 
 				if (mean != 0) {
 					mean = 0; std = 0; qmc_ave = 0;

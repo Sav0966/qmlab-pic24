@@ -6,6 +6,11 @@
 
 #include <math.h>
 #include <stdlib.h>
+
+#ifndef _PI
+#define _PI		3.1415926535897932384626433832795
+#define _rPI	1.7724538509055160272981674833411
+#endif
 /*
 *	Random number generators (pseudo)
 */
