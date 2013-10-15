@@ -143,15 +143,15 @@ IMPL_PM_MATH23_TASK(IC_USED)
 	unsigned int* _pT = _pT3;
 
 	if (_IC_(IC_USED, icm) == ICM_EDGE)
-	if (((typeof(_pT))_pcur.p.addr - 6) <= _pT)
-		return(0); // Number of adges must be even
+		if (((typeof(_pT))_pcur.p.addr - 6) <= _pT)
+		return(0); // Number of edges must be even
 
 	__asm__ volatile ("push _DSRPAG");
 	__asm__ volatile ("push _DSWPAG");
 	DSRPAG = PM_GET_PAGE(IC_USED);
 	DSWPAG = PM_GET_PAGE(IC_USED);
 
-	// _pcur.p.addr must be >= 3 (it's always true)
+	//_pcur.p.addr must be >=3 (it's always true)
 	while (((typeof(_pT))_pcur.p.addr - 3) > _pT)
 	{
 		// Prepare buffer (Period[i])
@@ -160,29 +160,27 @@ IMPL_PM_MATH23_TASK(IC_USED)
 		*_pT = *(_pT+1) - *_pT; ++_pT;
 		*_pT = *(_pT+1) - *_pT; ++_pT;
 
-		if (_cmp != 0)		// Task condition
-		for(;;) // Check deviation error (NSE)
+		if (_cmp != 0) // Task condition
 		{
-			long dT1 = 0, dT2 = 0, dT3 = 0;
+			long T1, T2, T3;
+			// Check deviation error (NSE)
 			_T02 -= *_pQ0++; _T02 += *_pQ2++;
 			_T13 -= *_pQ1++; _T13 += *_pQ3++;
-			dT1 = _T02 - _T13; if (dT1 < 0) dT1 = -dT1;
-			if (dT1 < _cmp) {// _Sqmc += T;
-				_T02 -= *_pQ0++; _T02 += *_pQ2++;
-				_T13 -= *_pQ1++; _T13 += *_pQ3++;
-				dT2 = _T02 - _T13; if (dT2 < 0) dT2 = -dT2;
-				if (dT2 < _cmp) {// _Sqmc += T;
-					_T02 -= *_pQ0++; _T02 += *_pQ2++;
-					_T13 -= *_pQ1++; _T13 += *_pQ3++;
-					dT3 = _T02 - _T13; if (dT3 < 0) dT3 = -dT3;
-					if (dT3 < _cmp) { _Sqmc += dT1+dT2+dT3; break; }
-				}
-			}
+			T1 = _T02 - _T13; if (T1 < 0) T1 = -T1;
+			if (T1 > _cmp) break; // NSE Error
 
-//			_Sqmc = -1; // Maximum value
-			__asm__ volatile ("pop _DSWPAG");
-			__asm__ volatile ("pop _DSRPAG");
-			return(-1); // Deviation error
+			_T02 -= *_pQ0++; _T02 += *_pQ2++;
+			_T13 -= *_pQ1++; _T13 += *_pQ3++;
+			T2 = _T02 - _T13; if (T2 < 0) T2 = -T2;
+			if (T2 > _cmp) break; // NSE Error
+
+			_T02 -= *_pQ0++; _T02 += *_pQ2++;
+			_T13 -= *_pQ1++; _T13 += *_pQ3;
+			T3 = _T02 - _T13; if (T3 < 0) T3 = -T3;
+			if (T3 > _cmp) break; // NSE Error
+
+			++_pQ3;   // _pQ3 must be equal to _pT
+			_Sqmc += T1 + T2 + T3; // No NSE error
 		}
 
 		// Calculate sums and duration times
@@ -302,6 +300,20 @@ IMPL_PM_MATH23_TASK(IC_USED)
 		} // _S1 = Sum(i * T[i]), i = 1..(1/3)N
 
 		if (_cmp == 0) break; // Start condition
+	} // while()
+
+	if (_cmp != 0) { // Task condition
+		if (_pT != _pQ3) { // NSE error
+			// Restore buffer (Time[i])
+			//	buf[i] = buf[i+1] - buf[i]
+			--_pT; *_pT = *(_pT+1) - *_pT;
+			--_pT; *_pT = *(_pT+1) - *_pT;
+			--_pT; *_pT = *(_pT+1) - *_pT;
+
+			__asm__ volatile ("pop _DSWPAG");
+			__asm__ volatile ("pop _DSRPAG");
+			return(-1); // Deviation error
+		}
 	}
 
 	__asm__ volatile ("pop _DSWPAG");
