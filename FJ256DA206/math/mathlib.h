@@ -25,5 +25,10 @@ float m_ndrandf(void);	// Normal (or Gaussian) distribution
 
 double m_grand(double mean, double std);	// Normal deviate
 float m_grandf(float mean, float std);		// Normal deviate
+/*
+*	2/3-SUM statistical algorithm
+*/
+double math23_dperiod(unsigned long long s, unsigned int n);
+float math23_qmc(unsigned long s, unsigned int n, int nCT3);
 
 #endif /*_MATHLIB_INCL_*/

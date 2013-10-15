@@ -38,7 +38,7 @@
 #define PM_DONE(n)		IC_PWOFF(n)
 
 #define PM_START(n, size, mode)\
-	_IC_(n, icm) = (mode) & 7; /* Save mode for later use */\
+	_IC_(n, icm) = (char)((mode) & 7);		/* Save mode */\
 	_IC_(n, pcur).peds = _IC_(n, buf); /* Current pointrr */\
 	/* Using buf[0] - buf[size-2], last cell is not used */\
 	_IC_(n, pend) =_IC_(n, pcur).p.addr + ((size) - 1);\
@@ -61,15 +61,15 @@
 #define IMPL_PM_MATH23_TASK(n)	int _PM_MATH23_TASK(n)(void)
 #define DECL_PM_MATH23_TASK(n)	extern IMPL_PM_MATH23_TASK(n)
 
-#define _PM_MATH23_SUM(n)		IC_(n, math_23_sum)
+#define _PM_MATH23_SUM(n)		IC_(n, math_23_sum) /* return SUM */
 #define IMPL_PM_MATH23_SUM(n)	unsigned long long _PM_MATH23_SUM(n)(void)
 #define DECL_PM_MATH23_SUM(n)	extern IMPL_PM_MATH23_SUM(n)
 
-#define _PM_MATH23_NUM(n)		IC_(n, math_23_num)
+#define _PM_MATH23_NUM(n)		IC_(n, math_23_num) /* return N1 */
 #define IMPL_PM_MATH23_NUM(n)	unsigned int _PM_MATH23_NUM(n)(void)
 #define DECL_PM_MATH23_NUM(n)	extern IMPL_PM_MATH23_NUM(n)
 
-#define _PM_MATH23_QMC(n)		IC_(n, math_23_qmc)
+#define _PM_MATH23_QMC(n)		IC_(n, math_23_qmc) /* return Sqmc */
 #define IMPL_PM_MATH23_QMC(n)	unsigned long _PM_MATH23_QMC(n)(void)
 #define DECL_PM_MATH23_QMC(n)	extern IMPL_PM_MATH23_QMC(n)
 
@@ -83,5 +83,6 @@
 #define pm_math23_num(n)					_PM_MATH23_NUM(n)()
 #define pm_math23_qmc(n)					_PM_MATH23_QMC(n)()
 #define pm_math23_start(n, nCT3, timeout)	_PM_MATH23_START(n)(nCT3, timeout)
+#define pm_math23_post(n)	pm_math23_task(n) // The same at this point
 
 #endif //_PMETER_INCL_
