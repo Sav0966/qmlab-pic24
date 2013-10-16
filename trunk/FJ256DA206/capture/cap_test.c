@@ -26,7 +26,7 @@ static float qmc;
 static char __time__[] = __TIME__; // Rand()
 static int seed __attribute__((persistent));
 
-static int i, clk, stage = 0; // Test stage
+int i, clk, stage = 0; // Test stage
 
 #ifdef __DEBUG
 static int tim;
@@ -186,10 +186,11 @@ void cap_test(void)
 #ifdef __MPLAB_SIM
 
 			fill_buffer(avep, BUF_SIZE); // Fill buffer
-			for (i = 1; i < BUF_SIZE; ++i) { // Add deviation
-				int d = (int)m_grandf(0, avep/16); // Gaussian
-//				if ((d < -0x200) || (d > 0x200)) continue;
-				PM_BUF(IC_USED, i) += d;
+			i = 1; while (i < BUF_SIZE) { // Add deviation
+				float d = m_grandf(0, avep/18); // Gaussian
+				if ((d < 0) && (d < -(int)avep/3)) continue;
+				else if ((d > 0) && (d > avep/3)) continue;
+				PM_BUF(IC_USED, i) += (int)d; ++i;
 			}
 
 			pm_math_init(IC_USED); err = 0;
@@ -202,11 +203,18 @@ void cap_test(void)
 			if (!err) pm_math23_post(IC_USED);
 
 			if (err < 0) { // NSE error
-				i = 3 * pm_math23_num(IC_USED) + 1;
-				ASSERT(i < (BUF_SIZE-1));	// Buffer
-//				for (; i < BUF_SIZE-1; ++i) // must be restored
-//				ASSERT(((unsigned)PM_BUF(IC_USED, i) - // = 256 us
-//						(unsigned)PM_BUF(IC_USED, i-1)) == avep);
+				i = 3 * pm_math23_num(IC_USED)-1;
+				ASSERT(PM_BUF(IC_USED, i) < 5*(avep/3));
+				ASSERT(PM_BUF(IC_USED, i) > avep/3);
+
+				for (i += 2; i < BUF_SIZE-1; ++i)
+				{ // Buffer must be restored
+					err = (unsigned)PM_BUF(IC_USED, i) -
+						(unsigned)PM_BUF(IC_USED, i-1);
+					if (err < 0) err = -err;
+					ASSERT(err < 5*(avep/3));
+					ASSERT(err > avep/3);
+				}
 			}
 
 			period = math23_dperiod( // Doubled period
@@ -222,8 +230,8 @@ void cap_test(void)
 			} else qmc = 65535;
 
 			{ // Compute Median and STD
-				static double p[15]; static float q[15];
-				static int j = 0; double d[15];
+				static double p[32]; static float q[32];
+				static int j = 0; double d[32];
 
 				if (qmc != 65535) {
 					q[j] = qmc; // Real QMC values
