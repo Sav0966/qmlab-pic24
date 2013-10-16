@@ -183,7 +183,7 @@ IMPL_PM_MATH23_TASK(IC_USED)
 			_Sqmc += T1 + T2 + T3; // No NSE error
 		}
 
-		// Calculate sums and duration times
+		// Calculate sums and durations of _Sn sampling
 
 		{ // Calculate full sum
 			// unsigned long T;	 // Period[i]
@@ -304,7 +304,7 @@ IMPL_PM_MATH23_TASK(IC_USED)
 
 	if (_cmp != 0) { // Task condition
 		if (_pT != _pQ3) { // NSE error
-			// Restore buffer (Time[i])
+			// Restore buffer (to Time[i])
 			//	buf[i] = buf[i+1] - buf[i]
 			--_pT; *_pT = *(_pT+1) - *_pT;
 			--_pT; *_pT = *(_pT+1) - *_pT;
