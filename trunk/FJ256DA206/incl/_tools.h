@@ -35,7 +35,7 @@
 	__FILE__, __LINE__, __mkstr__(f)), 0)
 
 #ifndef __MPLAB_SIM // Stop at the failed line and no messages
-#define ASSERT(f)	if (!(f)) while(1) asm __volatile__("nop");
+#define ASSERT(f)	if (!(f)) while(1) asm __volatile__("nop\nnop");
 #define TRACE2(sz, p1, p2)
 #define TRACE1(sz, p1)
 #define TRACE(sz)
