@@ -64,7 +64,7 @@ void cap_test(void)
 			refo_div(RODIV_8192); avep = 0x1000;
 			refo_on(); // == 256 us period on REFO
 
-			PM_START(IC_USED, BUF_SIZE, ICM_EDGE);
+			PM_START(IC_USED, BUF_SIZE, ICM_FALL);
 
 			if (PM_GET_MODE(IC_USED) == ICM_PRE4) avep *= 4;
 			else if (PM_GET_MODE(IC_USED) == ICM_EDGE) avep /= 2;
@@ -174,7 +174,7 @@ void cap_test(void)
 						if (PM_GET_MODE(IC_USED) == ICM_PRE4) qmc /= 4;
 						else if (PM_GET_MODE(IC_USED) == ICM_EDGE) qmc *= 2;
 					} else qmc = 65535; // Maximum error value
-				PROFILE_END(SYS_TIMER, tim); // ~70 us
+				PROFILE_END(SYS_TIMER, tim); // ~80 us
 
 				__asm__ volatile ("nop\nnop");
 			}
@@ -230,26 +230,29 @@ void cap_test(void)
 			} else qmc = 65535;
 
 			{ // Compute Median and STD
-				static double p[32]; static float q[32];
-				static int j = 0; double d[32];
+				static double p[256]; double d[ARSIZE(p)];
+				static float q[ARSIZE(p)]; 
+				static int j = 0;
 
 				if (qmc != 65535) {
 					q[j] = qmc; // Real QMC values
 					p[j] = period; // Real values of period
-					if (++j >= ARSIZE(p)) { j = 0; mean = period; }
+					if (++j >= 3) mean = period; // Ready
 				}
 
 				if (mean != 0) {
 					mean = 0; std = 0; qmc_ave = 0;
-					for (i = 0; i < ARSIZE(p); ++i) mean += p[i];
-					mean /= ARSIZE(p);
+					for (i = 0; p[i] != 0; ++i) mean += p[i];
+					mean /= i;
 
-					for (i = 0; i < ARSIZE(p); ++i) d[i] = p[i] - mean;
-					for (i = 0; i < ARSIZE(p); ++i) std += d[i]*d[i];
-					std = sqrt(std/ARSIZE(p));
+					for (i = 0; p[i] != 0; ++i) d[i] = p[i] - mean;
+					for (i = 0; p[i] != 0; ++i) std += d[i]*d[i];
+					std = sqrt(std/i);
 
-					for (i = 0; i < ARSIZE(q); ++i) qmc_ave += q[i];
-					qmc_ave /= ARSIZE(q);
+					for (i = 0; p[i] != 0; ++i) qmc_ave += q[i];
+					qmc_ave /= i;
+
+					if (j >= (ARSIZE(p)-1)) j = 0; // Circle
 
 					__asm__ volatile ("nop\nnop");
 				}
