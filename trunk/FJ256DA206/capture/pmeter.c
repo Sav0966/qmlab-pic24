@@ -8,7 +8,6 @@
 #define _PMERT_INCL_
 
 #include <config.h>
-#include <timers.h>
 
 #ifdef IC_USED // Only for used Cupture module
 
@@ -102,8 +101,7 @@ IMPL_PM_MATH_INIT(IC_USED)
 IMPL_PM_MATH23_START(IC_USED)
 {
 	unsigned long T;
-	unsigned int t, n, tim =
-				(unsigned)TIMER_READ(SYS_TIMER);
+	unsigned int t, n, tim = (unsigned)ICTMR(IC_USED);
 
 	do
 	{ // Wait three correlation times
@@ -111,11 +109,11 @@ IMPL_PM_MATH23_START(IC_USED)
 		n = _N3;
 		pm_math23_task(IC_USED); // _cmp == 0
 		if (n != _N3) // New time-out on new data
-			tim = (unsigned)TIMER_READ(SYS_TIMER);
+					tim = (unsigned)ICTMR(IC_USED);
 
-		t = (unsigned)TIMER_READ(SYS_TIMER);
-		if (t < tim) t += (unsigned)TIMER_GET_PR(SYS_TIMER);
-		if ((t - tim) > timeout) break; // Wait time-out
+		t = (unsigned)ICTMR(IC_USED);
+		if ((t - tim) > (unsigned)timeout)
+				break; // Wait time-out
 	}
 	while (_N3 < nCT3);
 
