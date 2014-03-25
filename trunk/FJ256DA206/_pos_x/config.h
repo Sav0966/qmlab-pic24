@@ -8,25 +8,21 @@
 * The value of oscillator mode
 */
 #include <oscdef.h>
+#ifndef __OSC__
 #define __OSC__		PRIPLL
+#endif
 #include <fcy.h>
 /*
 * Interrupt priority levels (IPL) and modules
 */
 #define MAIN_IPL	0	// Main loop
 #define SYSCLK_IPL	1	// System timer (Timer1)
+#define FL_IPL		2	// Flash SPI
+#define SD_IPL		2	// SD card SPI
 
 #define SYS_TIMER	1	// System timer
-/*
-* Redefinition of default MCU pins configuration
-*/
-#include <pinscfg.h>
-
-#ifdef _IC_TEST_
-#define RP29_OUT	RP_OC9	// RB15/RP29 (REFO) OC9
-#define RP_IC9		RP29_IN // output and IC9 input
-#define IC_USED		9
-#endif
+#define FL_SPI		1	// Flash SPI
+#define SD_SPI		2	// SD card SPI
 /*
 * Definitions of Config Words
 */

@@ -1,6 +1,6 @@
 #include <p24Fxxxx.h>
 #include <libpic30.h>
-// #include <config.h>
+#include <config.h>
 // #include <mcu_id.h>
 // #include <reset.h>
 // #include <pins.h>
