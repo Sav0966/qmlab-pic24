@@ -13,16 +13,20 @@
 #endif
 #include <fcy.h>
 /*
-* Interrupt priority levels (IPL) and modules
+* Interrupt priority levels (IPL)
 */
 #define MAIN_IPL	0	// Main loop
-#define SYSCLK_IPL	1	// System timer (Timer1)
-#define FL_IPL		2	// Flash SPI
+#define SYSCLK_IPL	1	// System timer
+#define RTC_IPL		2	// RTC interface
 #define SD_IPL		2	// SD card SPI
-
+#define FL_IPL		2	// Flash SPI
+/*
+* System modules
+*/
 #define SYS_TIMER	1	// System timer
-#define FL_SPI		1	// Flash SPI
+#define RTC_I2C		3	// RTC interface
 #define SD_SPI		2	// SD card SPI
+#define FL_SPI		1	// Flash SPI
 /*
 * Definitions of Config Words
 */
