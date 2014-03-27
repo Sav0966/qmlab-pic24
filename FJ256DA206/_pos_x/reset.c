@@ -21,7 +21,7 @@ void __attribute__((user_init)) reset_init(void)
 #ifdef __DEBUG /*	--- ERROR ---
 	You must always reset IESO in _CONFIG2(), insert in code
 	_CONFIG2(IESO_OFF); // Reset IESO (Errata sheet DS80505) */
-	if (!IS_MCU_PROGRAMMED()) while(1); // Stop here in debug
+	if ((MCU_CONFIG2 & ~IESO_OFF) != 0) while(1); // Stop here
 #endif
 
 	/* May be we fail to take POR into account */

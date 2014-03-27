@@ -75,57 +75,64 @@
 /*
 *	PORT F
 */
-#define RF3_IN		// Power Good signal (INT)
+#define RF0_LOW		// RS-232 driver ~SHDN pin
+#define _U2_SHDN	_LATF0	// C definition
+
+#define RF1_LOW		// DC/DC module ~SHDN pin
+#define _PW_SHDN	_LATF1	// C definition
+
+#define RF3_IN		// Power Good signal (input and INT)
+#define RP_INT1		RP16_IN	// Map INT1 to RF3/RP16 pin
 #define _PWGOOD		_RF3	// C definition
 
 #define RF4_IN		// Input frequency signals
 #define RF5_IN		//		Input capture modules:
-#define RP_IC4		RP10_IN // IC4 - RF4/RP10 pin
-#define RP_IC3		RP17_IN // IC3 - RF5/RP17 pin
+#define RP_IC4		RP10_IN	// IC4 - RF4/RP10 pin
+#define RP_IC3		RP17_IN	// IC3 - RF5/RP17 pin
 
 #define RF7_IN		// VBUS signal (USB module)
 //#define _VBUS		_RF7	// C definition
 /*
 *	PORT C
 */
+#define RC12_IN		// CLKI input (external main oscillator)
+#define RC15_HIGH	// OSCO pin has digital output function (RC15)
+#define _OSCOFF		_LATC15	// C definition (initially turned off)
 
-/*
-*	PORT B
-*/
-// UART2 TxD, RxD, ~INVALID and ~SHDN pins (RB8-RB11 pins)
-// To use RB8-11,12,13 JTAG must be off, check CONFIG1 word
-//#define RB8_HIGH	// TxD output (To RS-232 driver Tin pin)
-//#define RP8_OUT		RP_U2TX // Map UART1 TxD output to RB8/RP8 pin
-//
-//#define RB9_IN		// RxD input (From RS-232 driver Rout pin)
-//#define RP_U2RX		RP9_IN // Map UART1 TxD input to RB9/RP9 pin
-//
-//#define RB10_IN		// ~INVALID input signal from RS-232 driver
-//#define _U2_VALID	_RB10 // C definitions of ~INVALID signal
-//
-//#define RB11_LOW	// ~SHDN output signal to RS-232 driver
-//#define _U2_SHDN	_LATB11 // C definitions of ~SHDN signal
-// UART2
-
-//#define RB15_HIGH			// Test pin (and REFO output)
-//#define _REFO		_RB15	// C definitions of REFO pin
+#define RC13_IN		// SOSCI and SOSCO
+#define RC14_IN
 /*
 *	PORT D
 */
-// SPI1 Master Mode (SDO - RD0, SDI - RD2, SCK - RD11)
-//#define RD0_LOW		// SDO output (to DataFlash SI input)
-//#define RP11_OUT	RP_SDO1 // Map SDO1 to RD0/RP11 pin
-//
-//#define RD2_IN		// SDI input (from DataFlash SO output)
-//#define RP_SDI1		RP23_IN // Map SDI1 to RD2/RP23 pin
-//
-//#define RD11_HIGH	// SCK output (to DataFlash SCK input)
-//#define RP12_OUT	RP_SCK1OUT // Map SCK1 to RD11/RP12 pin
-// SPI1
-/*
-*	PORT E
-*/
-//#define RE0_HIGH	// ~CS0 (Chip Select 0) output pin
-//#define _CS0		_LATE0 // C definition of ~CS0 pin
+#define RD1_IN		// RxD2 input (From RS-232 driver Rout pin)
+#define RD2_HIGH	// TxD2 output (To RS-232 driver Tin pin)
+#define RP23_OUT	RP_U2TX // Map TxD2 to RD2/RP23 pin
+#define RP_U2RX		RP24_IN // Map RxD to RD1/RP24 pin
+
+#define RD3_IN		// SPI1 - interface to external Flash
+#define RD4_HIGH	
+#define RD5_HIGH
+#define RP_SDI1		RP22_IN 	// Map SDI1 to RD3/RP22 pin
+#define RP25_OUT	RP_SDO1		// Map SDO1 to RD4/RP25 pin
+#define RP20_OUT	RP_SCK1OUT	// Map SCK1 to RD5/RP20 pin
+
+#define RD6_HIGH	// SPI1 ~CS pin (see RD3-5)
+#define _CS1		_LATD6		// C definition
+
+#define RD7_LOW		// ~RESET pin (GPS and Flash)
+#define _RST		_LATD7		// C definition
+
+#define RD8_IN		// Input frequency signals
+#define RD9_IN		//		Input capture modules:
+#define RP_IC2		RP2_IN	// IC2 - RD8/RP2 pin
+#define RP_IC1		RP4_IN	// IC3 - RD9/RP4 pin
+
+#define RD0_IN		// RxD3 input (From GPS module Rout pin)
+#define RD10_HIGH	// TxD3 output (To GPS module Tin pin)
+#define RP3_OUT		RP_U3TX // Map TxD3 to RD10/RP3 pin
+#define RP_U3RX		RP11_IN // Map RxD3 to RD0/RP11 pin
+
+#define RD11_IN		// PPS signal (from GPS module, INT)
+#define RP_INT2		RP12_IN	// Map INT2 to RD11/RP12 pin
 
 #endif /*_PINSCFG_INCL_*/
