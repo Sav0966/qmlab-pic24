@@ -8,18 +8,24 @@
 * The value of oscillator mode
 */
 #include <oscdef.h>
-#ifndef __OSC__
 #define __OSC__		PRIPLL
-#endif
 #include <fcy.h>
+/*
+* Pin definition
+*/
+#include <pinscfg.h>
 /*
 * Interrupt priority levels (IPL)
 */
 #define MAIN_IPL	0	// Main loop
 #define SYSCLK_IPL	1	// System timer
-#define RTC_IPL		2	// RTC interface
+#define RTC_IPL		1	// RTC interface
 #define SD_IPL		2	// SD card SPI
 #define FL_IPL		2	// Flash SPI
+#define UART_IPL	1	// System COM
+#define GPS_IPL		1	// GPS module COM
+#define PPS_IPL		3	// PPS signal
+#define PWG_IPL		4	// Power Good
 /*
 * System modules
 */
@@ -27,6 +33,11 @@
 #define RTC_I2C		3	// RTC interface
 #define SD_SPI		2	// SD card SPI
 #define FL_SPI		1	// Flash SPI
+#define DBG_UART	1	// Debug COM
+#define SYS_UART	2	// System COM
+#define GPS_UART	3	// GPS module COM
+#define PW_INT		1	// INT1 to PW_GOOG
+#define PPS_INT		2	// INT2 to PPS signal
 /*
 * Definitions of Config Words
 */

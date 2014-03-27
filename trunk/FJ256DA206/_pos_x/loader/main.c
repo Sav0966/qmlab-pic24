@@ -1,45 +1,53 @@
 #include <p24Fxxxx.h>
 #include <libpic30.h>
 #include <config.h>
-// #include <mcu_id.h>
-// #include <reset.h>
-// #include <pins.h>
-
+#include <reset.h>
+#include <uarts.h>
 #include "main.h"
 
-/* Condition of initialization of persistent data */
-#define isPOWER_ON(state) (((state) & EXT_RESET) != 0)
-
-// unsigned int mcu_id;
-// unsigned int rst_state; /* Current reset state */
-// unsigned int __attribute__((persistent)) rst_events;
-// unsigned int __attribute__((persistent)) rst_num;
-// unsigned long nOscFail; // Trap error counter
-
-// static void power_on_init(void)
-// {
-//	clr_reset_state(); // Needed for MCLR
-//	rst_events = 0; rst_num = 0;
-// }
+#ifndef _U_SHDN
+#define __U_SHDN(n)	_U##n##_SHDN
+#define _U_SHDN(n)	__U_SHDN(n)
+#endif
 
 int main(void)
 {
-//	if (!IS_MCU_PROGRAMMED()) /* Stay in programming */
-//	__delay32((unsigned long)((1000)*(FCY_UP2)/1000UL));
+	pins_init(); // Initialize MCU pins first
 
-	/* SIM doesn't clear SRbits.IPL, ICD2 clears it */
-//	SET_CPU_IPL(MAIN_IPL); /* Set default by hands */
+	while (!IS_MCU_PROGRAMMED()); // Stay here
+	// SIM doesn't clear SRbits.IPL, ICD2 clears it
+	SET_CPU_IPL(MAIN_IPL); // Set default by hands
 
-//	mcu_id = MCU_ID;
-//	if (isPOWER_ON(rst_state = get_reset_state()))
-//		power_on_init(); /*	For POR, BOR and MCLR */
+	if ((RCON & RCON_STATUS) == 0)
+	{ // Another program clears RCON bits
+	} else { /* No programms are in flash */ }
 
-//	rst_events |= rst_state; /* As RCON register */
-//	++rst_num; /* Calculate session reset number */
+	// Initialize UART module
+	//
+	UART_DISABLE_TXINT(SYS_UART);
+	UART_DISABLE_RXINT(SYS_UART);
+	UART_DISABLE_ERINT(SYS_UART);
+	_UMD(SYS_UART) = 0;		// Power on UART module
+	_U_SHDN(SYS_UART) = 1; // Wake-up RS-232 driver
+	//
+	// Setup mode (UART disabled). Setup control
+	// bits, clear FIFO buffers and receiver errors
+	UMODE(SYS_UART) = U_NOPARITY; // 8-bit no parity
+	//
+	USTA(SYS_UART) = U_TXI_READY | U_RXI_ANY; // Setup status
+	UBRG(SYS_UART) = FCY2BRGH(FCY2, 9600);  // 9600 baud rate
+	//
+	// Clear buffers
+	//
+	UART_CLR_RXFLAG(SYS_UART); UART_CLR_TXFLAG(SYS_UART);
+	UART_CLR_ERFLAG(SYS_UART);	// Clear interrupt flags
+	//
+	UMODEbits(SYS_UART).UARTEN = 1;	// Enable module
+	UART_ENABLE_TX(SYS_UART); // Enable Transmitter
+	//___
 
-//	if (mcu_id != 0) while(1); // For simulator only !!!
-//	pins_init(); /* Initialize MCU pins configuration */
 
-	for(;;);
+
+	for(;;) __asm__ volatile ("CLRWDT\n");
 	return(0); /* Never return */
 }
