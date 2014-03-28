@@ -7,8 +7,10 @@
 /*
 * The value of oscillator mode
 */
-#include <oscdef.h>
+#ifndef __OSC__
 #define __OSC__		PRIPLL
+#endif
+#include <oscdef.h>
 #include <fcy.h>
 /*
 * Pin definition

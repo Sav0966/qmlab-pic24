@@ -177,7 +177,7 @@ void UART_INTFUNC(UART_USED, RX)(void)
 				UART_SET_ERFLAG(UART_USED);
 				break; // It's not my job
 			} else { // No errors at the top of FIFO
-				// Write readed bytes into RX buffer
+				// Push received bytes into RX buffer
 				QUEBUF_IPUSH(RXB, UART_READ8(UART_USED));
 			}
 		} else break; // FIFO is empty
