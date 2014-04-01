@@ -21,9 +21,9 @@
 #define _UBRG(n)	U##n##BRG
 #define UBRG(n)		_UBRG(n)
 // Computation of the baud rate whith RBGH = 0
-#define FCY2BRG(fcy, rate) ((int)((fcy/(16L*rate))-1))
+#define FCY2BRG(fcy, rate) ((int)((fcy)/(16L*(rate))-1))
 // Computation of the baud rate whith RBGH = 1
-#define FCY2BRGH(fcy, rate) ((int)((fcy/(4L*rate))-1))
+#define FCY2BRGH(fcy, rate) ((int)((fcy)/(4L*(rate))-1))
 /*
 * UART Mode Register and appropriate mode settings
 */
