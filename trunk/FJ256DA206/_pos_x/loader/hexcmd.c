@@ -2,36 +2,42 @@
 #include <ctype.h>
 #include "main.h"
 
-static int hex2dec(char* str)
-{
-if (!isxdigit(*str)) return(-1);
-	if ((*str >= '0') && (*str <= '9')) *str -= '0';
-	else if ((*str >= 'A') && (*str <= 'F')) *str -= 'A'-10;
-	else if ((*str >= 'a') && (*str <= 'f')) *str -= 'a'-10;
-	else return(-1);
+void hex_init(PUARTBUF buf) { buf->prog.p.type = -1; }
 
-	return(0);
+static int hex2dec(int hex)
+{
+	if (isxdigit(hex)) {
+		toupper(hex); hex -= '0';
+		if (hex > 9) hex -= 7;
+	} else hex = -1;
+
+	return(hex);
 }
 
-//static char hex2bin(unsigned char* str)
-//{ return( ((*str - '0') << 8) + (*(str+1) - '0')); }
-
-void hex_command(void)
+void hex_command(PUARTBUF buf)
 { // Upload and program hex-files
-	int n, sum;
+	int n, sum, dec, bin;
 
-	// ":00000001FF" - min length string
-	if ((buf.pos < 11) || !(buf.pos & 1))
-	{ ++buf.err; return; } // and odd
+	for (;;) {
+		// ":00000001FF" - min  string length and odd
+		if ((buf->pos < 11) || !(buf->pos & 1)) break;
 
-	sum = 0; // Check control sum
-	for (n = 1; n < buf.pos; n += 2)
-	{
-		if (hex2dec((char*)&buf.rxd[n])) break;
-		if (hex2dec((char*)&buf.rxd[n+1])) break;
-//		sum += 
-	}
+		for (sum = 0, n = 1; n < buf->pos; n++)
+		{ // Check control sum
+			if ((dec = hex2dec(buf->rxd[n])) < 0) break;
 
-	if (n != buf.pos)
-	{ ++buf.err; return; } // Error
+			if (n & 1) bin = dec << 4;
+			else {		// Byte is read
+				bin += dec; sum += bin;
+				buf->prog.b[n/2] = bin;
+			}
+		}
+
+		if ((n != buf->pos) || (sum & 0xFF)) break;
+
+
+		return; // OK
+	} // for(;;)
+
+	++buf->err; // Any error
 }
