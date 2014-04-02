@@ -8,7 +8,7 @@
 #define _U_SHDN(n)	__U_SHDN(n)
 #endif
 
-void uart_init(void)
+void uart_init(PUARTBUF buf)
 { // Initialize UART module
 	UART_DISABLE_TXINT(UART_USED);
 	UART_DISABLE_RXINT(UART_USED);
@@ -23,8 +23,8 @@ void uart_init(void)
 	USTA(UART_USED) = U_TXI_READY | U_RXI_ANY; // Setup status
 	UBRG(UART_USED) = FCY2BRG(FCY2, 9600);  // 9600 baud rate
 
-	buf.nrx = 0; // Clear buffers
-	buf.ntx = 0; buf.err = 0; buf.pos = 0;
+	buf->nrx = 0; // Clear buffers
+	buf->ntx = 0; buf->err = 0; buf->pos = 0;
 
 	UART_CLR_RXFLAG(UART_USED); UART_CLR_TXFLAG(UART_USED);
 	UART_CLR_ERFLAG(UART_USED);	// Clear interrupt flags
@@ -33,11 +33,11 @@ void uart_init(void)
 	UART_ENABLE_TX(UART_USED); // Enable Transmitter
 }
 
-void uart_rx(void)
+void uart_rx(PUARTBUF buf)
 { // First clear interrupt flag
 	UART_CLR_RXFLAG(UART_USED);
 
-	while (buf.nrx < RXBUF_SIZE)
+	while (buf->nrx < RXBUF_SIZE)
 	{ // Read bytes from FIFO to buffer
 		if (UART_CAN_READ(UART_USED)) {
 			if (UART_IS_RXERR(UART_USED)) {
@@ -45,7 +45,7 @@ void uart_rx(void)
 				break; // It's not my job
 			} else { // No errors at the top of FIFO
 				// Push received bytes into RX buffer
-				buf.rxd[buf.nrx++] = UART_READ8(UART_USED);
+				buf->rxd[buf->nrx++] = UART_READ8(UART_USED);
 			}
 		} else break; // FIFO is empty
 	} // while (nrx != RXBUF_SIZE)
@@ -55,7 +55,7 @@ void uart_rx(void)
 	//  and leave it in RX FIFO
 }
 
-void uart_er(void)
+void uart_er(PUARTBUF buf)
 { // First clear interrupt flag
 	UART_CLR_ERFLAG(UART_USED);
 
@@ -86,21 +86,21 @@ void uart_er(void)
 			}
 		}
 
-		++buf.err; // Point to errors
+		++buf->err; // Point to errors
 	} // while (UART_IS_ERR(UART_USED))
 }
 
-void uart_tx(void)
+void uart_tx(PUARTBUF buf)
 {
 	unsigned char ch;
 
 	// First clear interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	while (buf.ntx != 0) {
+	while (buf->ntx != 0) {
 	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			ch = buf.txd[buf.ntx--];
+			ch = buf->txd[buf->ntx--];
 			UART_WRITE(UART_USED, ch);
 		} else break; // FIFO is full
 	}
