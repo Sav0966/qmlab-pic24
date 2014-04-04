@@ -11,18 +11,24 @@
 #define TXBUF_SIZE	16
 
 typedef struct tagPROG {
-	unsigned char _dummy;
-	unsigned char nb;  // number of bytes
+	unsigned char state; // Current status
+	unsigned char cb;  // counter of bytes
 	unsigned int  addr; // start address
 	unsigned char type; // record type
 	unsigned char data[2*((DATA_SIZE+1)/2)];
 } PROG, *PPROG;
+
+#define PROG_VALID		 0
+#define PROG_BUSY		 1
+#define PROG_INVALID	-1 /* Record status */
 
 typedef struct tagUARTBUF {
 	union {
 		PROG p; // programming data
 		unsigned char b[sizeof(PROG)];
 	} prog;
+
+	unsigned int xaddr; // extended address
 
 	unsigned char nrx;	// received bytes
 	unsigned char ntx;	// transmitted bites

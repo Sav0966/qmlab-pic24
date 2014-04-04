@@ -21,7 +21,7 @@ int main(void)
 	} else { /* No programms are in flash */ }
 
 	uart_init(&buf); // Initialize UART
-	hex_init(&buf);
+	hex_init(&buf); // Set invalid state
 
 	for(;;) { // Main loop
 
@@ -34,7 +34,13 @@ int main(void)
 		if (buf.nrx >= RXBUF_SIZE) ++buf.err;
 
 		// On any error - reset UART
-		if (buf.err != 0) uart_init(&buf); 
+		if (buf.err != 0) uart_init(&buf);
+
+		if (buf.prog.p.state == PROG_BUSY)
+		{ // Flash can not be programmed
+
+			continue; // RX-TX only
+		}
 
 		for (; buf.pos < buf.nrx; ++buf.pos)
 		{ // Try to find '\n' or ZERO character
