@@ -11,16 +11,12 @@
 #define TXBUF_SIZE	16
 
 typedef struct tagPROG {
-	unsigned char state; // Current status
+	char pos; // current position
 	unsigned char cb;  // counter of bytes
 	unsigned int  addr; // start address
 	unsigned char type; // record type
 	unsigned char data[2*((DATA_SIZE+1)/2)];
 } PROG, *PPROG;
-
-#define PROG_VALID		 0
-#define PROG_BUSY		 1
-#define PROG_INVALID	-1 /* Record status */
 
 typedef struct tagUARTBUF {
 	union {

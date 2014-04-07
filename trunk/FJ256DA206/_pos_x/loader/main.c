@@ -4,8 +4,11 @@
 #include <uarts.h>
 #include "main.h"
 
+extern __attribute__((space(prog))) int _resetPRI;
+
 int main(void)
 {
+	_prog_addressT rst_addr;
 	/* volatile */ UARTBUF buf;
 
 	pins_init(); // Initialize MCU pins first
@@ -22,6 +25,7 @@ int main(void)
 
 	uart_init(&buf); // Initialize UART
 	hex_init(&buf); // Set invalid state
+	rst_addr = __builtin_tbladdress(&_resetPRI);
 
 	for(;;) { // Main loop
 
@@ -36,9 +40,8 @@ int main(void)
 		// On any error - reset UART
 		if (buf.err != 0) uart_init(&buf);
 
-		if (buf.prog.p.state == PROG_BUSY)
-		{ // Flash can not be programmed
-
+		if (buf.prog.p.pos > 0)
+		{ // Flash is programmed
 			continue; // RX-TX only
 		}
 
