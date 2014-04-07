@@ -2,8 +2,7 @@
 #include <ctype.h>
 #include "main.h"
 
-void hex_init(PUARTBUF buf)
-{ buf->prog.p.state = PROG_INVALID; }
+void hex_init(PUARTBUF buf) { buf->prog.p.pos = -1; }
 
 static int hex2dec(int hex)
 {
@@ -30,13 +29,9 @@ void hex_command(PUARTBUF buf)
 { // Upload and program hex-files
 	int n, sum, dec, bin;
 
-	for (;;) {
-		if (buf->prog.p.state == PROG_BUSY)
-		{ // Wait the end of programming
-			__asm__ volatile( /* _flash_helpers doesn't wait */
-			"btsc	NVMCON, #15	\n" /* We wait for it to be */
-			"bra	$-2			"); /* completed (WR == 0) */
-		}
+	for (bin = 0;;) {
+		// Wait the end of programming
+		if (buf->prog.p.pos > 0) break;
 
 		hex_init(buf); // Reset state (invalid)
 
@@ -72,7 +67,7 @@ void hex_command(PUARTBUF buf)
 			buf->xaddr = mk_word(&buf->prog.b[5]);
 		} else if (buf->prog.p.type != 0) break;
 
-		buf->prog.p.state = PROG_VALID;
+		buf->prog.p.pos = 0;
 		return; // OK
 	} // for(;;)
 
