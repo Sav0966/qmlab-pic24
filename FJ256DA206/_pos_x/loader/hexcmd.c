@@ -29,7 +29,7 @@ void hex_command(PUARTBUF buf)
 { // Upload and program hex-files
 	int n, sum, dec, bin;
 
-	for (bin = 0;;) {
+	for (;;) {
 		// Wait the end of programming
 		if (buf->prog.p.pos > 0) break;
 
@@ -38,12 +38,13 @@ void hex_command(PUARTBUF buf)
 		// ':00000001FF' - min of string length (odd)
 		if ((buf->pos < 11) || !(buf->pos & 1)) break;
 
-		for (sum = 0, n = 1; n < buf->pos; n++)
+		for (bin = 0, sum = 0, n = 1; n < buf->pos; n++)
 		{ // Move data from RxD buffer to PROG structure
 			if ((dec = hex2dec(buf->rxd[n])) < 0) break;
 
 			if (n & 1) bin = dec << 4;
 			else { // Byte is read
+				if (n == 2*sizeof(PROG)) break;
 				bin += dec; sum += bin;
 				buf->prog.b[n/2] = bin;
 			}
