@@ -6,7 +6,7 @@
 #endif
 
 #define UART_USED	SYS_UART
-#define DATA_SIZE	32 /* Maximum data length */
+#define DATA_SIZE	16 /* Maximum data length */
 #define RXBUF_SIZE	(2*DATA_SIZE + sizeof(":00000001FF\r\n"))
 #define TXBUF_SIZE	16
 
@@ -15,7 +15,7 @@ typedef struct tagPROG {
 	unsigned char cb;  // counter of bytes
 	unsigned int  addr; // start address
 	unsigned char type; // record type
-	unsigned char data[2*((DATA_SIZE+1)/2)];
+	unsigned char data[DATA_SIZE + 1]; // data + sum
 } PROG, *PPROG;
 
 typedef struct tagUARTBUF {

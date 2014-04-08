@@ -63,9 +63,14 @@ int main(void)
 		else if (buf.rxd[0] == ':') hex_command(&buf);
 		else ++buf.err;  // Translate command
 
-		// On any error - reset UART
-		if (buf.err != 0) uart_init(&buf);
-		else { buf.nrx = 0; buf.pos = 0; } // Reset buffer
+		if (buf.prog.p.type == 0) {
+
+		}
+
+		// On any error - reset UART and start again
+		if (buf.err != 0) { uart_init(&buf); continue; }
+
+		buf.nrx = 0; buf.pos = 0; // Reset buffer
 
 		__asm__ volatile ("CLRWDT\n"); // Reset WDT
 	} // Main loop
