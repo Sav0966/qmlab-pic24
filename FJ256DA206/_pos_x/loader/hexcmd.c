@@ -8,7 +8,7 @@ void hex_init(PUARTBUF buf)
 	buf->page = -1; buf->xaddr = 0;
 }
 
-int hex2dec(int hex)
+static int hex2dec(int hex)
 {
 	if (isxdigit(hex)) {
 		hex = toupper(hex) - '0';
@@ -18,10 +18,10 @@ int hex2dec(int hex)
 	return(hex);
 }
 
-int mk_word(unsigned char* str)
+static unsigned int mk_word(unsigned char* str)
 {
 	union {
-		int ret;
+		unsigned int ret;
 		struct { char lo; char hi; } ch;
 	} u;
 

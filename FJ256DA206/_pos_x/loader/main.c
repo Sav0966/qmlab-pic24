@@ -2,13 +2,28 @@
 #include <config.h>
 #include <reset.h>
 #include <uarts.h>
+#include <pm.h>
+
 #include "main.h"
 
 extern __attribute__((space(prog))) int _resetPRI;
 
+static unsigned long mk_long(unsigned char* str)
+{
+	union {
+		unsigned long l;
+		struct { char llo; char lhi;
+				 char hlo; char hhi; } ch;
+	} u;
+
+	u.ch.llo = *str++; u.ch.lhi = *str++;
+	u.ch.hlo = *str++; u.ch.hhi = *str;
+	return (u.l);
+}
+
 int main(void)
 {
-	unsigned long addr;
+	union { unsigned long l; unsigned char b[4]; } addr;
 	/* volatile */ UARTBUF buf;
 
 	pins_init(); // Initialize MCU pins first
@@ -25,7 +40,6 @@ int main(void)
 
 	uart_init(&buf); // Initialize UART
 	hex_init(&buf); // Set invalid state
-	addr = __builtin_tbladdress(&_resetPRI);
 
 	for(;;) { // Main loop
 
@@ -63,24 +77,66 @@ int main(void)
 		else if (buf.rxd[0] == ':') hex_command(&buf);
 		else ++buf.err;  // Translate command
 
-		if (buf.err == 0)
-		if (buf.prog.p.type == 0) {
-			addr = get_xaddr(&buf); // Check address
-			if ((addr >= (unsigned long)&_resetPRI) ||
-				((addr == 0) && (buf.prog.p.cb < 8))) ++buf.err;
-			else if (addr == 0)
-			{ // Change reset instruction
-			}
-			
-			if (buf.err == 0) {
-
-			}
-		}
-
-		// On any error - reset UART and start again
+		// On command error - reset UART and start again
 		if (buf.err != 0) { uart_init(&buf); continue; }
 
-		buf.nrx = 0; buf.pos = 0; // Reset buffer
+//		if (buf.err == 0)
+		if (buf.prog.p.pos == 0)
+		if (buf.prog.p.type == 0)
+		{ // Programm flash
+			addr.l = _user_addr(__builtin_tbladdress(&_resetPRI));
+
+			if (_page_addr(addr.l) <= get_xaddr(&buf))
+			{
+				++buf.err; // Check address value
+			} else {
+				if (get_xaddr(&buf) == 0) {
+					if (buf.prog.p.cb < 8) ++buf.err;
+					else { // Change reset vector
+						buf.prog.p.data[0] = addr.b[0];
+						buf.prog.p.data[1] = addr.b[1];
+						buf.prog.p.data[2] = 4; // goto
+						buf.prog.p.data[3] = 0;
+						buf.prog.p.data[4] = addr.b[2];
+						buf.prog.p.data[5] = 0;
+						buf.prog.p.data[6] = 0;
+						buf.prog.p.data[7] = 0;
+					}
+
+					// Clear page 0
+					if (!pm_erase_page(0)) ++buf.err;
+				}
+			}
+
+			addr.l = _user_addr(get_xaddr(&buf));
+
+			if (buf.err == 0)
+			{ // Clear current page
+				if (_page_addr(addr.l) != 0)
+				if (buf.page != _page_addr(addr.l))
+				{
+					buf.page = _page_addr(addr.l);
+					if (!pm_erase_page(buf.page)) ++buf.err;
+				}
+			}
+
+			if (buf.err == 0)
+			{ // Write current block of data
+				for (; buf.err < buf.prog.p.cb; buf.err += 4)
+				{
+					addr.l = pm_write_pword(addr.l,
+						mk_long(&buf.prog.p.data[buf.err]));
+					if (addr.l == 0) break; // Writting error
+				}
+
+				if (buf.err == buf.prog.p.cb) buf.err = 0;
+			}
+		} // Programm
+
+		if (buf.err == 0) { /* Answer ER  */ }
+		else { /* Answer OK	*/ }
+
+		buf.nrx = 0; buf.pos = 0; // Reset RX buffer
 
 		__asm__ volatile ("CLRWDT\n"); // Reset WDT
 	} // Main loop
