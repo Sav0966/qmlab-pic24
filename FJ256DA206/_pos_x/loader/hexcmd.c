@@ -2,9 +2,13 @@
 #include <ctype.h>
 #include "main.h"
 
-void hex_init(PUARTBUF buf) { buf->prog.p.pos = -1; }
+void hex_init(PUARTBUF buf)
+{
+	buf->prog.p.pos = -1;
+	buf->page = -1; buf->xaddr = 0;
+}
 
-static int hex2dec(int hex)
+int hex2dec(int hex)
 {
 	if (isxdigit(hex)) {
 		hex = toupper(hex) - '0';
@@ -14,7 +18,7 @@ static int hex2dec(int hex)
 	return(hex);
 }
 
-static int mk_word(unsigned char* str)
+int mk_word(unsigned char* str)
 {
 	union {
 		int ret;
@@ -25,6 +29,12 @@ static int mk_word(unsigned char* str)
 	return( u.ret );
 }
 
+unsigned long get_xaddr(PUARTBUF buf)
+{ // word-addressable 3-byte instructions
+	return( (((unsigned long)buf->xaddr << 16)
+			 + buf->prog.p.addr)/2 );
+}
+
 void hex_command(PUARTBUF buf)
 { // Upload and program hex-files
 	int n, sum, dec, bin;
@@ -33,20 +43,20 @@ void hex_command(PUARTBUF buf)
 		// Wait the end of programming
 		if (buf->prog.p.pos > 0) break;
 
-		hex_init(buf); // Reset state (invalid)
+		buf->prog.p.pos = -1; // Set invalid state
 
 		// ':00000001FF' - min of string length (odd)
 		if ((buf->pos < 11) || !(buf->pos & 1)) break;
 
 		for (bin = 0, sum = 0, n = 1; n < buf->pos; n++)
 		{ // Move data from RxD buffer to PROG structure
+			if (n == 2*sizeof(PROG)) { sum = -1;  break; }
 			if ((dec = hex2dec(buf->rxd[n])) < 0) break;
 
 			if (n & 1) bin = dec << 4;
 			else { // Byte is read
-				if (n == 2*sizeof(PROG)) break;
 				bin += dec; sum += bin;
-				buf->prog.b[n/2] = bin;
+				buf->prog.b[n>>1] = bin;
 			}
 		}
 
@@ -60,7 +70,7 @@ void hex_command(PUARTBUF buf)
 		// Switch command
 		if (buf->prog.p.type == 1)
 		{ // the end of the file
-
+			hex_init(buf); // Reset all
 		} else if (buf->prog.p.type == 4)
 		{ // extended address
 			if (buf->prog.p.cb != 2) break;
