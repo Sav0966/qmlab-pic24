@@ -26,7 +26,7 @@ typedef struct tagUARTBUF {
 	} prog;
 
 	unsigned int xaddr; // extended address
-	unsigned int page; // current page
+	unsigned long page; // current page
 
 	unsigned char nrx;	// received bytes
 	unsigned char ntx;	// transmitted bites
@@ -46,8 +46,6 @@ void trm_command(PUARTBUF buf); // trmcmd.c
 
 void hex_init(PUARTBUF buf); // hexcmd.c
 void hex_command(PUARTBUF buf);
-int mk_word(unsigned char* str);
-int hex2dec(int hex);
 unsigned long get_xaddr(PUARTBUF buf);
 
 #endif /*_MAIN_INCL_*/

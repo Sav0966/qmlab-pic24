@@ -3,14 +3,19 @@
 */
 #include <pm.h>
 
+extern __attribute__((space(prog))) int _resetPRI;
+
+static _prog_addressT _and(_prog_addressT addr, unsigned long l)
+{ return(addr & l); }
+
 _prog_addressT _user_addr(_prog_addressT addr) /* Even */
-{ return(addr & 0x7FFFFE); } /* address in user memory */
+{ return(_and(addr, 0x7FFFFE)); } /* address in user memory */
 
 _prog_addressT _page_addr(_prog_addressT addr) /* First */
-{ return(addr & 0x7FFC00); } /* address of program page */
+{ return(_and(addr, 0x7FFC00)); } /* address of program page */
 
 _prog_addressT _row_addr(_prog_addressT addr) /* First */
-{ return(addr & 0x7FFF80); } /* address of program row */
+{ return(_and(addr, 0x7FFF80)); } /* address of program row */
 
 _prog_addressT pm_read_row(_prog_addressT addr, void *buf)
 { return(_memcpy_p2d24(buf, _row_addr(addr), PM_ROW_SIZE)); }
@@ -46,9 +51,9 @@ _prog_addressT addr, long data, char mode)
 
 	if (mode) _write_flash_word24(addr, data); /* LWHB */
 	else _write_flash_word16(addr, (int)data);  /* LW */
-	__asm__ volatile( /* _flash_helpers doesn't wait */
-	"btsc	NVMCON, #15	\n" /* We wait for it to be */
-	"bra	$-2			"); /* completed (WR == 0) */
+//	__asm__ volatile( /* _flash_helpers doesn't wait */
+//	"btsc	NVMCON, #15	\n" /* We wait for it to be */
+//	"bra	$-2			"); /* completed (WR == 0) */
 
 	/* Return next address if no error */
 	return(NVMCONbits.WRERR? 0: addr + 2);
@@ -62,9 +67,11 @@ _prog_addressT pm_write_word(_prog_addressT addr, int data)
 
 static int is_valid(_prog_addressT page)
 {
-	_prog_addressT end_page; /* Can't erase or write itself */
+	/* Can't erase or write itself */
+	_prog_addressT end_page, rst_page;
 	end_page = _page_addr(__builtin_tbladdress(&_PROGRAM_END));
-	return((page > end_page)? 1: 0);
+	rst_page = _page_addr(__builtin_tbladdress(&_resetPRI));
+	return((page > end_page)? 1: ((page < rst_page)? 1: 0));
 }
 
 _prog_addressT pm_erase_page(_prog_addressT addr)
@@ -73,9 +80,9 @@ _prog_addressT pm_erase_page(_prog_addressT addr)
 	if (!is_valid(addr)) return(0); /* Can't erase itself */
 
 	_erase_flash(addr); /* Erase a page of program memory */
-	__asm__ volatile( /* _flash_helpers doesn't wait */
-	"btsc	NVMCON, #15	\n" /* We wait for it to be */
-	"bra	$-2			"); /* completed (WR == 0) */
+//	__asm__ volatile( /* _flash_helpers doesn't wait */
+//	"btsc	NVMCON, #15	\n" /* We wait for it to be */
+//	"bra	$-2			"); /* completed (WR == 0) */
 
 	/* Check error, return next page address if no */
 	return(NVMCONbits.WRERR? 0: addr + 2*_FLASH_PAGE);
@@ -101,9 +108,9 @@ _prog_addressT pm_write_row(_prog_addressT addr, void *buf)
 
 	copy_buf((char*)lbuf, (char*)buf, _FLASH_ROW); /* Prepare */
 	_write_flash24(addr, lbuf);  /* for library page writing */
-	__asm__ volatile( /* _flash_helpers doesn't wait */
-	"btsc	NVMCON, #15	\n" /* We wait for it to be */
-	"bra	$-2			"); /* completed (WR == 0) */
+//	__asm__ volatile( /* _flash_helpers doesn't wait */
+//	"btsc	NVMCON, #15	\n" /* We wait for it to be */
+//	"bra	$-2			"); /* completed (WR == 0) */
 
 	/* Check error, return next row address if no */
 	return(NVMCONbits.WRERR? 0: addr + 2*_FLASH_ROW);
