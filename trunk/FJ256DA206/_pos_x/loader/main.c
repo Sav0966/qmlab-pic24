@@ -8,7 +8,7 @@ extern __attribute__((space(prog))) int _resetPRI;
 
 int main(void)
 {
-	_prog_addressT rst_addr;
+	unsigned long addr;
 	/* volatile */ UARTBUF buf;
 
 	pins_init(); // Initialize MCU pins first
@@ -25,7 +25,7 @@ int main(void)
 
 	uart_init(&buf); // Initialize UART
 	hex_init(&buf); // Set invalid state
-	rst_addr = __builtin_tbladdress(&_resetPRI);
+	addr = __builtin_tbladdress(&_resetPRI);
 
 	for(;;) { // Main loop
 
@@ -34,7 +34,7 @@ int main(void)
 		if (UART_IS_ERFLAG(UART_USED)) uart_er(&buf);
 		if (UART_IS_TXFLAG(UART_USED)) uart_tx(&buf);
 
-		// Overrun receiver buffer
+		// Overrun receiver buffer - set error
 		if (buf.nrx >= RXBUF_SIZE) ++buf.err;
 
 		// On any error - reset UART
@@ -63,8 +63,18 @@ int main(void)
 		else if (buf.rxd[0] == ':') hex_command(&buf);
 		else ++buf.err;  // Translate command
 
+		if (buf.err == 0)
 		if (buf.prog.p.type == 0) {
+			addr = get_xaddr(&buf); // Check address
+			if ((addr >= (unsigned long)&_resetPRI) ||
+				((addr == 0) && (buf.prog.p.cb < 8))) ++buf.err;
+			else if (addr == 0)
+			{ // Change reset instruction
+			}
+			
+			if (buf.err == 0) {
 
+			}
 		}
 
 		// On any error - reset UART and start again
