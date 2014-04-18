@@ -133,8 +133,17 @@ int main(void)
 			}
 		} // Programm
 
-		if (buf.err == 0) { /* Answer ER  */ }
-		else { /* Answer OK	*/ }
+		if (buf.err == 0) // Answer OK
+		{ buf.txd[0] = 'O'; buf.txd[1] = 'K'; }
+		else // Answer ER
+		{ buf.txd[0] = 'E'; buf.txd[1] = 'R'; }
+
+		buf.txd[2] = buf.rxd[buf.pos]; buf.ntx = 3;
+
+		if (buf.txd[2] == '\r') // for '\r\n' terminator
+		{ buf.txd[3] = buf.rxd[buf.pos+1]; buf.ntx = 4; }
+
+		UART_SET_TXFLAG(UART_USED); // Start transmition
 
 		buf.nrx = 0; buf.pos = 0; // Reset RX buffer
 
