@@ -24,7 +24,7 @@ void uart_init(PUARTBUF buf)
 	UBRG(UART_USED) = FCY2BRG(FCY2, 9600);  // 9600 baud rate
 
 	buf->nrx = 0; // Clear buffers
-	buf->ntx = 0; buf->err = 0; buf->pos = 0;
+	buf->ntx = 0; buf->tsiz = 0; buf->err = 0; buf->pos = 0;
 
 	UART_CLR_RXFLAG(UART_USED); UART_CLR_TXFLAG(UART_USED);
 	UART_CLR_ERFLAG(UART_USED);	// Clear interrupt flags
@@ -97,11 +97,16 @@ void uart_tx(PUARTBUF buf)
 	// First clear interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-	while (buf->ntx != 0) {
+	while (buf->ntx < buf->tsiz) {
 	 // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			ch = buf->txd[buf->ntx--];
+			ch = buf->txd[buf->ntx++];
 			UART_WRITE(UART_USED, ch);
 		} else break; // FIFO is full
+	}
+
+	if (buf->ntx >= buf->tsiz)
+	{ // That's all
+		buf->ntx = 0; buf->tsiz = 0;
 	}
 }

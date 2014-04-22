@@ -30,6 +30,7 @@ typedef struct tagUARTBUF {
 
 	unsigned char nrx;	// received bytes
 	unsigned char ntx;	// transmitted bites
+	unsigned char tsiz;	// transmittion size
 	unsigned char err;	// error counter
 	unsigned char pos;	// current position
 

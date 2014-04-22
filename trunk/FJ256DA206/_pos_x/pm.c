@@ -47,13 +47,14 @@ static _prog_addressT write_helper(
 _prog_addressT addr, long data, char mode)
 {
 	addr = _user_addr(addr);
-	if (pm_read_pword(addr) > 0) return(0); /* Not clear */
-
-	if (mode) _write_flash_word24(addr, data); /* LWHB */
-	else _write_flash_word16(addr, (int)data);  /* LW */
-//	__asm__ volatile( /* _flash_helpers doesn't wait */
-//	"btsc	NVMCON, #15	\n" /* We wait for it to be */
-//	"bra	$-2			"); /* completed (WR == 0) */
+	if (pm_read_pword(addr) < 0)
+	{ // Cell is clear - write a new data
+		if (mode) _write_flash_word24(addr, data); /* LWHB */
+		else _write_flash_word16(addr, (int)data);  /* LW */
+	//	__asm__ volatile( /* _flash_helpers doesn't wait */
+	//	"btsc	NVMCON, #15	\n" /* We wait for it to be */
+	//	"bra	$-2			"); /* completed (WR == 0) */
+	} else if (pm_read_pword(addr) != data ) return(0);
 
 	/* Return next address if no error */
 	return(NVMCONbits.WRERR? 0: addr + 2);
