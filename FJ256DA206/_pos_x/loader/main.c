@@ -42,6 +42,7 @@ int main(void)
 	hex_init(&buf); // Set invalid state
 
 	for(;;) { // Main loop
+		__asm__ volatile ("CLRWDT\n"); // Reset WDT
 
 		// Check UART events:
 		if (UART_IS_RXFLAG(UART_USED)) uart_rx(&buf);
@@ -89,7 +90,9 @@ int main(void)
 			if (_page_addr(addr.l) <= get_xaddr(&buf))
 			{
 				++buf.err; // Check address value
-			} else {
+			}
+			else
+			{
 				if (get_xaddr(&buf) == 0) {
 					if (buf.prog.p.cb < 8) ++buf.err;
 					else { // Change reset vector
@@ -119,6 +122,9 @@ int main(void)
 					if (!pm_erase_page(buf.page)) ++buf.err;
 				}
 			}
+			else if (addr.l >= // Don't erase last page
+					_user_addr(__builtin_tbladdress(&_CONFIG4)))
+					--buf.err; // Check config words later
 
 			if (buf.err == 0)
 			{ // Write current block of data
@@ -138,16 +144,16 @@ int main(void)
 		else // Answer ER
 		{ buf.txd[0] = 'E'; buf.txd[1] = 'R'; }
 
-		buf.txd[2] = buf.rxd[buf.pos]; buf.ntx = 3;
+		buf.err = 0; // Clear error
+		buf.txd[2] = buf.rxd[buf.pos]; buf.tsiz = 3;
 
 		if (buf.txd[2] == '\r') // for '\r\n' terminator
-		{ buf.txd[3] = buf.rxd[buf.pos+1]; buf.ntx = 4; }
+		{ buf.txd[3] = buf.rxd[buf.pos+1]; buf.tsiz = 4; }
 
+		buf.ntx = 0;
 		UART_SET_TXFLAG(UART_USED); // Start transmition
 
 		buf.nrx = 0; buf.pos = 0; // Reset RX buffer
-
-		__asm__ volatile ("CLRWDT\n"); // Reset WDT
 	} // Main loop
 
 	return(0); /* Never return */
