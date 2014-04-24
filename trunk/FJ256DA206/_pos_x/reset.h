@@ -49,7 +49,7 @@ unsigned int get_reset_state(void);
 void do_reset(unsigned int uParam);
 
 void clr_reset_state(void); /* Reset RCON=POR and uParam=0 only */
-#define clr_reset_state() {RCON = 3; get_reset_state();} (void) 0;
+#define clr_reset_state() {RCON = 3; get_reset_state();} ((void)0)
 /*
 *	RCON register bit mask definitions
 */

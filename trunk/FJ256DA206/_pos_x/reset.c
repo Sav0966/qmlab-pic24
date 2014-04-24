@@ -4,11 +4,11 @@
 */
 #include <reset.h>
 
-static unsigned int __attribute__((persistent)) reset_state;
+unsigned int __attribute__((persistent)) __reset_state;
 
 void do_reset(unsigned int uParam)
 {
-	reset_state = uParam; /* Save unused RCON bits */
+	__reset_state = uParam; /* Save unused RCON bits */
 	__asm__ volatile ("reset");
 }
 /*
@@ -37,10 +37,10 @@ void __attribute__((user_init)) reset_init(void)
 	/* at power-on reset. Clear it as minor bit */
 
 	/* Initialize reset_state value only at POR or BOR */
-	if ((RCON & (RCON_POR|RCON_BOR)) != 0) reset_state = 0;
+	if ((RCON & (RCON_POR|RCON_BOR)) != 0) __reset_state = 0;
 
-	reset_state &= RCON_UNUSED; /* Clear all except uParam */
-	reset_state |= RCON & RCON_BITS; /* Save all used bits */
+	__reset_state &= RCON_UNUSED; /* Clear all except uParam */
+	__reset_state |= RCON & RCON_BITS; /* Save all used bits */
 	RCON &= ~RCON_STATUS; /* Then clear all status bits */
 }
 
@@ -50,5 +50,5 @@ unsigned int get_reset_state(void)
 	/* before reset_init() has been called, or after */
 	/* Idle or Sleep mode has been selected - reinit */
 	if ((RCON & RCON_STATUS) != 0) reset_init();
-	return(reset_state);
+	return(__reset_state);
 }
