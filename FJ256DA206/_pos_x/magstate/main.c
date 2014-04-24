@@ -26,6 +26,12 @@ static void power_on_init(void)
 	clr_reset_state();		// Needed for MCLR
 }
 
+static void on_idle(void)
+{
+
+	__asm__ volatile ("pwrsav	#1"); // Idle mode
+}
+
 int main(void)
 {
 	while (!IS_MCU_PROGRAMMED()); // Stay here
@@ -48,7 +54,7 @@ int main(void)
 
 	for(;;) { // Main loop
 
-		__asm__ volatile ("pwrsav	#1"); // Idle mode
+		on_idle(); // Idle loop
 	} // Main loop
 
 	return(0); // Never return

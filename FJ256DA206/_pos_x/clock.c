@@ -18,22 +18,35 @@
 #define PR_CORR ((unsigned int)\
 (FCY /* *(CORR_TIM/16) */ - CORR_CLK * PR_PERT(CLK_TIM)))
 
-static volatile long sys_time; // System time and
-static volatile int sys_pph; // its hundredth part
-static volatile int _sys_clock; // System clock
+static volatile SYSTIME _sys_time;	// System time and
+static volatile int _sys_clock;		// System clock
 
 int sys_clock(void) { return(_sys_clock); }
 
+long sys_time(PSYSTIME ptim)
+{
+	SYSTIME tim;
+
+	{	TIMER_DISABLE_INT(SYS_TIMER);
+		tim = _sys_time;
+		TIMER_ENABLE_INT(SYS_TIMER); }
+
+	if (ptim) *ptim = tim;
+	return( tim.time );
+}
+
 void TIMER_INTFUNC(SYS_TIMER, no_auto_psv)(void)
 {
-	TIMER_SET_PR(SYS_TIMER, PR_START); // Restore period register
+	TIMER_CLR_FLAG(1);
+	// Restore period register
+	TIMER_SET_PR(SYS_TIMER, PR_START);
 
 	++_sys_clock;
 
-	if (++sys_pph == 100)
+	if (++_sys_time.pph == 100)
 	{
-		sys_pph = 0;
-		if (!(++sys_time & 0x000F))
+		_sys_time.pph = 0;
+		if (!(++_sys_time.time & 0x000F))
 		{	// Once per 16 seccond:
 			// Doing correction of period register
 			__asm__ volatile ("mov #%0, W0\n add PR1"
@@ -45,20 +58,17 @@ void TIMER_INTFUNC(SYS_TIMER, no_auto_psv)(void)
 				"	btg LATB, #15 ; Toggle latch REFO\n");
 		}
 	}
-
-	TIMER_CLR_FLAG(1);
 }
 
-void clock_done(void) { TIMER_PWOFF(1); }
+void clock_done(void) { TIMER_PWOFF(SYS_TIMER); }
 
 int clock_init(long time)
 {
 	clock_done(); // Disable all
-	sys_time = time; sys_pph = 0; // Set time, pph = 0
-
-	// Init Timer1 (Fcy/16 = 2 MHz) whith 10 ms period
+	_sys_time.time = time; _sys_time.pph = 0; // time
+	// Init Timer (Fcy/16 = 2 MHz) whith 10 ms period
 	TIMER_INIT(SYS_TIMER, T_MODE_INT|T_PS_8, PR_START, SYSCLK_IPL);
-	TIMER_ON(SYS_TIMER); // Run Timer1
+	TIMER_ON(SYS_TIMER); // Run Timer
 
 	return 0;
 }
