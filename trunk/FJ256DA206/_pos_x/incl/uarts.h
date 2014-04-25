@@ -55,6 +55,7 @@
 #define UART_SET_LPBACK(n)	UMODEbits(n).LPBACK = 1
 #define UART_CLR_LPBACK(n)	UMODEbits(n).LPBACK = 0
 #define UART_IS_LPBACK(n)	(UMODEbits(n).LPBACK == 1)
+#define U_LPBACK	0x0040 // Loopback Mode Select bit
 
 // Auto Baud Mode. Enable baud rate measurement on the
 // next character – requires reception of a Sync field
@@ -215,10 +216,95 @@ USTA(n) = (USTA(n) & ~(U_TXI_END | U_TXI_EMPTY)) | txi
 #define UART_SET_ERFLAG(n)	_UERIF(n) = 1
 #define UART_IS_ERFLAG(n)	(_UERIF(n) != 0)
 /*
+*	Template of UART Interrupt Service Routines
+*/
+#define _UART_INTFUNC(n, isr, attr) /* isr - RX, TX and Err */\
+__attribute__((__interrupt__, attr)) _U##n##isr##Interrupt
+#define UART_INTFUNC(n, isr, attr) _UART_INTFUNC(n, isr, attr)
+/*
 * Power management of UART module (PMDx.UnMD bit)
 */
 #define __UMD(n)		_U##n##MD
 #define _UMD(n)			__UMD(n)
+/*
+*	~SHDN and ~INVALID pins of RS-232 driver
+*/
+#define _UART_IS_VALID(n)	1 /* Always valid */
+#define _UART_WAKEUP(n)		_U##n##_SHDN = 1
+#define _UART_SHDN(n)		_U##n##_SHDN = 0
+
+#define UART_IS_VALID(n)	_UART_IS_VALID(n)
+#define UART_WAKEUP(n)		_UART_WAKEUP(n)
+#define UART_SHDN(n)		_UART_SHDN(n)
+/*
+* UART Initialization
+*
+* n - UART number (1 - 4)
+* mode - UART mode ([U_EN] | [U_PARITYx] | [U_RTSx]|[...])
+* sta - UART status ([U_TXEN] | [U_TXIx]|[U_RXIx]|[...])
+* brg - BRG register value (use FCY2BRG(FCY2, baud_rate))
+* ipl - interrupt priority levels, if <= 0 - no unterrupt
+*/
+#define _UART_INIT(n, mode, sta, brg, ipl) {\
+	UART_DISABLE_TXINT(n); /* Disable UART interrupts */\
+	UART_DISABLE_RXINT(n); UART_DISABLE_ERINT(n);\
+\
+	if (UART_IS_VALID(n)) {/* Valid input levels */\
+		_UMD(n) = 0;	/* Power on UART module */\
+		UART_WAKEUP(n); /* Wake-up RS-232 Driver */\
+\
+		/* Setup mode (UART disabled). Setup control */\
+		/* bits, clear FIFO buffers and receiver errors */\
+		UMODE(n) = (mode)&~UART_EN; USTA(n) = (sta)&~U_TXEN;\
+		UBRG(n) = brg; /* Write appropriate baud rate value */\
+\
+		/* Clear all interrupt status flags (Rx, Tx and Error */\
+		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
+\
+		if (ipl > 0) {\
+			UART_SET_RXIPL(n, ipl); /* Receive IPL */\
+			UART_SET_ERIPL(n, ipl); /* Set the same */\
+			UART_ENABLE_ERINT(n); /* Enable interrupt */\
+			UART_ENABLE_RXINT(n); /* Enable interrupt */\
+\
+			UART_SET_TXIPL(n, ipl); /* Transmit IPL */\
+			UART_ENABLE_TXINT(n); /* Enable interrupt */\
+		}\
+\
+		if ((mode) & UART_EN) { /* If it is set in 'mode' */\
+			UMODEbits(n).UARTEN = 1;	/* Enable module */\
+			/* The UTXEN bit should not be set until the */\
+			/* UARTEN bit has been set; otherwise, UART */\
+			/* transmissions will  not be enabled. */\
+			/* Enable Transmitter if it's needed */\
+			if ((sta) & U_TXEN) UART_ENABLE_TX(n);\
+\
+			/* Uart TX interrupt may be called */\
+		}\
+\
+	} /* UART_IS_VALID() */\
+} ((void)0)
+
+#define _UART_IS_INIT(n) /* Powered & Enabled */\
+((_UMD(n) == 0) && (UMODEbits(n).UARTEN != 0))
+
+#define _UART_DONE(n)\
+	UART_DISABLE_TXINT(n); /* Disable interrupts */\
+	UART_DISABLE_RXINT(n); UART_DISABLE_ERINT(n);\
+	UMODEbits(n).UARTEN = 0; /* Disable module */\
+	/* Clear all interrupt status flags (Rx, Tx and Error */\
+	UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n)
+
+#define _UART_PWOFF(n)\
+	UART_DONE(n); /* Disable UART and interrupt */\
+	UART_SHDN(n); /* Shutdown RS-232 Driver */\
+	_UMD(n) = 1 /* Power off UART module */
+
+#define UART_INIT(n, mode, sta, brg, ipl)\
+		_UART_INIT(n, mode, sta, brg, ipl)
+#define UART_IS_INIT(n) _UART_IS_INIT(n)
+#define UART_DONE(n) _UART_DONE(n)
+#define UART_PWOFF(n) _UART_PWOFF(n)
 /*
 *	Public and protected module names
 */
