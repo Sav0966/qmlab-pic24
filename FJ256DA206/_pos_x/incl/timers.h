@@ -89,7 +89,7 @@ __attribute__((__interrupt__, attr)) _T##timer##Interrupt
 * ipl - interrupt priority level, if <= 0 - no unterrupt
 * n - the value of timer period register
 */
-#define TIMER_INIT(timer, mode, n, ipl) {\
+#define _TIMER_INIT(timer, mode, n, ipl) {\
 	TIMER_DISABLE_INT(timer); /* Disable interrupt */\
 \
 	_TMD(timer) = 0;		/* Power on Timer module */\
@@ -106,15 +106,19 @@ __attribute__((__interrupt__, attr)) _T##timer##Interrupt
 	TCON(timer) = mode; /* Setup Timer mode */\
 } ((void)0)
 
-#define TIMER_DONE(timer)\
+#define _TIMER_DONE(timer)\
 	TIMER_DISABLE_INT(timer);	/* Disable the interrupt */\
 	TIMER_OFF(timer);					/* Disable timer */\
 	TIMER_CLR_FLAG(timer)	/* Clear Timer interrupt flag */
 
-
-#define TIMER_PWOFF(timer)\
+#define _TIMER_PWOFF(timer)\
 	TIMER_DONE(timer);	/* Disable timer and interrupt */\
 	_TMD(timer) = 1 /* Disable module to energy saving */
+
+#define TIMER_INIT(timer, mode, n, ipl)\
+		_TIMER_INIT(timer, mode, n, ipl)
+#define TIMER_DONE(timer) _TIMER_DONE(timer)
+#define TIMER_PWOFF(timer) _TIMER_PWOFF(timer)
 /*
 *	Public and protected modele names
 */
