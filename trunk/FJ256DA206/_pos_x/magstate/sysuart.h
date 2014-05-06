@@ -19,7 +19,6 @@ int sysu_rxcount(void);
 int sysu_txcount(void);
 void sysu_rxpurge(void);
 void sysu_txpurge(void);
-
 #define sysu_rxfull() (sysu_rxcount() == sysu_rxsize())
 #define sysu_txfull() (sysu_txcount() == sysu_txsize())
 
