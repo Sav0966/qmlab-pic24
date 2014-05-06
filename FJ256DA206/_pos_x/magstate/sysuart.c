@@ -68,11 +68,12 @@ void UART_INTFUNC(UART_USED, TX, no_auto_psv)(void)
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
-//	switch (QUEBUF_LEN(TXB)) {
-//		case 0: i = U_TXI_END; break;
-//		case 1: i = U_TXI_READY; break;
-//		default: i = U_TXI_EMPTY; // We'll fill FIFO
-//	} UART_SET_TXI(UART_USED, i);
+	switch (QUEBUF_LEN(TXB)) {
+		case 0:  UART_SET_TXI(UART_USED, U_TXI_END); break;
+		case 1:  UART_SET_TXI(UART_USED, U_TXI_READY); break;
+		default: UART_SET_TXI(UART_USED, U_TXI_EMPTY);
+			break; // We'll fill FIFO in this case
+	}
 
 	while (!QUEBUF_EMPTY(TXB))
 	{ // Load TX queue and fill TX FIFO
@@ -135,40 +136,24 @@ void UART_INTFUNC(UART_USED, Err, no_auto_psv)(void)
 	// Clear Interrupt flag
 	UART_CLR_ERFLAG(UART_USED);
 
-	while (UART_IS_RXERR(UART_USED)) {
-		if (UART_IS_OERR(UART_USED)) {
-			// Rx FIFO Buffer overrun error:
-//			while (!QUEBUF_FULL(RXB)) { // Try to store
-//				if (UART_CAN_READ(UART_USED)) { // RX FIFO
-//					QUEBUF_IPUSH(RXB, UART_READ8(UART_USED));
-//				} else break;
-//			}
+	if (UART_IS_OERR(UART_USED))
+	{ // Overrun FIFO
+		UART_CLR_OERR(UART_USED); // Clear FIFO and OERR
+		// No errors at this point (FIFO is empty)
+	}
+	else
+	{ // Frame or parity error - dummy read
+		int i = UART_READ9(UART_USED);
+		if (UART_IS_FERR(UART_USED) && (i == 0))
+		{	// Break character is received:
+			__asm__("nop"); // TODO: AutoBaud
+			__asm__("nop"); //    Mode can be
+			__asm__("nop"); //    started here
+		} // Break condition
+	}
 
-			// Clear FIFO and OERR
-			UART_CLR_OERR(UART_USED);
-
-			// No errors at this point (FIFO is empty)
-
-		} else {
-			if (UART_IS_FERR(UART_USED)) {
-				// Frame error at the top of FIFO:
-				// Read Data and check Break codition
-				if (0 == UART_READ9(UART_USED)) {
-					// Break character is received:
-					__asm__("nop"); // TODO: AutoBaud
-					__asm__("nop"); // Mode can be started
-					__asm__("nop"); // in this section
-	 			}	
-			} else /* if (UART_IS_PERR(UART_USED)) */ {
-				// Parity error at the top of FIFO:
-				// Read the byte from the top of FIFO
-				UART_READ9(UART_USED);  // Dummy read
-			}
-		}
-
-		// Calculate errors
-		++U_(UART_USED, rxerr);
-	} //  while (UART_IS_ERR(UART_USED))
+	// Calculate errors
+	++U_(UART_USED, rxerr);
 
 	if (UART_CAN_READ(UART_USED)) // There is any bytes to read
 		UART_SET_RXFLAG(UART_USED); // Set interrupt flag only
