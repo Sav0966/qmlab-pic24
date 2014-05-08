@@ -331,7 +331,7 @@ __attribute__((__interrupt__, attr)) _U##n##isr##Interrupt
 
 #define uart_write(n, buf, len)		_UART_WRITE(n)(buf, len)
 #define uart_read(n, buf, len)		_UART_READ(n)(buf, len)
-#define uart_putc(c, n)				_UART_PUTC(n)(c)
+#define uart_putc(n, c)				_UART_PUTC(n)(c)
 #define uart_getc(n)				_UART_GETC(n)()
 
 #endif /*_UART_INCL_*/

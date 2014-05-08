@@ -21,13 +21,13 @@
 */
 #define MAIN_IPL	0	// Main loop
 #define SYSCLK_IPL	1	// System timer
-#define RTC_IPL		1	// RTC interface
-#define SD_IPL		2	// SD card SPI
-#define FL_IPL		2	// Flash SPI
-#define UART_IPL	1	// System COM
-#define GPS_IPL		1	// GPS module COM
-#define PPS_IPL		3	// PPS signal
-#define PWG_IPL		4	// Power Good
+#define RTC_IPL		2	// RTC interface
+#define UART_IPL	3	// System COM
+#define GPS_IPL		3	// GPS module COM
+#define SD_IPL		4	// SD card SPI
+#define FL_IPL		4	// Flash SPI
+#define PPS_IPL		6	// PPS signal
+#define PWG_IPL		7	// Power Good
 /*
 * System modules
 */

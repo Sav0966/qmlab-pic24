@@ -1,21 +1,6 @@
 #ifndef _BUFFER_INCL_
 #define _BUFFER_INCL_
 
-// Thread synchronization
-#ifndef DISABLE_INTERRUPT
-// 0-6 int level disabling
-#define DISABLE_INTERRUPT()\
-	{	register int _disicnt_to_save = DISICNT;\
-		__asm__ volatile ("disi #0x3FFF")
-
-#define ENABLE_INTERRUPT() DISICNT = _disicnt_to_save; } ((void)0)
-
-#define INTERLOCKED(f) DISABLE_INTERRUPT(); f; ENABLE_INTERRUPT()
-#endif // DISABLE_INTERRUPT
-
-// Queue template (one thread can enqueues, another - dequeues)
-// The queue is implemented as an array of needed type of elements
-
 #define _QUEBUF(id, size)\
  que_##id##_buf[size] __attribute__((noload));\
  static struct {\
@@ -35,15 +20,11 @@
 #define _QUEBUF_LEN(id)			((int)que_##id.len)
 #define _QUEBUF_FRONTREF(id)	(*que_##id.front)
 
-#define _QUEBUF_MOVEFD(id) /* Not locked, only one thread can dequeue */\
+#define _QUEBUF_MOVEFD(id)\
  if (++que_##id.front == _QUEBUF_END(id)) que_##id.front = que_##id##_buf
 
-#define _QUEBUF_MOVEBK(id) /* Not locked, only one thread can enqueue */\
+#define _QUEBUF_MOVEBK(id)\
  if (++que_##id.back == _QUEBUF_END(id)) que_##id.back = que_##id##_buf
-
-// Locked, any thread can change length of the buffer
-#define _QUEBUF_DEC_LEN(id) INTERLOCKED(--que_##id.len)
-#define _QUEBUF_INC_LEN(id) INTERLOCKED(++que_##id.len)
 
 // First element at the front of the queue
 #define QUEBUF_FRONTREF(id)	_QUEBUF_FRONTREF(id)
@@ -61,33 +42,23 @@
 #define QUEBUF_EMPTY(id)	(QUEBUF_LEN(id) == 0)
 #define QUEBUF_FULL(id)		(QUEBUF_LEN(id) == QUEBUF_SIZE(id))
 
-#define QUEBUF_POP(id)\
-	QUEBUF_FRONT(id); /* Removes an element from the front of the queue */\
-	if (!QUEBUF_EMPTY(id)) {_QUEBUF_DEC_LEN(id); _QUEBUF_MOVEFD(id);}
+// Removes an element from the front of the queue
+#define __QUEBUF_POP(id, ref) {\
+	ref = QUEBUF_FRONT(id);\
+	--que_##id.len; _QUEBUF_MOVEFD(id); } ((void)0)
 
-#define _QUEBUF_IPOP(id)\
-	QUEBUF_FRONT(id); /* Not blocked - can be called in ISR only */\
-	if (!QUEBUF_EMPTY(id)) {--que_##id.len; _QUEBUF_MOVEFD(id);}
-#define QUEBUF_IPOP(id)	_QUEBUF_IPOP(id)
+#define _QUEBUF_POP(id, ref)	__QUEBUF_POP(id, ref)
+#define QUEBUF_POP(id, ref)	if (!QUEBUF_EMPTY(id)) _QUEBUF_POP(id, ref)
 
-#define _QUEBUF_PUSH(id, val) if (!QUEBUF_FULL(id))\
-	{ /* Adds an element to the back of the queue */\
-		*que_##id.back = (_QUEBUF_TYPE(id))(val); \
-		_QUEBUF_INC_LEN(id); _QUEBUF_MOVEBK(id); }
-#define QUEBUF_PUSH(id, val)	_QUEBUF_PUSH(id, val)
-
-#define _QUEBUF_IPUSH(id, val)	if (!QUEBUF_FULL(id))\
-	{ /* Not blocked - can be called in ISR only */\
+// Adds an element to the back of the queue
+#define __QUEBUF_PUSH(id, val) {\
 		*que_##id.back = (_QUEBUF_TYPE(id))(val);\
-		++que_##id.len; _QUEBUF_MOVEBK(id); }
-#define QUEBUF_IPUSH(id, val)	_QUEBUF_IPUSH(id, val)
+		++que_##id.len; _QUEBUF_MOVEBK(id); } ((void)0)
 
-// Reset queue to Empty state (must be called from dequeue thread)
-#define QUEBUF_RESET(id) while (!QUEBUF_EMPTY(id)) QUEBUF_POP(id)
+#define _QUEBUF_PUSH(id, val)	__QUEBUF_PUSH(id, val)
+#define QUEBUF_PUSH(id, val) if (!QUEBUF_FULL(id)) _QUEBUF_PUSH(id, val)
 
-// Don't reset 'len' & 'back' directly if you don't sure with your right
-#define __QUEBUF_INIT(id) que_##id.back = que_##id.front; que_##id.len = 0
-#define _QUEBUF_INIT(id) __QUEBUF_INIT(id) /* Not locked function */
-#define QUEBUF_INIT(id)  INTERLOCKED(_QUEBUF_INIT(id)) /* Locked */
+#define _QUEBUF_INIT(id) que_##id.back = que_##id.front; que_##id.len = 0
+#define QUEBUF_INIT(id) _QUEBUF_INIT(id)
 
 #endif /*_BUFFER_INCL_*/

@@ -1,7 +1,7 @@
 #include <p24Fxxxx.h>
 #include <config.h>
 #include <buffer.h>
-#include <_tools.h>
+#include <uarts.h>
 
 #include "sysuart.h"
 
@@ -23,8 +23,8 @@ void sysu_done(void) { UART_PWOFF(UART_USED); }
 
 int sysu_init(void)
 {
-	sysu_done(); // clear buffers
-	sysu_txpurge(); sysu_rxpurge();
+	sysu_done(); // Disable all
+	QUEBUF_INIT(RXB); QUEBUF_INIT(TXB);
 	U_(UART_USED, rxerr) = 0;
 
 	UART_INIT(UART_USED, // Try to initialize UART
@@ -44,9 +44,11 @@ int sysu_init(void)
 //
 // Transmitter section
 //
+#ifdef INTERLOCKED
 #undef INTERLOCKED
+#endif
 #define INTERLOCKED(f)	UART_DISABLE_TXINT(UART_USED);\
-						f; UART_ENABLE_TXINT(UART_USED)
+						{f} UART_ENABLE_TXINT(UART_USED);
 
 int sysu_txsize(void) { return(QUEBUF_SIZE(TXB)); }
 
@@ -54,31 +56,62 @@ int sysu_txcount(void) { return(QUEBUF_LEN(TXB)); }
 
 void sysu_txpurge(void)
 { // Reset TX queue and TX FIFO
-	QUEBUF_INIT(TXB); // Clear buffer (locked)
+	INTERLOCKED
+	(
+		QUEBUF_INIT(TXB); // Clear buffer
+		if (UART_IS_ENABLE_TX(UART_USED)) { // Clear FIFO
+			UART_DISABLE_TX(UART_USED); // Clear FIFO by TXEN = 0
+			UART_ENABLE_TX(UART_USED); } // Then restore TXEN
+	)
+}
 
-	if (UART_IS_ENABLE_TX(UART_USED)) { // Clear FIFO if needed 
-		UART_DISABLE_TX(UART_USED); // Clear FIFO by TXEN = 0
-		UART_ENABLE_TX(UART_USED);	// Then restore TXEN
-	}
+static int _sysu_putc(const int c)
+{
+	int i = -1;
+	INTERLOCKED
+	(
+		if (!QUEBUF_FULL(TXB))
+			_QUEBUF_PUSH(TXB, i = (unsigned char)c);
+	)
+	return(i);
+}
+
+int sysu_putc(const int c)
+{
+	int i = _sysu_putc(c);
+	if (i != -1) UART_SET_TXFLAG(UART_USED);
+	return(i);
+}
+
+int sysu_write(const char* buf, int len)
+{
+	int n;
+
+	for (n = 0; n != len; n++)
+	if (_sysu_putc((unsigned char)*buf++) == -1) break;
+
+	if (n != 0) UART_SET_TXFLAG(UART_USED);
+	return(n);
 }
 
 // Transmitter Interrupt Service Routine
 void UART_INTFUNC(UART_USED, TX, no_auto_psv)(void)
 {
+	int i;
 	// Clear Interrupt flag
 	UART_CLR_TXFLAG(UART_USED);
 
 	switch (QUEBUF_LEN(TXB)) {
-		case 0:  UART_SET_TXI(UART_USED, U_TXI_END); break;
-		case 1:  UART_SET_TXI(UART_USED, U_TXI_READY); break;
-		default: UART_SET_TXI(UART_USED, U_TXI_EMPTY);
-			break; // We'll fill FIFO in this case
-	}
+		case 0:  i = U_TXI_END; break;
+		case 1:  i = U_TXI_READY; break;
+		default: i = U_TXI_EMPTY; // We'll fill FIFO
+	} UART_SET_TXI(UART_USED, i);
 
 	while (!QUEBUF_EMPTY(TXB))
 	{ // Load TX queue and fill TX FIFO
 		if (UART_CAN_WRITE(UART_USED)) {
-			UART_WRITE(UART_USED, QUEBUF_IPOP(TXB));
+			_QUEBUF_POP(TXB, i);
+			UART_WRITE(UART_USED, i);
 		} else break; // FIFO is full
 	}
 
@@ -91,7 +124,7 @@ void UART_INTFUNC(UART_USED, TX, no_auto_psv)(void)
 //
 #undef INTERLOCKED
 #define INTERLOCKED(f)	UART_DISABLE_RXINT(UART_USED);\
-						f; UART_ENABLE_RXINT(UART_USED)
+						{f} UART_ENABLE_RXINT(UART_USED);
 
 int sysu_rxsize(void) { return(QUEBUF_SIZE(RXB)); }
 
@@ -99,11 +132,22 @@ int sysu_rxcount(void) { return(QUEBUF_LEN(RXB)); }
 
 void sysu_rxpurge(void)
 {
-	while (UART_CAN_READ(UART_USED))
-		UART_READ9(UART_USED); // Clear FIFO
+	INTERLOCKED
+	(
+		// Clear buffer, errors and FIFO
+		U_(UART_USED, rxerr) = 0; QUEBUF_INIT(RXB);
+		while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
+	)
+}
 
-	// Clear buffer and errors
-	QUEBUF_INIT(RXB); U_(UART_USED, rxerr) = 0;
+int sysu_getc(void)
+{
+	int i = -1;
+	INTERLOCKED
+	(
+		if (!QUEBUF_EMPTY(RXB)) _QUEBUF_POP(RXB, i);
+	)
+	return(i);
 }
 
 // Receiver Interrupt Service Routine
@@ -120,7 +164,7 @@ void UART_INTFUNC(UART_USED, RX, no_auto_psv)(void)
 				break; // It's not my job
 			} else { // No errors at the top of FIFO
 				// Push received bytes into RX buffer
-				QUEBUF_IPUSH(RXB, UART_READ8(UART_USED));
+				_QUEBUF_PUSH(RXB, UART_READ8(UART_USED));
 			}
 		} else break; // FIFO is empty
 	} // while (!QUEBUF_FULL(RXB))
