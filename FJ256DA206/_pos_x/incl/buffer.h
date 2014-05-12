@@ -6,7 +6,8 @@
  static struct {\
 	volatile typeof(que_##id##_buf[0])* back; /* pointer to tail */\
 	volatile typeof(que_##id##_buf[0])* front; /* pointer to head */\
-	volatile int len; } que_##id = {que_##id##_buf, que_##id##_buf, 0}
+	volatile int len; } que_##id __attribute__((near)) =\
+	{que_##id##_buf, que_##id##_buf, 0}
 
 #define QUEBUF(id, size)	_QUEBUF(id, size)
 

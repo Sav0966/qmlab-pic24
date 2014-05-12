@@ -10,6 +10,9 @@
 #define UART_RXBUF_SIZE		32
 #define UART_TXBUF_SIZE		32
 
+#define RXB		RX##UART_USED
+#define TXB		TX##UART_USED
+
 #ifndef DISPATCH
 #define DISPATCH()
 #endif
@@ -18,8 +21,11 @@
 static volatile unsigned char QUEBUF(RXB, UART_RXBUF_SIZE);
 static volatile unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
 static volatile int U_(UART_USED, rxerr) /* = 0 */;
+static volatile int U_(UART_USED, txevt) /* = 0 */;
 
 int sysu_error(void) { return(U_(UART_USED, rxerr)); }
+
+int sysu_txevt(void) { return(U_(UART_USED, txevt)); }
 
 int sysu_is_init(void) { return(UART_IS_INIT(UART_USED)); }
 
@@ -34,7 +40,7 @@ int sysu_init(void)
 	UART_INIT(UART_USED, // Try to initialize UART
 
 #if (defined(__MPLAB_SIM) && (UART_USED == 2))
-/* =!= It works with UART2 too if set LPBACK here */	U_LPBACK |
+/* =!= It works with UART2 too if set LPBACK here *///	U_LPBACK |
 #endif // SIM supports UART1 only (SIM: UART1 IO must be enabled)
 
 		U_NOPARITY | UART_EN,			// 8-bit, no parity; Enabled
@@ -106,7 +112,8 @@ void UART_INTFUNC(UART_USED, TX, no_auto_psv)(void)
 	UART_CLR_TXFLAG(UART_USED);
 
 	switch (QUEBUF_LEN(TXB)) {
-		case 0:  i = U_TXI_END; break;
+		case 0:  ++U_(UART_USED, txevt);
+				 i = U_TXI_END; break;
 		case 1:  i = U_TXI_READY; break;
 		default: i = U_TXI_EMPTY; // We'll fill FIFO
 	} UART_SET_TXI(UART_USED, i);
