@@ -3,9 +3,11 @@
 #include <power.h>
 #include <reset.h>
 #include <clock.h>
+#include <ints.h>
 #include <osc.h>
 
 #include "main.h"
+#include "sysuart.h"
 
 // 20 џэт 1997 15:00:00
 #define INITIAL_TIME	853801200L
@@ -22,8 +24,12 @@ static void power_on_init(void)
 	if (MCU_CONFIG2 & ~IESO_OFF) while(1);
 #endif
 
+#ifdef __DEBUG
 	pins_init(); // Initialize pins at startup
 	clr_reset_state();		// Needed for MCLR
+#else
+#error "Check loader code in the flash"
+#endif
 }
 
 static void on_idle(void)
@@ -51,6 +57,9 @@ int main(void)
 	// 12.6V -> 6.3 mA (PRIPLL) or 2.2mA (FRCPLL)
 
 	power_init(); // Init power module
+	sysu_init(); // Init system UART
+
+	INT_INIT(DISP_INT, 0, DISP_IPL);
 
 	for(;;) { // Main loop
 
@@ -58,4 +67,10 @@ int main(void)
 	} // Main loop
 
 	return(0); // Never return
+}
+
+void INT_INTFUNC(DISP_INT, auto_psv)()
+{
+	INT_CLR_FLAG(DISP_INT);
+
 }

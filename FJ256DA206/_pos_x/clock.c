@@ -37,7 +37,7 @@ long sys_time(PSYSTIME ptim)
 
 void TIMER_INTFUNC(SYS_TIMER, no_auto_psv)(void)
 {
-	TIMER_CLR_FLAG(1);
+	TIMER_CLR_FLAG(SYS_TIMER);
 	// Restore period register
 	TIMER_SET_PR(SYS_TIMER, PR_START);
 

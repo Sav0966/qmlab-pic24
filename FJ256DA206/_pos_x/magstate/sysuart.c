@@ -10,6 +10,10 @@
 #define UART_RXBUF_SIZE		32
 #define UART_TXBUF_SIZE		32
 
+#ifndef DISPATCH
+#define DISPATCH()
+#endif
+
 // Receiver and transmitterqueue queues and error flag
 static volatile unsigned char QUEBUF(RXB, UART_RXBUF_SIZE);
 static volatile unsigned char QUEBUF(TXB, UART_TXBUF_SIZE);
@@ -115,6 +119,8 @@ void UART_INTFUNC(UART_USED, TX, no_auto_psv)(void)
 		} else break; // FIFO is full
 	}
 
+	if (QUEBUF_EMPTY(TXB)) DISPATCH();
+
 #ifdef __MPLAB_SIM // Poll error bits and set ERFLAG
  if (UART_IS_RXERR(UART_USED)) UART_SET_ERFLAG(UART_USED);
 #endif // SIM doesn't check receiver errors, but set OERR
@@ -159,19 +165,20 @@ void UART_INTFUNC(UART_USED, RX, no_auto_psv)(void)
 	while (!QUEBUF_FULL(RXB))
 	{ // Read bytes from FIFO to buffer
 		if (UART_CAN_READ(UART_USED)) {
-			if (UART_IS_RXERR(UART_USED)) {
-				UART_SET_ERFLAG(UART_USED);
-				break; // It's not my job
-			} else { // No errors at the top of FIFO
+			if (!UART_IS_RXERR(UART_USED))
+			{ // No errors at the top of FIFO
 				// Push received bytes into RX buffer
 				_QUEBUF_PUSH(RXB, UART_READ8(UART_USED));
-			}
+			} else break; // It's not my job (error)
 		} else break; // FIFO is empty
 	} // while (!QUEBUF_FULL(RXB))
 
 	// If receiver queue is full:
 	//  ignore received character
-	//  and leave it into RX FIFO
+	//  and leave it into RX FIFO (and ++errors)
+	if (QUEBUF_FULL(RXB)) ++U_(UART_USED, rxerr);
+
+	DISPATCH();
 }
 
 // Error Interrupt Service Routine
@@ -201,4 +208,6 @@ void UART_INTFUNC(UART_USED, Err, no_auto_psv)(void)
 
 	if (UART_CAN_READ(UART_USED)) // There is any bytes to read
 		UART_SET_RXFLAG(UART_USED); // Set interrupt flag only
+
+	DISPATCH();
 }
