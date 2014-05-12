@@ -18,6 +18,10 @@
 #define PR_CORR ((unsigned int)\
 (FCY /* *(CORR_TIM/16) */ - CORR_CLK * PR_PERT(CLK_TIM)))
 
+#ifndef DISPATCH
+#define DISPATCH()
+#endif
+
 static volatile SYSTIME _sys_time;	// System time and
 static volatile int _sys_clock;		// System clock
 
@@ -58,6 +62,8 @@ void TIMER_INTFUNC(SYS_TIMER, no_auto_psv)(void)
 				"	btg LATB, #15 ; Toggle latch REFO\n");
 		}
 	}
+
+	DISPATCH();
 }
 
 void clock_done(void) { TIMER_PWOFF(SYS_TIMER); }

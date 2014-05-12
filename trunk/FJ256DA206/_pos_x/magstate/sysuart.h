@@ -9,6 +9,7 @@ int sysu_is_init(void);
 void sysu_done(void);
 
 int sysu_error(void);
+int sysu_txevt(void);
 
 // Buffer functions
 
