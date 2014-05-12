@@ -20,17 +20,21 @@
 * Interrupt priority levels (IPL)
 */
 #define MAIN_IPL	0	// Main loop
-#define SYSCLK_IPL	1	// System timer
-#define RTC_IPL		2	// RTC interface
-#define UART_IPL	3	// System COM
-#define GPS_IPL		3	// GPS module COM
-#define SD_IPL		4	// SD card SPI
-#define FL_IPL		4	// Flash SPI
+#define DISP_IPL	2	// Dispatch level
+
+#define SYSCLK_IPL	4	// System timer
+#define RTC_IPL		3	// RTC interface
+#define UART_IPL	4	// System COM
+#define GPS_IPL		4	// GPS module COM
+#define SD_IPL		3	// SD card SPI
+#define FL_IPL		3	// Flash SPI
 #define PPS_IPL		6	// PPS signal
 #define PWG_IPL		7	// Power Good
 /*
 * System modules
 */
+#define DISP_INT	4	// Dispatch interrupt
+
 #define SYS_TIMER	1	// System timer
 #define RTC_I2C		3	// RTC interface
 #define SD_SPI		2	// SD card SPI
@@ -40,6 +44,9 @@
 #define GPS_UART	3	// GPS module COM
 #define PW_INT		1	// INT1 to PW_GOOG
 #define PPS_INT		2	// INT2 to PPS signal
+
+#include <ints.h>
+#define DISPATCH()	INT_SET_FLAG(DISP_INT)
 /*
 * Definitions of Config Words
 */

@@ -70,7 +70,7 @@
 #define RB12_AN
 #define RB13_AN
 
-#define RB15_IN		// REFO line (test line)
+#define RB15_HIGH	// REFO line (test line)
 #define _REFO		_RB15	// C definition
 /*
 *	PORT F

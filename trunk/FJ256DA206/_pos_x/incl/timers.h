@@ -120,7 +120,7 @@ __attribute__((__interrupt__, attr)) _T##timer##Interrupt
 #define TIMER_DONE(timer) _TIMER_DONE(timer)
 #define TIMER_PWOFF(timer) _TIMER_PWOFF(timer)
 /*
-*	Public and protected modele names
+*	Public and protected names of module
 */
 #define ___T_(n, name)		_timer_##n##_##name
 #define __T_(n, name)		timer_##n##_##name

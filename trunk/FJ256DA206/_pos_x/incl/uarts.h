@@ -306,7 +306,7 @@ __attribute__((__interrupt__, attr)) _U##n##isr##Interrupt
 #define UART_DONE(n) _UART_DONE(n)
 #define UART_PWOFF(n) _UART_PWOFF(n)
 /*
-*	Public and protected module names
+*	Public and protected names of module
 */
 #define ___U_(n, name)		_uart_##n##_##name
 #define __U_(n, name)		uart_##n##_##name
