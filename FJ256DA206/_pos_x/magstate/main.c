@@ -7,6 +7,7 @@
 #include <osc.h>
 
 #include "main.h"
+#include "dispatch.h"
 #include "sysuart.h"
 
 // 20 џэт 1997 15:00:00
@@ -59,7 +60,7 @@ int main(void)
 	power_init(); // Init power module
 	sysu_init(); // Init system UART
 
-	INT_INIT(DISP_INT, 0, DISP_IPL);
+	disp_init(); // Init dispatcher
 
 	for(;;) { // Main loop
 
@@ -67,64 +68,4 @@ int main(void)
 	} // Main loop
 
 	return(0); // Never return
-}
-
-#ifndef __PFVOID
-#define __PFVOID
-typedef void (*PFVOID)(void);
-#endif
-
-typedef enum {
-DISP_CLOCK, DISP_SYSUER, DISP_SYSURX, DISP_SYSUTX,
-DISP_LAST } DISP_EVENT;
-
-#define ENTER_DISP_LEVEL() {\
-	__asm__ volatile ("push SR\n");\
-	SR = (DISP_IPL << 5)
-
-#define LEAVE_DISP_LEVEL()\
-	__asm__ volatile ("pop SR\n"); } ((void)0)
-
-static void def_hook(void) {}
-
-static int cur_clock __attribute__((near)); // = 0
-static int cur_sysrx __attribute__((near)); // = 0
-static int cur_systx __attribute__((near)); // = 0
-
-static PFVOID phook[DISP_LAST] __attribute__((near)) =
-{ def_hook, def_hook, def_hook, def_hook };
-
-PFVOID pf = def_hook;
-
-PFVOID disp_sethook(DISP_EVENT evt, PFVOID hook)
-{
-	PFVOID ret;
-	ENTER_DISP_LEVEL();
-		ret = phook[evt];
-		phook[evt] = hook;
-	LEAVE_DISP_LEVEL();
-	return( ret );
-}
-
-void INT_INTFUNC(DISP_INT, auto_psv)()
-{
-	int evt; // Event
-	INT_CLR_FLAG(DISP_INT);
-
-	evt = sys_clock();
-	if (cur_clock != evt) // Check clock
-	{ cur_clock = evt; phook[DISP_CLOCK](); }
-
-	if (sysu_error()) // UART-ER
-			phook[DISP_SYSUER]();
-
-	evt = sysu_rxcount();
-	if (cur_sysrx != evt) // Check UART-RX
-	{ cur_sysrx = evt; phook[DISP_SYSURX](); }
-
-	evt = sysu_txevt();
-	if (cur_systx != evt) {
-		cur_systx = evt; // Check UART-TX
-		if (sysu_txcount() == 0) phook[DISP_SYSUTX]();
-	}
 }

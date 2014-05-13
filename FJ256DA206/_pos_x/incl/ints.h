@@ -40,6 +40,8 @@ __attribute__((__interrupt__, attr)) _INT##i##Interrupt
 	INT_DISABLE_INT(i);	/* Disable the interrupt */\
 	INT_CLR_FLAG(i)		/* Clear interrupt flag */
 
+#define INT_DONE(i)				_INT_DONE(i)
+
 #define _INT_INIT(i, neg, ipl) {\
 	INT_DONE(i); /* Disable interrupt and clear flag */\
 \
@@ -52,7 +54,6 @@ __attribute__((__interrupt__, attr)) _INT##i##Interrupt
 } ((void)0)
 
 #define INT_INIT(i, neg, ipl)	_INT_INIT(i, neg, ipl)
-#define INT_DONE(i)				_INT_DONE(i)
 /*
 *	Public and protected names of module
 */
