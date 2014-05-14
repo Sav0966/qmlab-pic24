@@ -7,26 +7,35 @@
 #include "sysuart.h"
 #include "dispatch.h"
 
-#define MAX_MESSAGE	16
+#define MAX_MESSAGES	16
 
-static volatile PMSG QUEBUF(MSG, MAX_MESSAGE);
+#ifndef ARSIZE
+#define ARSIZE(ar) (sizeof(ar)/sizeof(ar[0]))
+#endif
 
-static int cur_clock __attribute__((near)); // = 0
-static int cur_sysrx __attribute__((near)); // = 0
-static int cur_systx __attribute__((near)); // = 0
+static volatile PMSG QUEBUF(MSG, MAX_MESSAGES);
+static volatile MSG _msg[MAX_MESSAGES] __attribute__((noload));
 
-static volatile PFVOID phook[DISP_LAST] __attribute__((near));
+static volatile int cur_clock __attribute__((near)); // = 0
+static volatile int cur_syser __attribute__((near)); // = 0
+static volatile int cur_sysrx __attribute__((near)); // = 0
+static volatile int cur_systx __attribute__((near)); // = 0
 
-static void def_hook(void) {}
+static int def_hookfn(int);
+static int def_eventfn(void);
+static HOOK _def_hook = { 0, def_eventfn, def_hookfn };
+
+static volatile PHOOK phook[DISP_LAST] __attribute__((near));
 
 void disp_init(void)
 {
-	int i;
 	INT_DISABLE_INT(DISP_INT); // Disable the interrupt
 	ENTER_DISP_LEVEL();
 	{
+		int i;
+		for (i = 0; i < DISP_LAST; ++i) phook[i] = &_def_hook;
+		for (i = 0; i < ARSIZE(_msg); ++i) _msg[i].message = 0;
 		QUEBUF_INIT(MSG); // Reset the queue of messages
-		for (i = 0; i < DISP_LAST; ++i) phook[i] = def_hook;
 	} // Disp-level
 	LEAVE_DISP_LEVEL();
 	INT_SET_IPL(DISP_INT, DISP_IPL);   // Set IPL
@@ -34,55 +43,76 @@ void disp_init(void)
 	INT_ENABLE_INT(DISP_INT); // Enable interrupt
 }
 
-PFVOID disp_sethook(DISP_EVENT evt, PFVOID hook)
+void free_msg(PMSG pmsg)
 {
-	PFVOID ret;
+//	ENTER_DISP_LEVEL();
+		pmsg->message = 0;
+//	LEAVE_DISP_LEVEL();
+}
+
+PMSG alloc_msg(void)
+{
+	PMSG ret = (PMSG)_msg;
 	ENTER_DISP_LEVEL();
-		ret = phook[evt];
-		phook[evt] = hook;
+	{
+		int i;
+		for (i = 0; i < ARSIZE(_msg); ++i, ++ret)
+		if (ret->message == 0) { ret->message = -1; break; }
+
+		if (i == ARSIZE(_msg)) ret = NULL;
+	} // Disp-level
 	LEAVE_DISP_LEVEL();
 	return( ret );
 }
 
-void push_msg(PMSG pmsg)
+PMSG push_msg(PMSG pmsg)
 {
+	PMSG ret = NULL;
 	ENTER_DISP_LEVEL();
+	{
 		if (QUEBUF_LEN(MSG) != QUEBUF_SIZE(MSG))
 		{
-			QUEBUF_PUSH(MSG, pmsg);
+			ret = pmsg;
+			_QUEBUF_PUSH(MSG, ret);
 		}
+	} // Disp-level
 	LEAVE_DISP_LEVEL();
+	return( ret );
 }
 
 PMSG pop_msg()
 {
-	PMSG pmsg = NULL;
+	PMSG ret = NULL;
 	ENTER_DISP_LEVEL();
 		if (QUEBUF_LEN(MSG) != 0)
-			_QUEBUF_POP(MSG, pmsg);
+			_QUEBUF_POP(MSG, ret);
 	LEAVE_DISP_LEVEL();
-	return( pmsg );
+	return( ret );
 }
+
+PHOOK disp_sethook(DISP_EVENT mask, PHOOK hook)
+{
+	PHOOK ret;
+	ENTER_DISP_LEVEL();
+		ret = phook[mask];
+		phook[mask] = hook;
+	LEAVE_DISP_LEVEL();
+	return( ret );
+}
+
+static int def_eventfn(void) { return( 0 ); }
+
+static int def_hookfn(int evt) { return( evt ); }
 
 void INT_INTFUNC(DISP_INT, auto_psv)()
 {
-	int evt; // Current event
+	int i; // Current event
 	INT_CLR_FLAG(DISP_INT); // Clear flag
 
-	evt = sys_clock();
-	if (cur_clock != evt) // Check clock
-	{ cur_clock = evt; phook[DISP_CLOCK](); }
-
-	if (sysu_error()) // UART-ER
-			phook[DISP_SYSUER]();
-
-	evt = sysu_rxcount();
-	if (cur_sysrx != evt) // Check UART-RX
-	{ cur_sysrx = evt; phook[DISP_SYSURX](); }
-
-	evt = sysu_txevt();
-	if (cur_systx != evt) {
-		cur_systx = evt; // Check UART-TX
-		if (sysu_txcount() == 0) phook[DISP_SYSUTX]();
+	for (i = 0; i < DISP_LAST; ++i)
+	{
+		int event = phook[i]->pfnevent();
+		if (phook[i]->event != event) // Check event
+			phook[i]->event = phook[i]->pfnhook(event);
 	}
 }

@@ -29,7 +29,7 @@ static void power_on_init(void)
 	pins_init(); // Initialize pins at startup
 	clr_reset_state();		// Needed for MCLR
 #else
-#error "Check loader code in the flash"
+#warning "Check loader code in the flash"
 #endif
 }
 

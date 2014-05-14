@@ -59,7 +59,7 @@ __attribute__((__interrupt__, attr)) _INT##i##Interrupt
 */
 #define ___INT_(n, name)	_int_##n##_##name
 #define __INT_(n, name)		int_##n##_##name
-#define _INT_(n, name)		___T_(n, name) // Protected
-#define INT_(n, name)		__T_(n, name) // Public
+#define _INT_(n, name)		___INT_(n, name) // Protected
+#define INT_(n, name)		__INT_(n, name) // Public
 
 #endif /*_INTS_INCL_*/
