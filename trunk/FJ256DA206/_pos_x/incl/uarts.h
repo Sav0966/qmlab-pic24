@@ -261,13 +261,13 @@ __attribute__((__interrupt__, attr)) _U##n##isr##Interrupt
 		/* Clear all interrupt status flags (Rx, Tx and Error */\
 		UART_CLR_RXFLAG(n); UART_CLR_TXFLAG(n); UART_CLR_ERFLAG(n); \
 \
-		if (ipl > 0) {\
+		if (ipl > 1) {\
 			UART_SET_RXIPL(n, ipl); /* Receive IPL */\
-			UART_SET_ERIPL(n, ipl); /* Set the same */\
+			UART_SET_ERIPL(n, (ipl)+1); /* Higher IPL */\
 			UART_ENABLE_ERINT(n); /* Enable interrupt */\
 			UART_ENABLE_RXINT(n); /* Enable interrupt */\
 \
-			UART_SET_TXIPL(n, ipl); /* Transmit IPL */\
+			UART_SET_TXIPL(n, (ipl)-1); /* Lower IPL */\
 			UART_ENABLE_TXINT(n); /* Enable interrupt */\
 		}\
 \

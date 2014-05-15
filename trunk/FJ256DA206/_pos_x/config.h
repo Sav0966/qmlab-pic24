@@ -23,9 +23,9 @@
 #include <dispatch.h>	// DISP_IPL
 
 #define SYSCLK_IPL	4	// System timer
-#define RTC_IPL		3	// RTC interface
-#define UART_IPL	4	// System COM
+#define UART_IPL	4	// System COM (3,4,5)
 #define GPS_IPL		4	// GPS module COM
+#define RTC_IPL		3	// RTC interface
 #define SD_IPL		3	// SD card SPI
 #define FL_IPL		3	// Flash SPI
 #define PPS_IPL		6	// PPS signal
