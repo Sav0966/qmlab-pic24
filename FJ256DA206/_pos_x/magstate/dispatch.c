@@ -23,9 +23,9 @@ static volatile int cur_systx __attribute__((near)); // = 0
 
 static int def_hookfn(int);
 static int def_eventfn(void);
-static HOOK _def_hook = { 0, def_eventfn, def_hookfn };
+static HOOK _def_hook = { def_eventfn, def_hookfn, 0,NULL,NULL };
 
-static volatile PHOOK phook[DISP_LAST] __attribute__((near));
+static volatile PHOOK phooks[DISP_LAST] __attribute__((near));
 
 void disp_init(void)
 {
@@ -33,7 +33,7 @@ void disp_init(void)
 	ENTER_DISP_LEVEL();
 	{
 		int i;
-		for (i = 0; i < DISP_LAST; ++i) phook[i] = &_def_hook;
+		for (i = 0; i < DISP_LAST; ++i) phooks[i] = &_def_hook;
 		for (i = 0; i < ARSIZE(_msg); ++i) _msg[i].message = 0;
 		QUEBUF_INIT(MSG); // Reset the queue of messages
 	} // Disp-level
@@ -45,9 +45,9 @@ void disp_init(void)
 
 void free_msg(PMSG pmsg)
 {
-//	ENTER_DISP_LEVEL();
+	ENTER_DISP_LEVEL();
 		pmsg->message = 0;
-//	LEAVE_DISP_LEVEL();
+	LEAVE_DISP_LEVEL();
 }
 
 PMSG alloc_msg(void)
@@ -90,14 +90,26 @@ PMSG pop_msg()
 	return( ret );
 }
 
-PHOOK disp_sethook(DISP_EVENT mask, PHOOK hook)
+PHOOK disp_sethook(DISP_EVENT mask, PHOOK phook)
 {
-	PHOOK ret;
+	PHOOK prev;
 	ENTER_DISP_LEVEL();
-		ret = phook[mask];
-		phook[mask] = hook;
+		prev = phooks[mask];
+		phooks[mask] = phook;
+		phook->prev = prev;
+		phook->next = NULL;
 	LEAVE_DISP_LEVEL();
-	return( ret );
+	return( (PHOOK)prev );
+}
+
+PHOOK disp_delhook(DISP_EVENT mask, PHOOK phook)
+{
+	ENTER_DISP_LEVEL();
+		phook->prev->next = phook->next;
+		if (!phook->next) phooks[mask] = phook->prev;
+		else phook->next->prev = phook->prev;
+	LEAVE_DISP_LEVEL();
+	return( phook->prev );
 }
 
 static int def_eventfn(void) { return( 0 ); }
@@ -111,8 +123,8 @@ void INT_INTFUNC(DISP_INT, auto_psv)()
 
 	for (i = 0; i < DISP_LAST; ++i)
 	{
-		int event = phook[i]->pfnevent();
-		if (phook[i]->event != event) // Check event
-			phook[i]->event = phook[i]->pfnhook(event);
+		int event = phooks[i]->pfnevent();
+		if (phooks[i]->event != event) // Check event
+			phooks[i]->event = phooks[i]->pfnhook(event);
 	}
 }

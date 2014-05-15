@@ -39,6 +39,75 @@ static void on_idle(void)
 	__asm__ volatile ("pwrsav	#1"); // Idle mode
 }
 
+#define IO_IPL		1
+
+#define ENTER_IO_LEVEL() {\
+	__asm__ volatile ("push SR\n");\
+	SR = (IO_IPL << 5)
+
+#define LEAVE_IO_LEVEL()\
+	__asm__ volatile ("pop SR\n"); } ((void)0)
+
+static int uart_erhook(int);
+static int uart_rxhook(int);
+static int uart_txhook(int);
+
+static HOOK _uart_erhook = { sysu_error, uart_erhook };
+static HOOK _uart_rxhook = { sysu_rxcount, uart_rxhook };
+static HOOK _uart_txhook = { sysu_txevt, uart_txhook };
+
+static int uart_erhook(int evt /* == sysu_error() */)
+{
+	sysu_rxpurge();
+	return( 0 ); // No errors
+}
+
+static int uart_rxhook(int evt /* == sysu_txcount() */)
+{
+	static char busy = 0;
+
+	// DISPATCH_LEVEL
+	if (busy) return( evt );
+	busy = 1; // Exclude recursion
+	ENTER_IO_LEVEL(); // IO_LEVEL
+
+	LEAVE_IO_LEVEL(); // IO_LEVEL
+	busy = 0; //  DISPATCH_LEVEL
+//	DISPATCH(); // We can skip event
+
+	// No bytes to read
+	return( ((PHOOK)(_uart_rxhook.prev))->pfnhook(0) );
+}
+
+static int uart_txhook(int evt /* == sysu_txevt() */)
+{
+	static char busy = 0;
+
+	// DISPATCH_LEVEL
+	if (busy) return( evt );
+	busy = 1; // Exclude recursion
+	ENTER_IO_LEVEL(); // IO_LEVEL
+
+	LEAVE_IO_LEVEL(); // IO_LEVEL
+	busy = 0; //  DISPATCH_LEVEL
+
+	return( evt ); // Wait for next event
+}
+
+int uart_init(void)
+{
+	int ok = 0;
+
+	sysu_done();
+	ENTER_DISP_LEVEL();
+		if (disp_sethook(DISP_SYSUTX, &_uart_txhook))
+		if (disp_sethook(DISP_SYSUER, &_uart_erhook))
+		if (disp_sethook(DISP_SYSURX, &_uart_rxhook)) ok = 1;
+	LEAVE_DISP_LEVEL();
+
+	return( ok? sysu_init() : 0 );
+}
+
 int main(void)
 {
 	while (!IS_MCU_PROGRAMMED()); // Stay here
@@ -52,17 +121,21 @@ int main(void)
 	PMD1 = PMD2 = PMD3 = PMD4 = PMD5 = PMD6 = -1;
 
 	osc_mode(__OSC__); // Select oscillator mode
+
+	disp_init(); // Init dispatcher
+
 	// Run Timer1 (2 MHz) with 10 ms elapse period
 	if (clock_init(INITIAL_TIME) < 0) while (1);
 	// For empty loop and SYS_TIMER using only:
 	// 12.6V -> 6.3 mA (PRIPLL) or 2.2mA (FRCPLL)
 
 	power_init(); // Init power module
-	sysu_init(); // Init system UART
+	uart_init(); // Init system UART
 
-	disp_init(); // Init dispatcher
 
 	for(;;) { // Main loop
+
+//sysu_test();
 
 		on_idle(); // Idle loop
 	} // Main loop

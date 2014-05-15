@@ -45,12 +45,21 @@ PMSG push_msg(PMSG pmsg);
 void free_msg(PMSG pmsg);
 PMSG alloc_msg(void);
 
-typedef struct {
-	int event;
+typedef struct tagHOOK *PHOOK;
+
+typedef struct tagHOOK {
 	int (*pfnevent)(void);
 	int (*pfnhook)(int);
-} HOOK, *PHOOK;
+	int event;
 
-PHOOK disp_sethook(DISP_EVENT mask, PHOOK hook);
+	PHOOK prev;
+	PHOOK next;
+} HOOK;
+
+#define PREV_HOOK(phook) phook->prev_hook
+#define NEXT_HOOK(phook) phook->next_hook
+
+PHOOK disp_sethook(DISP_EVENT mask, PHOOK phook);
+PHOOK disp_delhook(DISP_EVENT mask, PHOOK phook);
 
 #endif /*_DISPATCH_INCL_*/

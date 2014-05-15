@@ -10,9 +10,6 @@
 #define UART_RXBUF_SIZE		32
 #define UART_TXBUF_SIZE		32
 
-#define RXB		RX##UART_USED
-#define TXB		TX##UART_USED
-
 #ifndef DISPATCH
 #define DISPATCH()
 #endif
@@ -40,7 +37,7 @@ int sysu_init(void)
 	UART_INIT(UART_USED, // Try to initialize UART
 
 #if (defined(__MPLAB_SIM) && (UART_USED == 2))
-/* =!= It works with UART2 too if set LPBACK here *///	U_LPBACK |
+/* =!= It works with UART2 too if set LPBACK here */	U_LPBACK |
 #endif // SIM supports UART1 only (SIM: UART1 IO must be enabled)
 
 		U_NOPARITY | UART_EN,			// 8-bit, no parity; Enabled
@@ -163,11 +160,8 @@ void UART_INTFUNC(UART_USED, RX, no_auto_psv)(void)
 	while (!QUEBUF_FULL(RXB))
 	{ // Read bytes from FIFO to buffer
 		if (UART_CAN_READ(UART_USED)) {
-			if (!UART_IS_RXERR(UART_USED))
-			{ // No errors at the top of FIFO
-				// Push received bytes into RX buffer
-				_QUEBUF_PUSH(RXB, UART_READ8(UART_USED));
-			} else break; // It's not my job (error)
+			// Push received bytes into RX buffer
+			_QUEBUF_PUSH(RXB, UART_READ8(UART_USED));
 		} else break; // FIFO is empty
 	} // while (!QUEBUF_FULL(RXB))
 
@@ -203,9 +197,6 @@ void UART_INTFUNC(UART_USED, Err, no_auto_psv)(void)
 
 	// Calculate errors
 	++U_(UART_USED, rxerr);
-
-	if (UART_CAN_READ(UART_USED)) // There is any bytes to read
-		UART_SET_RXFLAG(UART_USED); // Set interrupt flag only
 
 	DISPATCH();
 }
