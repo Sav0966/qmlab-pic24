@@ -33,16 +33,19 @@
 /*
 * Interrupt helpers
 */
-#ifndef DISABLE
-#define _DISABLE(module, source)	module##_DISABLE_##source
-#define DISABLE(module, source)		_DISABLE(module, source)
+#ifndef DISABLE_MOD
+#define _DISABLE_MOD(module, source) module##_DISABLE_##source
+#define DISABLE_MOD(module, source) _DISABLE_MOD(module, source)
 
-#define _ENABLE(module, source)		module##_ENABLE_##source
-#define ENABLE(module, source)		_ENABLE(module, source)
-#endif // DISABLE
+#define _ENABLE_MOD(module, source) module##_ENABLE_##source
+#define ENABLE_MOD(module, source) _ENABLE_MOD(module, source)
+#endif // DISABLE_MOD
 
-#define INTERLOCKED(module, source, f)\
-DISABLE(module, source); f; ENABLE(module, source)
+#define INTERLOCKED_MOD(module, source, f)\
+DISABLE_MOD(module, source); f; ENABLE_MOD(module, source)
+
+#define DISABLE() {__asm__ volatile ("push DISICNT\ndisi #0x3FFF")
+#define ENABLE() __asm__ volatile ("pop DISICNT\n");} ((void)0)
 /*
 * System modules
 */

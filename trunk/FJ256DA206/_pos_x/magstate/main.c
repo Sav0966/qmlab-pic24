@@ -56,27 +56,61 @@ static HOOK _uart_erhook = { sysu_error, uart_erhook };
 static HOOK _uart_rxhook = { sysu_rxcount, uart_rxhook };
 static HOOK _uart_txhook = { sysu_txevt, uart_txhook };
 
+
+static int rx_cnt; // = 0
+static unsigned char rx_buf[25];
+static unsigned char evt_char; // = 0
+#define ARSIZE(ar) (sizeof(ar)/sizeof(ar[0]))
+
 static int uart_erhook(int evt /* == sysu_error() */)
-{
+{ // DISPATCH_LEVEL
 	sysu_rxpurge();
 	return( 0 ); // No errors
 }
 
 static int uart_rxhook(int evt /* == sysu_txcount() */)
 {
+	int i;
 	static char busy = 0;
 
 	// DISPATCH_LEVEL
 	if (busy) return( evt );
-	busy = 1; // Exclude recursion
+	busy = 1; // Prevent recursion
 	ENTER_IO_LEVEL(); // IO_LEVEL
+
+	for (; rx_cnt < ARSIZE(rx_buf); ++rx_cnt)
+	{
+		if ((rx_cnt == 0) && rx_buf[0] != 0) break;
+		if ((i = sysu_getc()) < 0) break;
+
+		rx_buf[rx_cnt] = (unsigned char)i;
+
+		if (rx_buf[rx_cnt] == evt_char)
+		{ // New command has been received
+			MSG msg;
+			msg.message = 1;
+			msg.wParam = (int)rx_buf;
+			msg.lParam = rx_cnt;
+			msg.time = sys_clock();
+
+			if (push_msg(&msg) == NULL)
+				__asm__ volatile ("nop"); // !!!
+
+			rx_cnt = 0; break;
+		}
+	}
+
+	if (rx_cnt >= ARSIZE(rx_buf))
+		rx_buf[rx_cnt = 0] = 0;
 
 	LEAVE_IO_LEVEL(); // IO_LEVEL
 	busy = 0; //  DISPATCH_LEVEL
-//	DISPATCH(); // We can skip event
+
+	// We can skip event
+	if (sysu_rxcount()) DISPATCH();
 
 	// No bytes to read
-	return( ((PHOOK)(_uart_rxhook.prev))->pfnhook(0) );
+	return( _uart_rxhook.prev->pfnhook(0) );
 }
 
 static int uart_txhook(int evt /* == sysu_txevt() */)
@@ -85,7 +119,7 @@ static int uart_txhook(int evt /* == sysu_txevt() */)
 
 	// DISPATCH_LEVEL
 	if (busy) return( evt );
-	busy = 1; // Exclude recursion
+	busy = 1; // Prevent recursion
 	ENTER_IO_LEVEL(); // IO_LEVEL
 
 	LEAVE_IO_LEVEL(); // IO_LEVEL
@@ -132,10 +166,21 @@ int main(void)
 	power_init(); // Init power module
 	uart_init(); // Init system UART
 
-
 	for(;;) { // Main loop
+		MSG msg;
+		while (pop_msg(&msg) != NULL)
+		{
+			if (msg.message == 1)
+			{
+				unsigned char *buf = 
+					(unsigned char*)msg.wParam;
 
-//sysu_test();
+				buf[0] = 0; // Complite
+			}
+
+		}
+
+sysu_test();
 
 		on_idle(); // Idle loop
 	} // Main loop
