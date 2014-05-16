@@ -67,25 +67,29 @@ PMSG alloc_msg(void)
 
 PMSG push_msg(PMSG pmsg)
 {
-	PMSG ret = NULL;
-	ENTER_DISP_LEVEL();
+	PMSG ret = alloc_msg();
+	if (ret != NULL)
 	{
-		if (QUEBUF_LEN(MSG) != QUEBUF_SIZE(MSG))
+		*ret = *pmsg;
+		ENTER_DISP_LEVEL();
 		{
-			ret = pmsg;
-			_QUEBUF_PUSH(MSG, ret);
-		}
-	} // Disp-level
-	LEAVE_DISP_LEVEL();
+			if (QUEBUF_LEN(MSG) != QUEBUF_SIZE(MSG))
+				_QUEBUF_PUSH(MSG, ret);
+		} // Disp-level
+		LEAVE_DISP_LEVEL();
+	}
 	return( ret );
 }
 
-PMSG pop_msg()
+PMSG pop_msg(PMSG pmsg)
 {
 	PMSG ret = NULL;
 	ENTER_DISP_LEVEL();
-		if (QUEBUF_LEN(MSG) != 0)
+		if (QUEBUF_LEN(MSG) != 0) {
 			_QUEBUF_POP(MSG, ret);
+			*pmsg = *ret;
+			free_msg(ret);
+		}
 	LEAVE_DISP_LEVEL();
 	return( ret );
 }

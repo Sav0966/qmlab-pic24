@@ -31,7 +31,7 @@ long sys_time(PSYSTIME ptim)
 {
 	SYSTIME tim;
 
-	INTERLOCKED(TIMER, INT(SYS_TIMER), tim = _sys_time);
+	INTERLOCKED_MOD(TIMER, INT(SYS_TIMER), tim = _sys_time);
 
 	if (ptim) *ptim = tim;
 	return( tim.time );

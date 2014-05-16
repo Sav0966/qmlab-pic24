@@ -14,13 +14,13 @@
 #define LEAVE_DISP_LEVEL()\
 	__asm__ volatile ("pop SR\n"); } ((void)0)
 
-#define _DISABLE(module, source)\
+#define _DISABLE_MOD(module, source)\
 	ENTER_DISP_LEVEL(); module##_DISABLE_##source
-#define DISABLE(module, source)	_DISABLE(module, source)
+#define DISABLE_MOD(module, source)	_DISABLE_MOD(module, source)
 
-#define _ENABLE(module, source)\
+#define _ENABLE_MOD(module, source)\
 	module##_ENABLE_##source; LEAVE_DISP_LEVEL()
-#define ENABLE(module, source)	_ENABLE(module, source)
+#define ENABLE_MOD(module, source) _ENABLE_MOD(module, source)
 
 typedef enum { // Masks of dispatched events
 DISP_CLOCK, DISP_SYSUER, DISP_SYSURX, DISP_SYSUTX,
@@ -40,7 +40,7 @@ typedef struct {
 	int		time;
 } MSG, *PMSG;
 
-PMSG pop_msg();
+PMSG pop_msg(PMSG);
 PMSG push_msg(PMSG pmsg);
 void free_msg(PMSG pmsg);
 PMSG alloc_msg(void);
