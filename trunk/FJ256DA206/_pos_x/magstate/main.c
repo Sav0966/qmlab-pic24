@@ -39,6 +39,8 @@ static void on_idle(void)
 	__asm__ volatile ("pwrsav	#1"); // Idle mode
 }
 
+#include <string.h>
+
 #define IO_IPL		1
 
 #define ENTER_IO_LEVEL() {\
@@ -56,9 +58,10 @@ static HOOK _uart_erhook = { sysu_error, uart_erhook };
 static HOOK _uart_rxhook = { sysu_rxcount, uart_rxhook };
 static HOOK _uart_txhook = { sysu_txevt, uart_txhook };
 
+#define CMD_SIZE	sizeof("#i 08 00 0000000000000000")
 
 static int rx_cnt; // = 0
-static unsigned char rx_buf[25];
+static unsigned char rx_buf[CMD_SIZE];
 static unsigned char evt_char; // = 0
 #define ARSIZE(ar) (sizeof(ar)/sizeof(ar[0]))
 
@@ -106,11 +109,20 @@ static int uart_rxhook(int evt /* == sysu_txcount() */)
 	LEAVE_IO_LEVEL(); // IO_LEVEL
 	busy = 0; //  DISPATCH_LEVEL
 
-	// We can skip event
-	if (sysu_rxcount()) DISPATCH();
-
 	// No bytes to read
-	return( _uart_rxhook.prev->pfnhook(0) );
+	return( 0 );
+}
+
+PMSG uart_rxtranslate(PMSG pmsg)
+{
+	unsigned char cmd[CMD_SIZE], *buf = 
+			(unsigned char*)(pmsg->wParam);
+	int len = (int)(pmsg->lParam);
+
+	memcpy(cmd, buf, len);
+	buf[0] = 0; // Complite
+
+	return( pmsg );
 }
 
 static int uart_txhook(int evt /* == sysu_txevt() */)
@@ -118,7 +130,7 @@ static int uart_txhook(int evt /* == sysu_txevt() */)
 	static char busy = 0;
 
 	// DISPATCH_LEVEL
-	if (busy) return( evt );
+	if (busy) return( evt-1 );
 	busy = 1; // Prevent recursion
 	ENTER_IO_LEVEL(); // IO_LEVEL
 

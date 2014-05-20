@@ -50,7 +50,7 @@ typedef struct tagHOOK *PHOOK;
 typedef struct tagHOOK {
 	int (*pfnevent)(void);
 	int (*pfnhook)(int);
-	int event;
+	volatile int event;
 
 	PHOOK prev;
 	PHOOK next;
