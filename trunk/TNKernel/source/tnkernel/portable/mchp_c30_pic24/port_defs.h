@@ -146,6 +146,12 @@ TN_UWORD *tn_stack_init(void *task_func, void *stack_start, TN_UWORD stack_size,
  **************************************************************************************************/
 
 #define tn_sys_interrupt(a)                                 \
+    __asm__(".ifndef __HAS_EDS");                           \
+    __asm__(".equ   _PSVPAG_, _PSVPAG");                    \
+    __asm__(".else");                                       \
+    __asm__(".equ   _PSVPAG_, _DSRPAG");                    \
+    __asm__(".endif");                                      \
+                                                            \
     __asm__(".global _"#a);                                 \
     __asm__("_"#a":");                                      \
     __asm__("push        _SPLIM");                          \
@@ -161,7 +167,7 @@ TN_UWORD *tn_stack_init(void *task_func, void *stack_start, TN_UWORD stack_size,
     __asm__("push        _RCOUNT");                         \
     __asm__("push        _TBLPAG");                         \
     __asm__("push        _CORCON");                         \
-    __asm__("push        _PSVPAG");                         \
+    __asm__("push        _PSVPAG_");                        \
                                                             \
     __asm__("mov         #_tn_sys_context,   W0");          \
     __asm__("bset        [W0],               #0");          \
@@ -191,7 +197,7 @@ TN_UWORD *tn_stack_init(void *task_func, void *stack_start, TN_UWORD stack_size,
     __asm__("mov         W3,                 [W0]");        \
                                                             \
     __asm__("1:");                                          \
-    __asm__("pop         _PSVPAG");                         \
+    __asm__("pop         _PSVPAG_");                        \
     __asm__("pop         _CORCON");                         \
     __asm__("pop         _TBLPAG");                         \
     __asm__("pop         _RCOUNT");                         \
