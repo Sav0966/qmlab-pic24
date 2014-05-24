@@ -52,7 +52,11 @@
         .global _tn_switch_context_exit
         .global _tn_switch_context
     
-
+.ifndef __HAS_EDS
+.equ	_PSVPAG_, _PSVPAG
+.else
+.equ	_PSVPAG_, _DSRPAG
+.endif
 
 
 _tn_is_irq_disabled:
@@ -253,7 +257,7 @@ _tn_fill_fstack:
         mov     W0,             [W2++]
         mov     _CORCON,        W0
         mov     W0,             [W2++]
-        mov     _PSVPAG,        W0
+        mov     _PSVPAG_,       W0
         mov     W0,             [W2++]
 
         mov     W2,             W0              ; return last stack enter
@@ -323,7 +327,7 @@ _tn_switch_context_exit:
 
         ;; Restore new task context
 
-        pop     _PSVPAG
+        pop     _PSVPAG_
         pop     _CORCON
         pop     _TBLPAG
         pop     _RCOUNT
@@ -382,7 +386,7 @@ _tn_switch_context:
         push    _RCOUNT
         push    _TBLPAG
         push    _CORCON
-        push    _PSVPAG
+        push    _PSVPAG_
 
         mov     _SR,            W2                      ; save SR state and disable system interrupts
         bset    _SR,            #5
@@ -414,7 +418,7 @@ __tn_sw_restore:
 
         ; Restore context on stack pointer
 
-        pop     _PSVPAG
+        pop     _PSVPAG_
         pop     _CORCON
         pop     _TBLPAG
         pop     _RCOUNT
