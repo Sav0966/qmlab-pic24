@@ -8,7 +8,7 @@
 #include "dispatch.h"
 
 #define IO_IPL		(DISP_IPL-1)
-#define IO_INT		(DISP_INT-1)
+#define IO_INT		3
 
 #define MAX_MESSAGES	16
 
@@ -33,7 +33,7 @@ static volatile PHOOK phooks[DISP_LAST] __attribute__((near));
 void disp_init(void)
 {
 	INT_DISABLE_INT(DISP_INT); // Disable the interrupt
-	INT_DISABLE_INT(DISP_INT-1); // Disable the interrupt
+	INT_DISABLE_INT(IO_INT); // Disable the interrupt
 	ENTER_DISP_LEVEL();
 	{
 		int i;
@@ -43,10 +43,10 @@ void disp_init(void)
 	} // Disp-level
 	LEAVE_DISP_LEVEL();
 	INT_SET_IPL(DISP_INT, DISP_IPL);   // Set IPL
-	INT_SET_IPL(DISP_INT-1, IO_IPL);   // Set IPL
+	INT_SET_IPL(IO_INT, IO_IPL);   // Set IPL
 	INT_CLR_FLAG(DISP_INT); // Clear interrupt flag
-	INT_CLR_FLAG(DISP_INT-1); // Clear interrupt flag
-	INT_ENABLE_INT(DISP_INT-1); // Enable interrupt
+	INT_CLR_FLAG(IO_INT); // Clear interrupt flag
+	INT_ENABLE_INT(IO_INT); // Enable interrupt
 	INT_ENABLE_INT(DISP_INT); // Enable interrupt
 }
 
