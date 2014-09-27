@@ -5,7 +5,7 @@
 #define _CONFIG_INCL_
 #include <p24Fxxxx.h> /* PIC24F only */
 /*
-* The value of oscillator mode
+* Oscillator mode
 */
 #ifndef __OSC__
 #define __OSC__		PRIPLL
@@ -17,47 +17,43 @@
 */
 #include <pinscfg.h>
 /*
-* Interrupt priority levels (IPL)
-*/
-#define MAIN_IPL	0	// Main loop
-#include <dispatch.h>	// DISP_IPL
-
-#define SYSCLK_IPL	4	// System timer
-#define UART_IPL	4	// System COM (3,4,5)
-#define GPS_IPL		4	// GPS module COM
-#define RTC_IPL		3	// RTC interface
-#define SD_IPL		3	// SD card SPI
-#define FL_IPL		3	// Flash SPI
-#define PPS_IPL		6	// PPS signal
-#define PWG_IPL		7	// Power Good
-/*
 * Interrupt helpers
 */
-#ifndef DISABLE_MOD
-#define _DISABLE_MOD(module, source) module##_DISABLE_##source
-#define DISABLE_MOD(module, source) _DISABLE_MOD(module, source)
-
-#define _ENABLE_MOD(module, source) module##_ENABLE_##source
-#define ENABLE_MOD(module, source) _ENABLE_MOD(module, source)
-#endif // DISABLE_MOD
-
-#define INTERLOCKED_MOD(module, source, f)\
-DISABLE_MOD(module, source); f; ENABLE_MOD(module, source)
-
 #define DISABLE() {__asm__ volatile ("push DISICNT\ndisi #0x3FFF")
 #define ENABLE() __asm__ volatile ("pop DISICNT\n");} ((void)0)
+#define INTERLOCKED(f) DISABLE(); f; ENABLE()
 /*
 * System modules
 */
-#define SYS_TIMER	1	// System timer
-#define RTC_I2C		3	// RTC interface
-#define SD_SPI		2	// SD card SPI
-#define FL_SPI		1	// Flash SPI
-#define DBG_UART	1	// Debug COM
-#define SYS_UART	2	// System COM
-#define GPS_UART	3	// GPS module COM
-#define PW_INT		1	// INT1 to PW_GOOG
-#define PPS_INT		2	// INT2 to PPS signal
+#define MAIN_IPL		0	// Main loop
+
+#include <ints.h>
+#define DISP_INT		4	// Dispatch vector
+#define DISP_IPL		1	// Dispatch level
+#define DISPATCH()		INT_SET_FLAG(DISP_INT)
+#define DISP_VECTOR		_INT4Interrupt
+
+#define SYS_TIMER		1	// System timer
+#define SYS_TIMER_IPL	4	// Interrupt level
+
+#define DBG_UART		1	// Debug COM
+#define SYS_UART		2	// System COM
+#define SYS_UART_IPL	4	// Interrupt level
+
+#define GPS_UART		3	// GPS module COM
+#define GPS_UART_IPL	4	// Interrupt level
+#define GPS_PPS_IPL		6	// PPS level
+
+//#define RTC_I2C		3	// RTC interface
+//#define SD_SPI		2	// SD card SPI
+//#define FL_SPI		1	// Flash SPI
+//#define PW_INT		1	// INT1 to PW_GOOG
+//#define PPS_INT		2	// INT2 to PPS signal
+
+//#define RTC_IPL		3	// RTC interface
+//#define SD_IPL		3	// SD card SPI
+//#define FL_IPL		3	// Flash SPI
+//#define PWG_IPL		7	// Power Good
 /*
 * Definitions of Config Words
 */
