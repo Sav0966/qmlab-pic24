@@ -116,8 +116,13 @@ typedef struct _LIST_NODE {
 } ((void)0)
 #define LIST_DEL(id, node) _LIST_DEL(id, node)
 
-#define LIST_ITEM(type) struct { type data; LIST_NODE node; }
-#define LIST_DATA(type, node)	((type*)((void*)(node) -	\
+#define _LIST_ITEM(type) struct { type data; LIST_NODE node; }
+#define _LIST_DATA(type, node)	((type*)((void*)(node) -	\
 		 (sizeof(LIST_ITEM(type)) - sizeof(LIST_NODE))))
+#define _LIST_NODE(type, item) ((LIST_NODE*)((void*)(item) +	\
+		(sizeof(LIST_ITEM(type)) - sizeof(LIST_NODE))))
+#define LIST_DATA(type, node)	_LIST_DATA(type, node)
+#define LIST_NODE(type, item)	_LIST_NODE(type, item)
+#define LIST_ITEM(type)			_LIST_ITEM(type)
 
 #endif /*_BUFFER_INCL_*/
