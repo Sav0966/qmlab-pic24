@@ -23,7 +23,33 @@ TN_UWORD stk_Task_UART[TASK_UART_STACK_SIZE] TN_DATA;
 
 static LIST(IFUNC); // Interrupt functions list
 #define GET_IFUNC(pos)	LIST_DATA(IFUNC, LIST_GET(pos))
-#define IFUNC_ITEM		LIST_ITEM(IFUNC);
+#define IFUNC_ITEM		LIST_ITEM(IFUNC)
+
+PIFUNC	set_interrupt(PIFUNC ifunc)
+{
+	PIFUNC data = sys_malloc(sizeof(IFUNC_ITEM));
+
+	if (data) {
+		void* pos;
+		*data = *ifunc;
+		{ tn_sys_enter_critical(); // SYS_Lock
+			pos = LIST_FIRST(IFUNC);
+			while (pos) {
+				if (LIST_DATA(IFUNC, pos)->ipl < ifunc->ipl) break;
+				pos = LIST_NEXT(IFUNC, pos); } // while (pos)
+		 	LIST_INSL(IFUNC, pos, LIST_NODE(IFUNC, data));
+		  tn_sys_exit_critical(); } // SYS_lock
+		return( LIST_DATA(IFUNC, pos) ); // if()
+	} return( 0 );
+}
+
+void del_interrupt(PIFUNC ifunc)
+{
+	tn_sys_enter_critical(); // SYS_Lock
+		LIST_DEL(IFUNC, LIST_NODE(IFUNC, ifunc));
+	tn_sys_exit_critical(); // SYS_lock
+	sys_free(ifunc);
+}
 
 /* Reset all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)
@@ -108,3 +134,15 @@ int main(void)
 
 	return( 0 ); // Never return
 }
+
+void *sys_malloc(size_t size)
+{
+	register void *ret;
+	tn_sys_enter_critical();
+		ret = malloc(size);
+	tn_sys_exit_critical();
+	return( ret );
+}
+
+void sys_free(void *ptr)
+{ tn_sys_enter_critical(); free(ptr); tn_sys_exit_critical(); }

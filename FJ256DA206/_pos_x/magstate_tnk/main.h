@@ -13,8 +13,11 @@ typedef struct _IFUNC { // Interrupt descriptor
 	void (*hfunc)(void); // System handler
 	int ipl;             // Priority level
 } IFUNC, *PIFUNC;
-typedef void* HIFUNC; // Descriptor handler
 
+PIFUNC	set_interrupt(PIFUNC ifunc);
+void	del_interrupt(PIFUNC ifunc);
 
+void *sys_malloc(size_t size);
+void sys_free(void *ptr);
 
 #endif /*_MAIN_INCL_*/
