@@ -10,6 +10,9 @@
 #define UART_RXBUF_SIZE		SYS_UART_RXBUF_SIZE
 #define UART_TXBUF_SIZE		SYS_UART_TXBUF_SIZE
 
+#define _DISABLE_()			DISABLE()
+#define _ENABLE_()			ENABLE()
+
 #ifndef DISPATCH
 #define DISPATCH()
 #endif
@@ -57,25 +60,25 @@ int sysu_txcount(void) { return( QUEBUF_LEN(TXB) ); }
 
 void sysu_txpurge(void)
 { // Reset TX queue and TX FIFO
-	DISABLE();
+	_DISABLE_();
 	{
 		QUEBUF_INIT(TXB); // Clear buffer
 		if (UART_IS_ENABLE_TX(UART_USED)) { // Clear FIFO
 			UART_DISABLE_TX(UART_USED); // Clear FIFO by TXEN = 0
 			UART_ENABLE_TX(UART_USED); } // Then restore TXEN
 	}
-	ENABLE();
+	_ENABLE_();
 }
 
 static int _sysu_putc(const int c)
 {
 	int i = -1;
-	DISABLE();
+	_DISABLE_();
 	{
 		if (!QUEBUF_FULL(TXB))
 			_QUEBUF_PUSH(TXB, i = (unsigned char)c);
 	}
-	ENABLE();
+	_ENABLE_();
 	return( i );
 }
 
@@ -135,23 +138,23 @@ int sysu_rxcount(void) { return(QUEBUF_LEN(RXB)); }
 
 void sysu_rxpurge(void)
 {
-	DISABLE();
+	_DISABLE_();
 	{
 		// Clear buffer, errors and FIFO
 		U_(UART_USED, rxerr) = 0; QUEBUF_INIT(RXB);
 		while (UART_CAN_READ(UART_USED)) UART_READ9(UART_USED);
 	}
-	ENABLE();
+	_ENABLE_();
 }
 
 int sysu_getc(void)
 {
 	int i = -1;
-	DISABLE();
+	_DISABLE_();
 	{
 		if (!QUEBUF_EMPTY(RXB)) _QUEBUF_POP(RXB, i);
 	}
-	ENABLE();
+	_ENABLE_();
 	return( i );
 }
 

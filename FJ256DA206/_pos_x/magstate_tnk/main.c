@@ -7,6 +7,7 @@
 #include <osc.h>
 
 #include "systime.h"
+#include "sysuart.h"
 #include "main.h"
 
 #if (DISP_IPL != TN_INTERRUPT_LEVEL)
@@ -21,34 +22,32 @@ TN_UWORD stk_Idl_Task[IDL_TASK_STACK_SIZE] TN_DATA;
 TN_UWORD stk_Task_Main[TASK_MAIN_STACK_SIZE] TN_DATA;
 TN_UWORD stk_Task_UART[TASK_UART_STACK_SIZE] TN_DATA;
 
-static LIST(IFUNC); // Interrupt functions list
+static LIST(IFUNC);		// Interrupt functions list
 #define GET_IFUNC(pos)	LIST_DATA(IFUNC, LIST_GET(pos))
 #define IFUNC_ITEM		LIST_ITEM(IFUNC)
 
-PIFUNC	set_interrupt(PIFUNC ifunc)
-{
-	PIFUNC data = sys_malloc(sizeof(IFUNC_ITEM));
+static TN_EVENT sysu_event; // UART events
 
-	if (data) {
-		void* pos;
-		*data = *ifunc;
-		{ tn_sys_enter_critical(); // SYS_Lock
-			pos = LIST_FIRST(IFUNC);
-			while (pos) {
-				if (LIST_DATA(IFUNC, pos)->ipl < ifunc->ipl) break;
-				pos = LIST_NEXT(IFUNC, pos); } // while (pos)
-		 	LIST_INSL(IFUNC, pos, LIST_NODE(IFUNC, data));
-		  tn_sys_exit_critical(); } // SYS_lock
-		return( LIST_DATA(IFUNC, pos) ); // if()
-	} return( 0 );
+static void sysu_handler(void)
+{ // System interrupt handler
+	int mask = 0; // No events
+	static int last_txevt;
+
+	if (sysu_error())
+	{ sysu_rxpurge() ; mask |= EV_ERR; }
+	else if (sysu_rxcount()) mask |= EV_RXCHAR;
+
+	if (last_txevt != sysu_txevt())
+	{ last_txevt = sysu_txevt(); mask |= EV_TXEMPTY; }
+
+	if (mask) tn_event_iset(&sysu_event, mask);
 }
 
-void del_interrupt(PIFUNC ifunc)
+static void uart_init(void)
 {
-	tn_sys_enter_critical(); // SYS_Lock
-		LIST_DEL(IFUNC, LIST_NODE(IFUNC, ifunc));
-	tn_sys_exit_critical(); // SYS_lock
-	sys_free(ifunc);
+	IFUNC sysu_ifunc = { 0, sysu_handler, SYS_UART_IPL };
+	tn_event_create(&sysu_event, TN_EVENT_ATTR_MULTI, 0);
+	if (set_interrupt(&sysu_ifunc)) sysu_init();
 }
 
 /* Reset all persistent and config data */
@@ -91,6 +90,7 @@ void app_conf (void)
 
 void int_conf(void)
 {
+	uart_init();
 
 	// Init dispatcher of events
 	INT_INIT(DISP_INT, 0, DISP_IPL);
@@ -145,4 +145,34 @@ void *sys_malloc(size_t size)
 }
 
 void sys_free(void *ptr)
-{ tn_sys_enter_critical(); free(ptr); tn_sys_exit_critical(); }
+{
+	tn_sys_enter_critical();
+		free(ptr); // Locked
+	tn_sys_exit_critical();
+}
+
+PIFUNC	set_interrupt(PIFUNC ifunc)
+{
+	PIFUNC data = sys_malloc(sizeof(IFUNC_ITEM));
+
+	if (data) {
+		void* pos;
+		*data = *ifunc;
+		{ tn_sys_enter_critical(); // SYS_Lock
+			pos = LIST_FIRST(IFUNC);
+			while (pos) {
+				if (LIST_DATA(IFUNC, pos)->ipl < ifunc->ipl) break;
+				pos = LIST_NEXT(IFUNC, pos); } // while (pos)
+		 	LIST_INSL(IFUNC, pos, LIST_NODE(IFUNC, data));
+		  tn_sys_exit_critical(); } // SYS_lock
+		return( data ); // if()
+	} return( 0 );
+}
+
+void del_interrupt(PIFUNC ifunc)
+{
+	tn_sys_enter_critical(); // SYS_Lock
+		LIST_DEL(IFUNC, LIST_NODE(IFUNC, ifunc));
+	tn_sys_exit_critical(); // SYS_lock
+	sys_free(ifunc);
+}
