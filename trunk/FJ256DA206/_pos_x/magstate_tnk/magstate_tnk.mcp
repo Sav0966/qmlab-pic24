@@ -50,6 +50,7 @@ file_022=.
 file_023=.
 file_024=.
 file_025=.
+file_026=.
 [GENERATED_FILES]
 file_000=no
 file_001=no
@@ -77,6 +78,7 @@ file_022=no
 file_023=no
 file_024=no
 file_025=no
+file_026=no
 [OTHER_FILES]
 file_000=no
 file_001=no
@@ -104,6 +106,7 @@ file_022=no
 file_023=no
 file_024=no
 file_025=no
+file_026=no
 [FILE_INFO]
 file_000=main.c
 file_001=C:\MPLab Projects\FJ256DA206\_pos_x\pins.c
@@ -130,7 +133,8 @@ file_021=C:\MPLab Projects\FJ256DA206\_pos_x\incl\ints.h
 file_022=sysuart.h
 file_023=C:\MPLab Projects\FJ256DA206\_pos_x\incl\buffer.h
 file_024=C:\MPLab Projects\FJ256DA206\_pos_x\reset.h
-file_025=C:\MPLab Projects\TNKernel\source\tnkernel\_lib\TNKernel_PIC24.a
+file_025=C:\MPLab Projects\FJ256DA206\_pos_x\incl\uarts.h
+file_026=C:\MPLab Projects\TNKernel\source\tnkernel\_lib\TNKernel_PIC24.a
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=-omf=elf

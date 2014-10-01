@@ -2,6 +2,7 @@
 #define _MAIN_INCL_
 
 #include <stdlib.h>
+#include <tnkernel.h>
 
 // 20 џэт 1997 15:00:00
 #define INITIAL_TIME	853801200L
