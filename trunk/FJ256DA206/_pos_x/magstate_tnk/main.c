@@ -43,11 +43,49 @@ static void sysu_handler(void)
 	if (mask) tn_event_iset(&sysu_event, mask);
 }
 
+static struct _commbuf {
+	char* pbuf;
+	int	  size;
+	volatile int offset;
+} _rxb;
+
+static void fTask_UART(void *param)
+{
+	for(;;)
+	{
+		TN_UWORD event;
+		if (TERR_NO_ERR == tn_event_wait(
+			(TN_EVENT*)param, EV_ERR | EV_RXCHAR |
+			EV_TXEMPTY, TN_EVENT_WCOND_OR, &event,
+			TN_WAIT_INFINITE))
+		{
+			tn_event_clear((TN_EVENT*)param, 0);
+
+			if (event & EV_ERR) {
+			}
+			if (event & EV_RXCHAR) {
+			}
+			if (event & EV_TXEMPTY) {
+			}
+			if (event & EV_RXFLAG) {
+			}
+		} else break; // Error or exit
+	}
+}
+
 static void uart_init(void)
 {
 	IFUNC sysu_ifunc = { 0, sysu_handler, SYS_UART_IPL };
 	tn_event_create(&sysu_event, TN_EVENT_ATTR_MULTI, 0);
-	if (set_interrupt(&sysu_ifunc)) sysu_init();
+
+	if (set_interrupt(&sysu_ifunc)) { // Set handler
+		tn_task_create( // Create UART task
+			&tcb_Task_UART, // and run it
+			fTask_UART, TASK_UART_PRIORITY,
+			stk_Task_UART, TASK_UART_STACK_SIZE,
+			&sysu_event, TN_TASK_START_ON_CREATION);
+		sysu_init(); // Initialize UART module
+	}
 }
 
 /* Reset all persistent and config data */

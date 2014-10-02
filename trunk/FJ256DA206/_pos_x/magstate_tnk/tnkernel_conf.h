@@ -8,8 +8,12 @@
 
 #define TMR_TASK_STACK_SIZE		256
 #define IDL_TASK_STACK_SIZE 	256
+
 #define TASK_MAIN_STACK_SIZE	256
+#define TASK_MAIN_PRIORITY		8
+
 #define TASK_UART_STACK_SIZE	256
+#define TASK_UART_PRIORITY		4
 
 /* Communication events */
 
