@@ -1,5 +1,6 @@
 #include <p24Fxxxx.h>
 #include <tnkernel.h>
+#include <string.h>
 #include <config.h>
 #include <buffer.h>
 #include <timers.h>
@@ -7,7 +8,7 @@
 #include <osc.h>
 
 #include "systime.h"
-#include "sysuart.h"
+#include "sys_io.h"
 #include "main.h"
 
 #if (DISP_IPL != TN_INTERRUPT_LEVEL)
@@ -15,78 +16,14 @@
 #endif
 
 TN_TCB tcb_Task_Main TN_DATA;
-TN_TCB tcb_Task_UART TN_DATA;
 
 TN_UWORD stk_Tmr_Task[TMR_TASK_STACK_SIZE] TN_DATA;
 TN_UWORD stk_Idl_Task[IDL_TASK_STACK_SIZE] TN_DATA;
 TN_UWORD stk_Task_Main[TASK_MAIN_STACK_SIZE] TN_DATA;
-TN_UWORD stk_Task_UART[TASK_UART_STACK_SIZE] TN_DATA;
 
 static LIST(IFUNC);		// Interrupt functions list
 #define GET_IFUNC(pos)	LIST_DATA(IFUNC, LIST_GET(pos))
 #define IFUNC_ITEM		LIST_ITEM(IFUNC)
-
-static TN_EVENT sysu_event; // UART events
-
-static void sysu_handler(void)
-{ // System interrupt handler
-	int mask = 0; // No events
-	static int last_txevt;
-
-	if (sysu_error())
-	{ sysu_rxpurge() ; mask |= EV_ERR; }
-	else if (sysu_rxcount()) mask |= EV_RXCHAR;
-
-	if (last_txevt != sysu_txevt())
-	{ last_txevt = sysu_txevt(); mask |= EV_TXEMPTY; }
-
-	if (mask) tn_event_iset(&sysu_event, mask);
-}
-
-static struct _commbuf {
-	char* pbuf;
-	int	  size;
-	volatile int offset;
-} _rxb;
-
-static void fTask_UART(void *param)
-{
-	for(;;)
-	{
-		TN_UWORD event;
-		if (TERR_NO_ERR == tn_event_wait(
-			(TN_EVENT*)param, EV_ERR | EV_RXCHAR |
-			EV_TXEMPTY, TN_EVENT_WCOND_OR, &event,
-			TN_WAIT_INFINITE))
-		{
-			tn_event_clear((TN_EVENT*)param, 0);
-
-			if (event & EV_ERR) {
-			}
-			if (event & EV_RXCHAR) {
-			}
-			if (event & EV_TXEMPTY) {
-			}
-			if (event & EV_RXFLAG) {
-			}
-		} else break; // Error or exit
-	}
-}
-
-static void uart_init(void)
-{
-	IFUNC sysu_ifunc = { 0, sysu_handler, SYS_UART_IPL };
-	tn_event_create(&sysu_event, TN_EVENT_ATTR_MULTI, 0);
-
-	if (set_interrupt(&sysu_ifunc)) { // Set handler
-		tn_task_create( // Create UART task
-			&tcb_Task_UART, // and run it
-			fTask_UART, TASK_UART_PRIORITY,
-			stk_Task_UART, TASK_UART_STACK_SIZE,
-			&sysu_event, TN_TASK_START_ON_CREATION);
-		sysu_init(); // Initialize UART module
-	}
-}
 
 /* Reset all persistent and config data */
 #define isPOWER_ON(i) (((i) & EXT_RESET) != 0)
@@ -137,31 +74,9 @@ void int_conf(void)
 
 void idle_handler (void)
 {
+	if (_sys_tick_ == 100) uart_done(); // Test
+
 	__asm__ volatile ("pwrsav	#1"); // Idle mode
-}
-
-SYS_INTERRUPT(DISP_VECTOR)
-{
-	static int last_tick;
-	register void* pos;
-
-	INT_CLR_FLAG(DISP_INT);
-
-	// Check system_time
-	pos = (void*)_sys_tick_;
-	if ((int)pos != last_tick)
-	{ // Switch context
-		last_tick = (int)pos;
-		tn_tick_int_processing();
-		INT_SET_FLAG(DISP_INT);
-		return;   // IF is set
-	} // No RTOS services more
-
-	pos = LIST_FIRST(IFUNC);
-	while (pos) { // Check all sys events
-		GET_IFUNC(pos)->hfunc();
-		pos = LIST_NEXT(IFUNC, pos);
-	}
 }
 
 int main(void)
@@ -213,4 +128,28 @@ void del_interrupt(PIFUNC ifunc)
 		LIST_DEL(IFUNC, LIST_NODE(IFUNC, ifunc));
 	tn_sys_exit_critical(); // SYS_lock
 	sys_free(ifunc);
+}
+
+SYS_INTERRUPT(DISP_VECTOR)
+{
+	static int last_tick;
+	register void* pos;
+
+	INT_CLR_FLAG(DISP_INT);
+
+	// Check system_time
+	pos = (void*)_sys_tick_;
+	if ((int)pos != last_tick)
+	{ // Switch context
+		last_tick = (int)pos;
+		tn_tick_int_processing();
+		INT_SET_FLAG(DISP_INT);
+		return;   // IF is set
+	} // No RTOS services more
+
+	pos = LIST_FIRST(IFUNC);
+	while (pos) { // Check all sys events
+		GET_IFUNC(pos)->hfunc();
+		pos = LIST_NEXT(IFUNC, pos);
+	}
 }
